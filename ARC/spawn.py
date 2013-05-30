@@ -13,9 +13,35 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+import time
+import multiprocessing
+from process_runner import ProcessRunner
 
-from ARC import sample
+def run(config={}):
+  ref_q = multiprocessing.JoinableQueue()
 
-def run():
-  print "Spawning the sampler processors"
-  sample.run()
+  from test import TestRunner
+  nprocs = 10
+  for i in range(50):
+    s = TestRunner()
+    ref_q.put({'runner': s, 'name': 'Sample Run'})
+
+  # Get the number of processors to use
+  # nprocs = config['nprocs']
+  # Get the number of samples from the configuration
+  # samples = config['samples'] is dict
+  # Get the target file from the configuration
+  # target = config['target']
+  # Load the queue with the intial mapping jobs
+  #
+  # for sample in samples
+  #   mapper = Mapper(sample,target)
+  #   ref_q.put(mapper.to_queue) # {'runner': self, 'name': 'Map <Sample name>'}
+
+  # Need signal handling for graceful exit
+  for i in range(nprocs):
+    worker = ProcessRunner(ref_q)
+    worker.start()
+
+  ref_q.join()

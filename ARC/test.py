@@ -17,8 +17,18 @@
 import time
 from random import randint
 
-class SampleRunner:
+class TestRunner:
   def __init__(self):
-    self.file = None
-    self.name = ""
+    self.error = None
+    self.next = []
 
+  def start(self):
+    self.cpu_intensive()
+    if randint(0,10) > 8:
+      self.next = [{'runner': TestRunner(), 'name': 'Added Runner' }]
+
+  def cpu_intensive(self):
+    a, b = 0, 1
+    for i in range(100000):
+      a, b = b, a + b
+    time.sleep(randint(2,9))

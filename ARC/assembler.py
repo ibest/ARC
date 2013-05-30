@@ -17,3 +17,8 @@
 
 def run():
   print "I'm running the assembler now"
+
+def cpu_intensive():
+  a, b = 0, 1
+  for i in range(100000):
+    a, b = b, a + b

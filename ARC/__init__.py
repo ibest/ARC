@@ -21,23 +21,23 @@ from ARC import config
 
 def main():
   setup()
-  read_config()
-  run_mapper()
-  run_spawner()
+  config = read_config()
+  run_spawner(config)
   clean()
 
 def setup():
-  print "Hello from setup"
+  """Add setup"""
 
 def read_config():
-  config.read()
+  # config.read()
+  return {}
 
 def run_mapper():
   mapper.run()
 
-def run_spawner():
-  spawner.run()
+def run_spawner(config):
+  spawn.run(config)
 
 def clean():
-  print "Hello from cleaner"
+  """Clean up"""
 
