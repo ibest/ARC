@@ -14,12 +14,19 @@
 
 
 import sys
+import logging
 
 from ARC import mapper
 from ARC import spawn
 from ARC import config
 
 def main():
+  #Setup a global logger:
+  # How should we handle this gracefully for cases where each component is run independently?
+  # How should get get log-level (command line switch), and what level should we default to? 
+  logging.basicConfig(filename='run.log', level=logging.INFO)
+
+  #Run modules:
   setup()
   read_config()
   run_mapper()
