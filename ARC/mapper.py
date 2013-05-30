@@ -18,16 +18,16 @@ import time
 import logging
 
 class MapperRunner
-    def __init__(target, sample)
+    def __init__(self, target, sample)
         self.target = target
         self.sample = sample
         self.next = []
         self.error = None
 
-    def start():
+    def start(self):
       print "Running the mapper"
 
-    def SAM_to_dict(filename):
+    def SAM_to_dict(self, filename):
         """ Read a SAM file to a mapping dict and return it """
         try:
             inf = open(filename, 'r')
@@ -54,7 +54,7 @@ class MapperRunner
         logging.info("Processed %s lines in %s seconds." % (i, time.time() - startT ))
         return read_map
 
-    def PSL_to_dict(filename):
+    def PSL_to_dict(self, filename):
         try:
             inf = open(filename, 'r')
         except Exception as inst:
@@ -84,7 +84,7 @@ class MapperRunner
         return read_map
 
 
-    def write_dict(filename, read_map):
+    def write_dict(self, filename, read_map):
         """ Write a mapping dictionary to a file. """
         startT = time.time()
         outf = open(filename, 'w')
@@ -94,7 +94,7 @@ class MapperRunner
         logging.info("Wrote all values to txt in %s seconds" % (time.time() - startT ))
 
 
-    def read_dict(filename):
+    def read_dict(self, filename):
         """ Read a mapping dictionary from a file """
         startT = time.time()
         try:
