@@ -15,27 +15,98 @@
 # limitations under the License.
 
 import time
-import logging
+from ARC import logger
+import subprocess
+import os
+from ARC import exceptions
 
 
 class MapperRunner:
-    def __init__(self, target, sample):
-        self.target = target
-        self.sample = sample
-        self.next = []
-        self.error = None
+    def __init__(self, params):
+        self.params = params
 
-    def start(self):
-        print "Running the mapper"
+    def start(self, params):
+        #print "Running the mapper"
+        if not('mapper' in params):
+            raise exceptions.FatalException("mapper not defined in params")
+        if params['mapper'] == 'bowtie2':
+            self.run_bowtie2(params)
+        if params['mapper'] == 'blat':
+            self.run_blat(params)
+
+    def run_bowtie2(self, params):
+        """
+        Expects params:
+            sample - required
+            target - required
+            PE1 and PE2 or SE
+        """
+        #Check for necessary params:
+        if not ('sample' in params and 'reference' in params and (('PE1' in params and 'PE2' in params) or 'SE' in params)):
+            raise exceptions.FatalException('Missing params in run_bowtie2.')
+        #Check for necessary files:
+        if os.path.exists(params['reference']) is False:
+            raise exceptions.FatalException("Missing reference file for mapping")
+        if 'PE1' in params and 'PE2' in params:
+            if not (os.path.exists(params['PE1']) and os.path.exists(params['PE2'])):
+                raise exceptions.FatalException("One or both PE files can not be found for mapping.")
+        if 'SE' in params:
+            if not os.path.exists(params['SE']):
+                raise exceptions.FatalException("SE file cannot be found.")
+
+        #Make temporary working directory and idx directory
+        try:
+            working_dir = os.path.realpath('_'.join(['tmp', params['sample']]))
+            os.mkdir(working_dir)
+            idx_dir = os.path.realpath(os.path.join(working_dir, 'idx'))
+            os.mkdir(idx_dir)
+            params['working_dir'] = working_dir
+        except Exception as exc:
+            txt = "Error creating working directory for Sample: %s" % (params['sample']) + '\n\t' + str(exc)
+            raise exceptions.FatalException(txt)
+
+        #Check whether to log to temporary file, or default to os.devnull
+        if ''
+
+        base = os.path.join(idx_dir, 'idx')
+        ret = subprocess.call(['bowtie2-build', '-f', params['target'], base], stdout=open(os.devnull, 'w'))
+        if ret != 0:
+            raise exceptions.FatalException("Error creating bowtie2 index for Sample: %s" % params['sample'])
+
+        #Carry out mapping:
+        args = ['bowtie2', '--local', '-x', base]
+        if 'PE1' in params and 'PE2' in params:
+            args += ['-1', params['PE1'], '-2', params['PE2']]
+        if 'SE' in params:
+            args += ['-U', params['SE']]
+        args += ['-S', os.path.join(working_dir, 'mapping.sam')]
+        ret = subprocess.call(args, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
+
+
+
+
+        txt = "bowtie2 -p %s --local -x "
+        bowtie2 -p 15 --local -x ./idx/IsoTigs -1 ../01-Cleaned_Reads/Male_lane5/Male_PE1.fastq ../01-Cleaned_Reads/Male_lane5/Male_PE2.fastq -S male_IsoTig_hits.sam &
+
+
+
+    def run_blat(self, params):
+        "blat ./idx/454IsoTigs_renamed.fasta reads.txt -minScore=60 -minIdentity=95 -dots=1000000 -fastq Blat_IsoTig_hits.psl &"
+
+
+
+
+
+
+
 
     def SAM_to_dict(self, filename):
         """ Read a SAM file to a mapping dict and return it """
         try:
             inf = open(filename, 'r')
-        except Exception as inst:
-            if type(inst) == IOError:
-                logging.error("Failed to open mapping dictionary %s." % filename)
-            raise inst
+        except IOError:
+            logger.error("Failed to open mapping dictionary %s." % filename)
+            raise
 
         read_map = {}  # target:{read} dictionary of dictionaries
         i = 0
@@ -53,7 +124,7 @@ class MapperRunner:
                     read_map[target] = {}
                 read_map[target][readid] = 1
         #Report total time:
-        logging.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
+        logger.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
         return read_map
 
     def PSL_to_dict(self, filename):
@@ -61,7 +132,7 @@ class MapperRunner:
             inf = open(filename, 'r')
         except Exception as inst:
             if type(inst) == IOError:
-                logging.error("Failed to open mapping dictionary %s." % filename)
+                logger.error("Failed to open mapping dictionary %s." % filename)
             raise inst
         read_map = {}
         i = 0
@@ -82,7 +153,7 @@ class MapperRunner:
             if target not in read_map:
                 read_map[target] = {}
             read_map[target][readid] = 1
-        logging.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
+        logger.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
         return read_map
 
     def write_dict(self, filename, read_map):
@@ -92,7 +163,7 @@ class MapperRunner:
         for k in read_map.keys():
             outf.write(k + '\t' + ",".join(read_map[k].keys()) + '\n')
         outf.close()
-        logging.info("Wrote all values to txt in %s seconds" % (time.time() - startT))
+        logger.info("Wrote all values to txt in %s seconds" % (time.time() - startT))
 
     def read_dict(self, filename):
         """ Read a mapping dictionary from a file """
@@ -101,7 +172,7 @@ class MapperRunner:
             inf = open(filename, 'r')
         except Exception as inst:
             if type(inst) == IOError:
-                logging.error("Failed to open mapping dictionary %s." % filename)
+                logger.error("Failed to open mapping dictionary %s." % filename)
             raise inst
         new_map = {}
         for l in inf:
@@ -110,5 +181,5 @@ class MapperRunner:
             new_map[l2[0]] = {}
             for k in l3:
                 new_map[l2[0]][k] = 1
-        logging.info("Read all values to txt in %s seconds" % (time.time() - startT))
+        logger.info("Read all values to txt in %s seconds" % (time.time() - startT))
         return new_map
