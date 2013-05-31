@@ -17,8 +17,8 @@
 import time
 import logging
 
-class MapperRunner
-    def __init__(self, target, sample)
+class MapperRunner:
+    def __init__(self, target, sample):
         self.target = target
         self.sample = sample
         self.next = []
