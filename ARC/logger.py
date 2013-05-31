@@ -26,15 +26,15 @@ def setup(logfile=None, loglevel=logging.INFO):
   log_handler = logging.StreamHandler(sys.stdout)
   # else:
   #   log_handler = logging.FileHandler(config['logfile'])
-  log_handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
+  log_handler.setFormatter(logging.Formatter('[%(asctime)s %(levelname)s] %(message)s'))
   log_handler.setLevel(loglevel) # Here's where
   logger.addHandler(log_handler)
   logger.setLevel(loglevel) # And here
 
 def info(message):
   logger = logging.getLogger(__name__)
-  logger.info("[%s]" % (message))
+  logger.info("%s" % (message))
 
 def error(message):
   logger = logging.getLogger(__name__)
-  logger.error("[%s]" % (message))
+  logger.error("%s" % (message))
