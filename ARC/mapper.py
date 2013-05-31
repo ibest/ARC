@@ -17,19 +17,16 @@
 import time
 import logging
 
+
 class MapperRunner:
-<<<<<<< HEAD
     def __init__(self, target, sample):
-=======
-    def __init__(self, target, sample)
->>>>>>> 8b347b2435dcb7468bfba0bc897942a82ee333bd
         self.target = target
         self.sample = sample
         self.next = []
         self.error = None
 
     def start(self):
-      print "Running the mapper"
+        print "Running the mapper"
 
     def SAM_to_dict(self, filename):
         """ Read a SAM file to a mapping dict and return it """
@@ -52,10 +49,11 @@ class MapperRunner:
                     continue
                 readid = l2[0]
                 target = l2[2].split("_")[0].split("=")[1]
-                if target not in read_map: read_map[target] = {}
+                if target not in read_map:
+                    read_map[target] = {}
                 read_map[target][readid] = 1
         #Report total time:
-        logging.info("Processed %s lines in %s seconds." % (i, time.time() - startT ))
+        logging.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
         return read_map
 
     def PSL_to_dict(self, filename):
@@ -75,7 +73,7 @@ class MapperRunner:
             i += 1
             #Check for PSL header and skip 5 lines if it exists
             if i == 1 and l.split()[0] == 'psLayout':
-                psl_header = True 
+                psl_header = True
             if psl_header and i <= 5:
                 continue
             l2 = l.strip().split("\t")
@@ -87,16 +85,14 @@ class MapperRunner:
         logging.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
         return read_map
 
-
     def write_dict(self, filename, read_map):
         """ Write a mapping dictionary to a file. """
         startT = time.time()
         outf = open(filename, 'w')
         for k in read_map.keys():
-            outf.write(k + '\t' + ",".join(read_map[k].keys()) + '\n' )
+            outf.write(k + '\t' + ",".join(read_map[k].keys()) + '\n')
         outf.close()
-        logging.info("Wrote all values to txt in %s seconds" % (time.time() - startT ))
-
+        logging.info("Wrote all values to txt in %s seconds" % (time.time() - startT))
 
     def read_dict(self, filename):
         """ Read a mapping dictionary from a file """
@@ -114,5 +110,5 @@ class MapperRunner:
             new_map[l2[0]] = {}
             for k in l3:
                 new_map[l2[0]][k] = 1
-        logging.info("Read all values to txt in %s seconds" % (time.time() - startT ))
+        logging.info("Read all values to txt in %s seconds" % (time.time() - startT))
         return new_map
