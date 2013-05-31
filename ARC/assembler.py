@@ -14,11 +14,60 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+from ARC import logger
+import subprocess
+import os
+from ARC import exceptions
 
-def run():
-  print "I'm running the assembler now"
 
-def cpu_intensive():
-  a, b = 0, 1
-  for i in range(100000):
-    a, b = b, a + b
+class AssemblyRunner:
+    def __init__(self, params):
+        self.params = params
+
+    def start(self, params):
+        #print "Running the mapper"
+        if not('assembler' in params):
+            raise exceptions.FatalException("assembler not defined in params")
+        if params['assembler'] == 'newbler':
+            self.run_newbler(params)
+        elif params['assembler'] == 'spades':
+            self.run_spades(params)
+        else:
+            raise exceptions.FatalException("Assembler %s isn't recognized." % params['assembler'])
+
+    def RunNewbler(self, params):
+        #Code for running newbler
+        """
+        Expects params keys:
+            PE1 and PE2 and/or SE
+            target_dir
+        """
+        #Check for necessary params:
+        if not (('PE1' in params and 'PE2' in params) or 'SE' in params)):
+            raise exceptions.FatalException('Missing params in RunNewbler.')
+        #Check for necessary files:
+        if os.path.exists(params['reference']) is False:
+            raise exceptions.FatalException("Missing reference file for mapping")
+        if 'PE1' in params and 'PE2' in params:
+            if not (os.path.exists(params['PE1']) and os.path.exists(params['PE2'])):
+                raise exceptions.FatalException("One or both PE files can not be found for mapping.")
+        if 'SE' in params:
+            if not os.path.exists(params['SE']):
+                raise exceptions.FatalException("SE file cannot be found.")
+
+
+
+    def RunSpades(self, params):
+        #Code for running spades
+
+
+# def run():
+#     print "I'm running the assembler now"
+
+
+# def cpu_intensive():
+#     a, b = 0, 1
+#     for i in range(100000):
+#         a, b = b, a + b
+

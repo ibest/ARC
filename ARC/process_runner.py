@@ -12,32 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
 from Queue import Empty
-from multiprocessing import Process, Queue
-from random import randint
+from multiprocessing import Process
+from ARC import logger
+from ARC import exceptions
+
 
 class ProcessRunner(Process):
-  def __init__(self,ref_q):
-    super(ProcessRunner, self).__init__()
-    self.ref_q = ref_q
+    def __init__(self, ref_q):
+        super(ProcessRunner, self).__init__()
+        self.ref_q = ref_q
 
-  def run(self):
-    while True:
-      try:
-        item = self.ref_q.get_nowait()
-        job = item['runner']
-        print "[%s] Processing: %s" % (self.name,item['name'])
-        job.start()
-        if not job.error:
-          for next_job in job.next:
-            self.ref_q.put(next_job)
-        else:
-          # Log the error ??Recover or die??
-          print "[%s] ERROR"
-
-      except Empty:
-        print "Queue Empty!!!!!"
-        return
-      else:
-        self.ref_q.task_done()
+    def run(self):
+        while True:
+            try:
+                # logger.info("The queue currently contains %d jobs" % (self.ref_q.qsize()))
+                item = self.ref_q.get_nowait()
+                job = item['runner']
+                logger.info("[%s] Processing: %s" % (self.name, item['message']))
+                job.queue(self.ref_q)
+                job.start()
+            except Empty:
+                return
+            except exceptions.FatalError as e:
+                logger.error("[%s] A fatal error occured: %s" % (self.name, e))
+                raise
+            except exceptions.RerunnableError as e:
+                logger.error("[%s] An error occured: %s" % (self.name, e))
+                self.ref_q.task_done()
+            else:
+                self.ref_q.task_done()

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Copyright 2013, Institute for Bioninformatics and Evolutionary Studies
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,35 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys
 
-from ARC import logger
-from ARC import mapper
-from ARC import spawn
-from ARC import config
 
-def main():
-  config = read_config()
-  logger.setup()
-
-  #Run modules:
-  setup()
-  run_spawner(config)
-  clean()
-
-def setup():
-  """Add setup"""
-
-def read_config():
-  # config.read()
-  return {}
-
-def run_mapper():
-  mapper.run()
-
-def run_spawner(config):
-  spawn.run(config)
-
-def clean():
-  """Clean up"""
-
+def add(q, entry):
+    q.put_nowait(entry)
