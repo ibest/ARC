@@ -17,9 +17,11 @@ import os
 import time
 import multiprocessing
 from process_runner import ProcessRunner
+from ARC import logger
 
 def run(config={}):
   ref_q = multiprocessing.JoinableQueue()
+  logger.info("Starting...")
 
   from test import TestRunner
   nprocs = 10

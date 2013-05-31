@@ -16,6 +16,7 @@ import time
 from Queue import Empty
 from multiprocessing import Process, Queue
 from random import randint
+from ARC import logger
 
 class ProcessRunner(Process):
   def __init__(self,ref_q):
@@ -27,17 +28,17 @@ class ProcessRunner(Process):
       try:
         item = self.ref_q.get_nowait()
         job = item['runner']
-        print "[%s] Processing: %s" % (self.name,item['name'])
+        logger.info("[%s] Processing: %s" % (self.name,item['name']))
         job.start()
         if not job.error:
           for next_job in job.next:
             self.ref_q.put(next_job)
         else:
           # Log the error ??Recover or die??
-          print "[%s] ERROR"
+          # print "[%s] ERROR"
+          pass
 
       except Empty:
-        print "Queue Empty!!!!!"
         return
       else:
         self.ref_q.task_done()

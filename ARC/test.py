@@ -13,18 +13,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import time
+from ARC import logger
 from random import randint
 
 class TestRunner:
-  def __init__(self):
+  def __init__(self, worker=""):
     self.error = None
     self.next = []
+    self.worker = worker
 
   def start(self):
+    logger.info("Starting test job.")
     self.cpu_intensive()
     if randint(0,10) > 8:
+      logger.info("Not finished yet, adding another test job.")
       self.next = [{'runner': TestRunner(), 'name': 'Added Runner' }]
 
   def cpu_intensive(self):

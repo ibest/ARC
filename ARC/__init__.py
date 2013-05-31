@@ -11,24 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 import sys
-import logging
 
+from ARC import logger
 from ARC import mapper
 from ARC import spawn
 from ARC import config
 
 def main():
-  #Setup a global logger:
-  # How should we handle this gracefully for cases where each component is run independently?
-  # How should get get log-level (command line switch), and what level should we default to? 
-  logging.basicConfig(filename='run.log', level=logging.INFO)
+  config = read_config()
+  logger.setup()
 
   #Run modules:
   setup()
-  config = read_config()
   run_spawner(config)
   clean()
 
