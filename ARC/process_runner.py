@@ -28,15 +28,19 @@ class ProcessRunner(Process):
       try:
         item = self.ref_q.get_nowait()
         job = item['runner']
-        logger.info("[%s] Processing: %s" % (self.name,item['name']))
+        logger.info("[%s] Processing: %s" % (self.name,item['message']))
+        job.queue(self.ref_q)
         job.start()
+
         if not job.error:
           for next_job in job.next:
+            logger.info("[%s] Picked up new job %s" % (self.name,item['message']))
             self.ref_q.put(next_job)
         else:
           # Log the error ??Recover or die??
           # print "[%s] ERROR"
-          pass
+          logger.error("[%s] An error occured" % (self.name)
+          raise "Fatal error encountered on %s" % (self.name)
 
       except Empty:
         return

@@ -27,7 +27,7 @@ def run(config={}):
   nprocs = 10
   for i in range(50):
     s = TestRunner()
-    ref_q.put({'runner': s, 'name': 'Sample Run'})
+    ref_q.put({'runner': s, 'message': 'Sample Run'})
 
   # Get the number of processors to use
   # nprocs = config['nprocs']

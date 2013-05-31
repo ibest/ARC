@@ -38,3 +38,4 @@ def info(message):
 def error(message):
   logger = logging.getLogger(__name__)
   logger.error("%s" % (message))
+  
