@@ -12,37 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
 from Queue import Empty
-from multiprocessing import Process, Queue
-from random import randint
+from multiprocessing import Process
 from ARC import logger
+from ARC import exceptions
+
 
 class ProcessRunner(Process):
-  def __init__(self,ref_q):
-    super(ProcessRunner, self).__init__()
-    self.ref_q = ref_q
+    def __init__(self, ref_q):
+        super(ProcessRunner, self).__init__()
+        self.ref_q = ref_q
 
-  def run(self):
-    while True:
-      try:
-        item = self.ref_q.get_nowait()
-        job = item['runner']
-        logger.info("[%s] Processing: %s" % (self.name,item['message']))
-        job.queue(self.ref_q)
-        job.start()
-
-        if not job.error:
-          for next_job in job.next:
-            logger.info("[%s] Picked up new job %s" % (self.name,item['message']))
-            self.ref_q.put(next_job)
-        else:
-          # Log the error ??Recover or die??
-          # print "[%s] ERROR"
-          logger.error("[%s] An error occured" % (self.name)
-          raise "Fatal error encountered on %s" % (self.name)
-
-      except Empty:
-        return
-      else:
-        self.ref_q.task_done()
+    def run(self):
+        while True:
+            try:
+                # logger.info("The queue currently contains %d jobs" % (self.ref_q.qsize()))
+                item = self.ref_q.get_nowait()
+                job = item['runner']
+                logger.info("[%s] Processing: %s" % (self.name, item['message']))
+                job.queue(self.ref_q)
+                job.start()
+            except Empty:
+                return
+            except exceptions.FatalError as e:
+                logger.error("[%s] A fatal error occured: %s" % (self.name, e))
+                raise
+            except exceptions.RerunnableError as e:
+                logger.error("[%s] An error occured: %s" % (self.name, e))
+                self.ref_q.task_done()
+            else:
+                self.ref_q.task_done()

@@ -17,29 +17,38 @@ import time
 from ARC import logger
 from ARC import queue
 from random import randint
+from ARC import exceptions
+
 
 class TestRunner:
 
-  def __init__(self):
-    self.error = None
-    self.next = []
+    def __init__(self, params={}):
+        self.params = params
 
-  def start(self):
-    logger.info("Starting test job.")
-    self.cpu_intensive()
-    if randint(0,10) > 8:
-      logger.info("Not finished yet, adding another test job.")
-      entry = {
-        'runner': TestRunner(), 
-        'message': 'Added Runner'
-      }
-      queue.add(self.ref_q, entry)
+    def to_dict(self):
+        return {'runner': self, 'message': 'Sample Run', 'params': self.params}
 
-  def cpu_intensive(self):
-    a, b = 0, 1
-    for i in range(100000):
-      a, b = b, a + b
-    time.sleep(randint(2,9))
+    def start(self):
+        logger.info("Running foo with %s" % (self.params['foo']))
+        self.cpu_intensive()
 
-  def queue(self,ref_q):
-    self.ref_q = ref_q
+        num = randint(0, 10)
+        if num > 8:
+            logger.info("Not finished yet, adding another test job.")
+            newjob = TestRunner({'foo': num})
+            queue.add(self.ref_q, newjob.to_dict())
+        if num == 5:
+            # Need to create a new one to make sure the joinablequeue isn't 
+            # passed along.
+            rerunjob = TestRunner(self.params)
+            queue.add(self.ref_q, rerunjob.to_dict())
+            raise exceptions.RerunnableError("Oops, need to rerun this one.")
+
+    def cpu_intensive(self):
+        a, b = 0, 1
+        for i in range(100000):
+            a, b = b, a + b
+        time.sleep(randint(2, 9))
+
+    def queue(self, ref_q):
+        self.ref_q = ref_q

@@ -16,26 +16,28 @@
 import sys
 import logging
 
+
 def setup(logfile=None, loglevel=logging.INFO):
-  #Setup a global logger:
-  # global logger
-  # How should we handle this gracefully for cases where each component is run independently?
-  # How should get get log-level (command line switch), and what level should we default to? 
-  logger = logging.getLogger(__name__)
-  # if config['logfile']:
-  log_handler = logging.StreamHandler(sys.stdout)
-  # else:
-  #   log_handler = logging.FileHandler(config['logfile'])
-  log_handler.setFormatter(logging.Formatter('[%(asctime)s %(levelname)s] %(message)s'))
-  log_handler.setLevel(loglevel) # Here's where
-  logger.addHandler(log_handler)
-  logger.setLevel(loglevel) # And here
+    #Setup a global logger:
+    # global logger
+    # How should we handle this gracefully for cases where each component is run independently?
+    # How should get get log-level (command line switch), and what level should we default to?
+    logger = logging.getLogger(__name__)
+    # if config['logfile']:
+    log_handler = logging.StreamHandler(sys.stdout)
+    # else:
+    #   log_handler = logging.FileHandler(config['logfile'])
+    log_handler.setFormatter(logging.Formatter('[%(asctime)s %(levelname)s] %(message)s'))
+    log_handler.setLevel(loglevel)  # Here's where
+    logger.addHandler(log_handler)
+    logger.setLevel(loglevel)  # And here
+
 
 def info(message):
-  logger = logging.getLogger(__name__)
-  logger.info("%s" % (message))
+    logger = logging.getLogger(__name__)
+    logger.info("%s" % (message))
+
 
 def error(message):
-  logger = logging.getLogger(__name__)
-  logger.error("%s" % (message))
-  
+    logger = logging.getLogger(__name__)
+    logger.error("%s" % (message))
