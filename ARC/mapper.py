@@ -226,21 +226,3 @@ class MapperRunner:
         outf.close()
         #logger.info("Wrote all values to txt in %s seconds" % (time.time() - startT))
 
-    def read_dict(self, filename):
-        """ Read a mapping dictionary from a file """
-        startT = time.time()
-        try:
-            inf = open(filename, 'r')
-        except Exception as inst:
-            if type(inst) == IOError:
-                logger.error("Failed to open mapping dictionary %s." % filename)
-            raise inst
-        new_map = {}
-        for l in inf:
-            l2 = l.split('\t')
-            l3 = l2[1].strip().split(",")
-            new_map[l2[0]] = {}
-            for k in l3:
-                new_map[l2[0]][k] = 1
-        logger.info("Read all values to txt in %s seconds" % (time.time() - startT))
-        return new_map

@@ -23,16 +23,41 @@ from ARC import logger
 
 class Splitter:
     """
-    This calss handles splitting reads into fastq files and launching assemblers.
+    This calss handles splitting reads into fastq files and launching assemblies.
+    Once all assemblies are launched, add a job to check that the assemblies have finished.
     """
     def __init__(self, params):
         self.params = params
 
     def start(self, params):
         print "Running the splitter"
+
+
+
+
+
         if not('mapper' in params):
             raise exceptions.FatalException("mapper not defined in params")
         if params['mapper'] == 'bowtie2':
             self.run_bowtie2(params)
         if params['mapper'] == 'blat':
             self.run_blat(params)
+
+    def read_dict(self, filename):
+        """ Read a mapping dictionary from a file """
+        startT = time.time()
+        try:
+            inf = open(filename, 'r')
+        except Exception as inst:
+            if type(inst) == IOError:
+                logger.error("Failed to open mapping dictionary %s." % filename)
+            raise inst
+        new_map = {}
+        for l in inf:
+            l2 = l.split('\t')
+            l3 = l2[1].strip().split(",")
+            new_map[l2[0]] = {}
+            for k in l3:
+                new_map[l2[0]][k] = 1
+        logger.info("Read all values to txt in %s seconds" % (time.time() - startT))
+        return new_map

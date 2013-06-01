@@ -45,20 +45,19 @@ class AssemblyRunner:
             -urt
         """
         #Check for necessary params:
-        if not (('PE1' in params and 'PE2' in params) or 'SE' in params)):
+        if not (('PE1' in params and 'PE2' in params) or 'SE' in params):
             raise exceptions.FatalException('Missing params in RunNewbler.')
-            
+
         #Check for necessary files:
         if 'PE1' in params and 'PE2' in params and not(os.path.exists(params['PE1']) and os.path.exists(params['PE2'])):
-            raise exceptioins.FatalException('Missing PE files in RunNewbler.')
-       
+            raise exceptions.FatalException('Missing PE files in RunNewbler.')
+
         if 'SE' in params and not(os.path.exists(params['SE'])):
-            raise exceptioins.FatalException('Missing SE file in RunNewbler.')
-            
+            raise exceptions.FatalException('Missing SE file in RunNewbler.')
+
         #Building the args
         args = ['runAssembly']
-        
-        args += ['-nobig', '-force', '-cpu', '1'] 
+        args += ['-nobig', '-force', '-cpu', '1']
         
         if 'urt' in params:
             args += ['-urt']
