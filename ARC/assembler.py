@@ -42,28 +42,53 @@ class AssemblyRunner:
         Expects params keys:
             PE1 and PE2 and/or SE
             target_dir
+            -urt
         """
         #Check for necessary params:
         if not (('PE1' in params and 'PE2' in params) or 'SE' in params)):
             raise exceptions.FatalException('Missing params in RunNewbler.')
+            
         #Check for necessary files:
-        if os.path.exists(params['reference']) is False:
-            raise exceptions.FatalException("Missing reference file for mapping")
+        if 'PE1' in params and 'PE2' in params and not(os.path.exists(params['PE1']) and os.path.exists(params['PE2'])):
+            raise exceptioins.FatalException('Missing PE files in RunNewbler.')
+       
+        if 'SE' in params and not(os.path.exists(params['SE'])):
+            raise exceptioins.FatalException('Missing SE file in RunNewbler.')
+            
+        #Building the args
+        args = ['runAssembly']
+        
+        args += ['-nobig', '-force', '-cpu', '1'] 
+        
+        if 'urt' in params:
+            args += ['-urt']
+        
+        args += ['-o', params['target_dir']]
+        
         if 'PE1' in params and 'PE2' in params:
-            if not (os.path.exists(params['PE1']) and os.path.exists(params['PE2'])):
-                raise exceptions.FatalException("One or both PE files can not be found for mapping.")
+            args += [params ['PE1'], params['PE2']]
+            
         if 'SE' in params:
-            if not os.path.exists(params['SE']):
-                raise exceptions.FatalException("SE file cannot be found.")
+            args += [params['SE']]
+            
+        if 'verbose' in params:
+            out = open(os.path.join(params['target_dir'], "assembly.log"), 'w')
+        
+        else:
+            out = open(os.devnull, 'w')
 
-
+        ret = subprocess.call(args, stderr=out, stdout=out)
+        out.close()
+        
+        if ret != 0:
+            raise exceptions.RerunnableError("Assembly failed")
 
     def RunSpades(self, params):
         """
         Several arguments can be passed to spades.py: -1 [PE1], -2 [PE2], -s [SE], and -o [target_dir]
         """
         #Check that required params are available   
-        if not ('PE1' in params and 'PE2' in params) or ('SE' in params):
+        if not (('PE1' in params and 'PE2' in params) or ('SE' in params)):
             raise exceptions.FatalException('Missing params in RunSpades.')
 
         #Check that the files actually exist
@@ -71,7 +96,7 @@ class AssemblyRunner:
             raise exceptioins.FatalException('Missing PE files in RunSpades.')
         
         if 'SE' in params and not(os.path.exists(params['SE'])):
-            raise exceptioins.FatalException('Missing SE files in RunSpades.')
+            raise exceptioins.FatalException('Missing SE file in RunSpades.')
     
         #Build args for assembler call      
         args = ['spades.py']
