@@ -15,18 +15,21 @@
 # limitations under the License.
 
 import time
-from ARC import logger
 import subprocess
 import os
 from ARC import exceptions
+from ARC import logger
 
 
 class MapperRunner:
+    """
+    This calss handles mapping jobs, as well as converting map results into a text version of a dict.
+    """
     def __init__(self, params):
         self.params = params
 
     def start(self, params):
-        #print "Running the mapper"
+        print "Running the mapper"
         if not('mapper' in params):
             raise exceptions.FatalException("mapper not defined in params")
         if params['mapper'] == 'bowtie2':
@@ -66,52 +69,110 @@ class MapperRunner:
             raise exceptions.FatalException(txt)
 
         #Check whether to log to temporary file, or default to os.devnull
-        if ''
+        if 'verbose' in params:
+            out = open(os.path.join(working_dir, "mapping_log.txt"), 'w')
+        else:
+            out = open(os.devnull, 'w')
 
+        #Build index
         base = os.path.join(idx_dir, 'idx')
-        ret = subprocess.call(['bowtie2-build', '-f', params['target'], base], stdout=open(os.devnull, 'w'))
+        ret = subprocess.call(['bowtie2-build', '-f', params['target'], base], stdout=out, stderr=out)
         if ret != 0:
             raise exceptions.FatalException("Error creating bowtie2 index for Sample: %s" % params['sample'])
 
-        #Carry out mapping:
+        #Do bowtie2 mapping:
         args = ['bowtie2', '--local', '-x', base]
         if 'PE1' in params and 'PE2' in params:
             args += ['-1', params['PE1'], '-2', params['PE2']]
         if 'SE' in params:
             args += ['-U', params['SE']]
         args += ['-S', os.path.join(working_dir, 'mapping.sam')]
-        ret = subprocess.call(args, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
+        ret = subprocess.call(args, stdout=out, stderr=out)
+        out.close()
+        if ret != 0:
+            raise exceptions.FatalException("Error running bowtie2 mapping for Sample: %s" % params['sample'])
 
+        #Extract the SAM to a dict
+        read_map = self.SAM_to_dict(self, filename=os.path.join(working_dir, 'mapping.sam'))
+        self.write_dict(self, os.path.join(working_dir, 'mapping_dict.tsv'), read_map)
 
-
-
-        txt = "bowtie2 -p %s --local -x "
-        bowtie2 -p 15 --local -x ./idx/IsoTigs -1 ../01-Cleaned_Reads/Male_lane5/Male_PE1.fastq ../01-Cleaned_Reads/Male_lane5/Male_PE2.fastq -S male_IsoTig_hits.sam &
-
-
+        #return the params with the mapping_dict for the next step:
+        params['mapping_dict'] = os.path.join(working_dir, 'mapping_dict.tsv')
+        return params
 
     def run_blat(self, params):
-        "blat ./idx/454IsoTigs_renamed.fasta reads.txt -minScore=60 -minIdentity=95 -dots=1000000 -fastq Blat_IsoTig_hits.psl &"
+        #Check for necessary params:
+        if not ('sample' in params and 'reference' in params and (('PE1' in params and 'PE2' in params) or 'SE' in params)):
+            raise exceptions.FatalException('Missing params in run_bowtie2.')
+        #Check for necessary files:
+        if os.path.exists(params['reference']) is False:
+            raise exceptions.FatalException("Missing reference file for mapping")
+        if 'PE1' in params and 'PE2' in params:
+            if not (os.path.exists(params['PE1']) and os.path.exists(params['PE2'])):
+                raise exceptions.FatalException("One or both PE files can not be found for mapping.")
+        if 'SE' in params:
+            if not os.path.exists(params['SE']):
+                raise exceptions.FatalException("SE file cannot be found.")
 
+        #Make temporary working directory and idx directory
+        try:
+            working_dir = os.path.realpath('_'.join(['tmp', params['sample']]))
+            os.mkdir(working_dir)
+            params['working_dir'] = working_dir
+        except Exception as exc:
+            txt = "Error creating working directory for Sample: %s" % (params['sample']) + '\n\t' + str(exc)
+            raise exceptions.FatalException(txt)
 
+        #Check whether to log to temporary file, or default to os.devnull
+        if 'verbose' in params:
+            out = open(os.path.join(working_dir, "mapping_log.txt"), 'w')
+        else:
+            out = open(os.devnull, 'w')
 
+        #Build a temporary txt file with all of the reads:
+        allreads_outf = open(os.path.join(working_dir, 'reads.txt'), 'w')
+        if 'PE1' in params and 'PE2' in params:
+            allreads_outf.write(params['PE1'] + '\n')
+            allreads_outf.write(params['PE2'] + '\n')
+        if 'SE' in params:
+            allreads_outf.write(params['SE'] + '\n')
+        allreads_outf.close()
 
+        #Do blat mapping
+        args = ['blat', params['reference'], os.path.join(working_dir, 'reads.txt')]
+        if 'fastq' in params:
+            args.append('-fastq')
+        if 'fastmap' in params:
+            args.append('-fastMap')
+        args.append(os.path.join(working_dir, 'mapping.psl'))
 
+        ret = subprocess.call(args, stdout=out, stderr=out)
+        out.close()
+        if ret != 0:
+            raise exceptions.FatalException('Error running blat mapping for sample: %s' % params['sample'])
 
+        #Extract the PSL to a dict
+        read_map = self.PSL_to_dict(self, filename=os.path.join(working_dir, 'mapping.psl'))
+        self.write_dict(self, os.path.join(working_dir, 'mapping_dict.tsv'), read_map)
 
+        #Return the params with the mapping_dict for the next step:
+        params['mapping_dict'] = os.path.join(working_dir, 'mapping_dict.tsv')
+        return params
 
     def SAM_to_dict(self, filename):
         """ Read a SAM file to a mapping dict and return it """
+        #Check for necessary files:
+        if os.path.exists(filename) is False:
+            raise exceptions.FatalException("Missing SAM file")
         try:
             inf = open(filename, 'r')
-        except IOError:
-            logger.error("Failed to open mapping dictionary %s." % filename)
-            raise
-
+        except Exception as exc:
+            txt = "Failed to open SAM file %s" % filename
+            txt += '\n\t' + str(exc)
+            raise exceptions.FatalException(txt)
         read_map = {}  # target:{read} dictionary of dictionaries
         i = 0
-        startT = time.time()
-
+        #startT = time.time()
         for l in inf:
             i += 1
             if l[0] != "@":
@@ -119,12 +180,12 @@ class MapperRunner:
                 if l2[2] == "*":  # skip unmapped
                     continue
                 readid = l2[0]
-                target = l2[2].split("_")[0].split("=")[1]
+                target = l2[2]
                 if target not in read_map:
                     read_map[target] = {}
                 read_map[target][readid] = 1
         #Report total time:
-        logger.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
+        #logger.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
         return read_map
 
     def PSL_to_dict(self, filename):
@@ -158,12 +219,12 @@ class MapperRunner:
 
     def write_dict(self, filename, read_map):
         """ Write a mapping dictionary to a file. """
-        startT = time.time()
+        #startT = time.time()
         outf = open(filename, 'w')
         for k in read_map.keys():
             outf.write(k + '\t' + ",".join(read_map[k].keys()) + '\n')
         outf.close()
-        logger.info("Wrote all values to txt in %s seconds" % (time.time() - startT))
+        #logger.info("Wrote all values to txt in %s seconds" % (time.time() - startT))
 
     def read_dict(self, filename):
         """ Read a mapping dictionary from a file """
