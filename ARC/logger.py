@@ -51,4 +51,3 @@ def debug(message):
 def warn(message):
     logger = logging.getLogger(__name__)
     logger.warn("%s" % (message))
-

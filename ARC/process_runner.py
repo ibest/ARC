@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import sys
-import time
 from Queue import Empty
 from multiprocessing import Process
 from ARC import logger
