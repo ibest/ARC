@@ -28,6 +28,8 @@ def main():
         setup()
         run_spawner(config)
         clean()
+    except exceptions.FatalError:
+        logger.error("A fatal error was encountered.  See log for details")
     except (KeyboardInterrupt, SystemExit):
         logger.error("%s unexpectedly terminated" % (__name__))
         clean()
