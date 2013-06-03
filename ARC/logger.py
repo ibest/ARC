@@ -42,6 +42,13 @@ def error(message):
     logger = logging.getLogger(__name__)
     logger.error("%s" % (message))
 
+
 def debug(message):
     logger = logging.getLogger(__name__)
     logger.debug("%s" % (message))
+
+
+def warn(message):
+    logger = logging.getLogger(__name__)
+    logger.warn("%s" % (message))
+

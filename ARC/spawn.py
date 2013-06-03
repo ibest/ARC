@@ -83,6 +83,7 @@ def run(config={}):
         except (KeyboardInterrupt, SystemExit):
             logger.error("Terminating processes")
             kill_workers(workers)
+            raise
         except Empty:
             if not not_done(finished):
                 logger.debug("Results queue is empty and there are no active processes.  Exiting")

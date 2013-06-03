@@ -38,7 +38,7 @@ class ProcessRunner(Process):
                 job.start()
                 self.result_q.put({"status": 0, "process": self.name})
             except exceptions.RerunnableError as e:
-                logger.error("[%s] A rerunnable error occured: %s" % (self.name, e))
+                logger.warn("[%s] A job needs to be rerun: %s" % (self.name, e))
                 self.result_q.put({"status": 1, "process": self.name})
             except exceptions.FatalError as e:
                 logger.error("[%s] A fatal error occured: %s" % (self.name, e))
