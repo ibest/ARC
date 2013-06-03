@@ -1,6 +1,6 @@
-# ARC
+# ARC (Assembly by Reduced Complexity)
 
-Assembly by Reduced Complexity (ARC)
+TODO: Write description here
 
 ## Installation
 ### Get the source:
