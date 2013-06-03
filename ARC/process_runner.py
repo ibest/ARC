@@ -31,6 +31,12 @@ class ProcessRunner(Process):
         while True:
             try:
                 item = self.ref_q.get_nowait()
+                # If we made it this far, we have found something on the
+                # queue so we need to make sure we let the spawner know we
+                # are not done prior to starting so spawner doesn't kill the
+                # process
+                self.not_done()
+                # Begin the run
                 job = item['runner']
                 logger.debug("[%s] Processing: %s" % (self.name, item['message']))
                 job.queue(self.ref_q)
@@ -55,8 +61,8 @@ class ProcessRunner(Process):
             except Exception:
                 logger.error("An unhandled exception occured")
                 self.result_q.put({"status": 2, "process": self.name})
-            else:
-                self.not_done()
+            # else:
+                # self.not_done()
 
     def done(self):
         self.finished[self.proc] = 1
