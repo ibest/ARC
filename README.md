@@ -8,6 +8,7 @@ Assembly by Reduced Complexity (ARC)
 
 ### Install using virtualenv:
 Move to your directory that you keep all of your python virtual environments and run the following commands:
+
     $ cd ~/pyenvs
     $ virtualenv arc
     $ source arc/bin/activate
