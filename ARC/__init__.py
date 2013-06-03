@@ -11,35 +11,45 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys
 
+import logging
 from ARC import logger
-from ARC import mapper
+#from ARC import mapper
 from ARC import spawn
-from ARC import config
+#from ARC import config
+
 
 def main():
-  config = read_config()
-  logger.setup()
+    try:
+        config = read_config()
+        logger.setup(loglevel=logging.INFO)
 
-  #Run modules:
-  setup()
-  run_spawner(config)
-  clean()
+        #Run modules:
+        setup()
+        run_spawner(config)
+        clean()
+    except (KeyboardInterrupt, SystemExit):
+        logger.error("%s unexpectedly terminated" % (__name__))
+        clean()
+
 
 def setup():
-  """Add setup"""
+    """Add setup"""
+
 
 def read_config():
-  # config.read()
-  return {}
+    # config.read()
+    return {}
+
 
 def run_mapper():
-  mapper.run()
+    # mapper.run()
+    pass
+
 
 def run_spawner(config):
-  spawn.run(config)
+    spawn.run(config)
+
 
 def clean():
-  """Clean up"""
-
+    """Clean up"""

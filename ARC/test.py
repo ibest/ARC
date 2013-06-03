@@ -34,15 +34,22 @@ class TestRunner:
 
         num = randint(0, 10)
         if num > 8:
-            logger.info("Not finished yet, adding another test job.")
-            newjob = TestRunner({'foo': num})
-            queue.add(self.ref_q, newjob.to_dict())
-        if num == 5:
-            # Need to create a new one to make sure the joinablequeue isn't 
+            # logger.info("Not finished yet, adding another test job.")
+            # newjob = TestRunner({'foo': num})
+            # queue.add(self.ref_q, newjob.to_dict())
+            return
+        elif num == 5:
+            # Need to create a new one to make sure the joinablequeue isn't
             # passed along.
             rerunjob = TestRunner(self.params)
             queue.add(self.ref_q, rerunjob.to_dict())
             raise exceptions.RerunnableError("Oops, need to rerun this one.")
+        elif num == 1:
+            try:
+                # f = open("/foobar")
+                pass
+            except IOError as e:
+                raise exceptions.FatalError(e.strerror)
 
     def cpu_intensive(self):
         a, b = 0, 1

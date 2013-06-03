@@ -16,4 +16,4 @@
 
 
 def add(q, entry):
-    q.put_nowait(entry)
+    q.put(entry)
