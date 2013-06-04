@@ -115,14 +115,18 @@ class MapperRunner:
                 raise exceptions.FatalException("SE file cannot be found.")
 
         #Make temporary working directory and idx directory
-        try:
+        if 'sample' in params:
             working_dir = os.path.realpath('_'.join(['tmp', params['sample']]))
+        else:
+            raise exceptions.FatalException("Error, sample not in params")
+
+        try:
             os.mkdir(working_dir)
-            params['working_dir'] = working_dir
         except Exception as exc:
             txt = "Error creating working directory for Sample: %s" % (params['sample']) + '\n\t' + str(exc)
             raise exceptions.FatalException(txt)
 
+        params['working_dir'] = working_dir
         #Check whether to log to temporary file, or default to os.devnull
         if 'verbose' in params:
             out = open(os.path.join(working_dir, "mapping_log.txt"), 'w')
@@ -225,4 +229,3 @@ class MapperRunner:
             outf.write(k + '\t' + ",".join(read_map[k].keys()) + '\n')
         outf.close()
         #logger.info("Wrote all values to txt in %s seconds" % (time.time() - startT))
-

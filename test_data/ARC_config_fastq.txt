@@ -1,0 +1,14 @@
+## Sample_ID:Sample_ID
+## FileName: fully specified path for fasta/fastq file
+## FileType: PE1, PE2, or SE
+## FileFormat: fasta or fastq
+# targets=./targets.fa
+# numcycles=3
+# 
+Sample_ID	FileName	FileType	FileFormat
+Sample1	./reads/Sample1_R1.fastq	PE1	fastq
+Sample1	./reads/Sample1_R2.fastq	PE2	fastq
+Sample1	./reads/Sample1_SE.fastq	SE	fastq
+Sample2	./reads/Sample2_R1.fastq	PE1	fastq
+Sample2	./reads/Sample2_R2.fastq	PE2	fastq
+Sample2	./reads/Sample2_SE.fastq	SE	fastq
