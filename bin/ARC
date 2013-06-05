@@ -22,4 +22,5 @@ if lib_path not in sys.path:
      sys.path.insert(0, lib_path)
 import ARC
 
-ARC.main()
+return ARC.main()
+

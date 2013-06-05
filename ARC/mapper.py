@@ -45,7 +45,7 @@ class MapperRunner:
             PE1 and PE2 or SE
         """
         #Check for necessary params:
-        if not ('sample' in params and 'reference' in params and (('PE1' in params and 'PE2' in params) or 'SE' in params)):
+        if not ('sample' in params and 'reference' in params and 'working_dir' in params and (('PE1' in params and 'PE2' in params) or 'SE' in params)):
             raise exceptions.FatalException('Missing params in run_bowtie2.')
         #Check for necessary files:
         if os.path.exists(params['reference']) is False:
@@ -59,8 +59,7 @@ class MapperRunner:
 
         #Make temporary working directory and idx directory
         try:
-            working_dir = os.path.realpath('_'.join(['tmp', params['sample']]))
-            os.mkdir(working_dir)
+            working_dir = params['working_dir']
             idx_dir = os.path.realpath(os.path.join(working_dir, 'idx'))
             os.mkdir(idx_dir)
             params['working_dir'] = working_dir
@@ -102,7 +101,7 @@ class MapperRunner:
 
     def run_blat(self, params):
         #Check for necessary params:
-        if not ('sample' in params and 'reference' in params and (('PE1' in params and 'PE2' in params) or 'SE' in params)):
+        if not ('sample' in params and 'reference' in params and 'working_dir' in params and (('PE1' in params and 'PE2' in params) or 'SE' in params)):
             raise exceptions.FatalException('Missing params in run_bowtie2.')
         #Check for necessary files:
         if os.path.exists(params['reference']) is False:
@@ -114,19 +113,9 @@ class MapperRunner:
             if not os.path.exists(params['SE']):
                 raise exceptions.FatalException("SE file cannot be found.")
 
-        #Make temporary working directory and idx directory
-        if 'sample' in params:
-            working_dir = os.path.realpath('_'.join(['tmp', params['sample']]))
-        else:
-            raise exceptions.FatalException("Error, sample not in params")
+        #Blat doesn't need an index
+        working_dir = params['working_dir']
 
-        try:
-            os.mkdir(working_dir)
-        except Exception as exc:
-            txt = "Error creating working directory for Sample: %s" % (params['sample']) + '\n\t' + str(exc)
-            raise exceptions.FatalException(txt)
-
-        params['working_dir'] = working_dir
         #Check whether to log to temporary file, or default to os.devnull
         if 'verbose' in params:
             out = open(os.path.join(working_dir, "mapping_log.txt"), 'w')

@@ -17,7 +17,18 @@ Move to your directory that you keep all of your python virtual environments and
 
 ## Usage
 
-TODO: Write usage instructions here
+Pre-requisites:
+    -Install either bowite2 or blat for mapping. Make sure that the executable for these is in your path.
+    -Combine reads into a maximum of 3 files per sample: PE1, PE2, SE (where PE stands for Paired End, and SE for Single End). These files can be fasta or fastq formatted.
+    -Ensure that the targets file is in fasta format and that all entries have unique names.
+
+1) Create an ARC_config_fastq.txt file using the one in "test_data" as a template. Put this file in a working directory on a drive with plenty of free space.
+2) run ARC: /path_to_arc/bin/ARC
+
+
+## Running unit tests:
+
+    TODO: Write usage instructions here
 
 ## Contributing
 
