@@ -16,30 +16,51 @@
 
 import time
 import multiprocessing
+import os
 from Queue import Empty
 from process_runner import ProcessRunner
 from ARC import logger
 from ARC import exceptions
+from mapper import MapperRunner
 
 
-def run(config={}):
+def run(config):
     logger.info("Starting...")
 
     # For test
-    nprocs = 10
+    #nprocs = 10
+    # Get the number of processors to use
+    nprocs = int(config['nprocs'])
 
     ref_q = multiprocessing.Queue()
     result_q = multiprocessing.Queue()
     finished = multiprocessing.Array('i', [0]*nprocs)
 
-    from test import TestRunner
-    for i in range(50):
-        s = TestRunner({'foo': i})
-        ref_q.put(s.to_dict())
+    # from test import TestRunner
+    # for i in range(50):
+    #     s = TestRunner({'foo': i})
+    #     ref_q.put(s.to_dict())
 
-    # Get the number of processors to use
-    # nprocs = config['nprocs']
     # Get the number of samples from the configuration
+    #'sample' in params and 'reference' in params and 'working_dir' in params and (('PE1' in params and 'PE2' in params) or 'SE' in params))
+    for sample in config['Samples']:
+        s = config['Samples'][sample]
+        params = {
+            'reference': config['reference'],
+            'numcycles': config['numcycles']
+        }
+        if 'PE1' in s and 'PE2' in s:
+            params['PE1'] = s['PE1']
+            params['PE2'] = s['PE2']
+        if 'SE' in s:
+            params['SE'] = s['SE']
+        params['working_dir'] = os.path.realpath('./working_' + sample)
+        params['sample'] = sample
+        params['mapper'] = config['mapper']
+
+        mapper = MapperRunner(params)
+        ref_q.put(mapper.to_dict())
+
     # samples = config['samples'] is dict
     # Get the target file from the configuration
     # target = config['target']
@@ -51,6 +72,7 @@ def run(config={}):
 
     # Need signal handling for graceful exit
 
+    logger.debug("Setting up workers.")
     workers = []
     for i in range(nprocs):
         worker = ProcessRunner(ref_q, result_q, finished, i)

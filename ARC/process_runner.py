@@ -58,9 +58,10 @@ class ProcessRunner(Process):
             except (KeyboardInterrupt, SystemExit):
                 logger.debug("Process interrupted")
                 sys.exit()
-            except Exception:
+            except Exception as e:
                 logger.error("An unhandled exception occured")
                 self.result_q.put({"status": 2, "process": self.name})
+                raise e
             # else:
                 # self.not_done()
 

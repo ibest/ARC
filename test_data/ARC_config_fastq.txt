@@ -1,3 +1,11 @@
+## Name=value pairs:
+## reference: contains reference sequences in fasta format
+## numcycles: maximum number of times to try remapping
+## mapper: the mapper to use (blat/bowtie2)
+## nprocs: number of cores to use
+## format: fastq or fastq, all must be the same
+##
+## Columns:
 ## Sample_ID:Sample_ID
 ## FileName: path for fasta/fastq file
 ## FileType: PE1, PE2, or SE
@@ -5,10 +13,13 @@
 # reference=./targets.fa
 # numcycles=3
 # mapper=blat
-Sample_ID	FileName	FileType	FileFormat
-Sample1	./reads/Sample1_R1.fastq	PE1	fastq
-Sample1	./reads/Sample1_R2.fastq	PE2	fastq
-Sample1	./reads/Sample1_SE.fastq	SE	fastq
-Sample2	./reads/Sample2_R1.fastq	PE1	fastq
-Sample2	./reads/Sample2_R2.fastq	PE2	fastq
-Sample2	./reads/Sample2_SE.fastq	SE	fastq
+# nprocs=10
+# format=fastq
+# verbose=True
+Sample_ID	FileName	FileType
+Sample1	./reads/Sample1_R1.fastq	PE1
+Sample1	./reads/Sample1_R2.fastq	PE2
+Sample1	./reads/Sample1_SE.fastq	SE
+Sample2	./reads/Sample2_R1.fastq	PE1
+Sample2	./reads/Sample2_R2.fastq	PE2
+Sample2	./reads/Sample2_SE.fastq	SE

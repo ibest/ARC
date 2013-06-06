@@ -28,16 +28,20 @@ class MapperRunner:
     def __init__(self, params):
         self.params = params
 
-    def start(self, params):
-        print "Running the mapper"
-        if not('mapper' in params):
-            raise exceptions.FatalException("mapper not defined in params")
-        if params['mapper'] == 'bowtie2':
-            self.run_bowtie2(params)
-        if params['mapper'] == 'blat':
-            self.run_blat(params)
+    def to_dict(self):
+        return {'runner': self, 'message': 'Starting mapper for sample %s' % self.params['sample'], 'params': self.params}
 
-    def run_bowtie2(self, params):
+    def start(self):
+        if not('mapper' in self.params):
+            raise exceptions.FatalError("mapper not defined in params")
+        if self.params['mapper'] == 'bowtie2':
+            print "Running the bowtie2 for %s" % self.params['sample']
+            self.run_bowtie2()
+        if self.params['mapper'] == 'blat':
+            print "Running the blat for %s" % self.params['sample']
+            self.run_blat()
+
+    def run_bowtie2(self):
         """
         Expects params:
             sample - required
@@ -45,124 +49,128 @@ class MapperRunner:
             PE1 and PE2 or SE
         """
         #Check for necessary params:
-        if not ('sample' in params and 'reference' in params and 'working_dir' in params and (('PE1' in params and 'PE2' in params) or 'SE' in params)):
-            raise exceptions.FatalException('Missing params in run_bowtie2.')
+        if not ('sample' in self.params and 'reference' in self.params and 'working_dir' in self.params and (('PE1' in self.params and 'PE2' in self.params) or 'SE' in self.params)):
+            raise exceptions.FatalError('Missing params in run_bowtie2.')
         #Check for necessary files:
-        if os.path.exists(params['reference']) is False:
-            raise exceptions.FatalException("Missing reference file for mapping")
-        if 'PE1' in params and 'PE2' in params:
-            if not (os.path.exists(params['PE1']) and os.path.exists(params['PE2'])):
-                raise exceptions.FatalException("One or both PE files can not be found for mapping.")
-        if 'SE' in params:
-            if not os.path.exists(params['SE']):
-                raise exceptions.FatalException("SE file cannot be found.")
+        if os.path.exists(self.params['reference']) is False:
+            raise exceptions.FatalError("Missing reference file for mapping")
+        if 'PE1' in self.params and 'PE2' in self.params:
+            if not (os.path.exists(self.params['PE1']) and os.path.exists(self.params['PE2'])):
+                raise exceptions.FatalError("One or both PE files can not be found for mapping.")
+        if 'SE' in self.params:
+            if not os.path.exists(self.params['SE']):
+                raise exceptions.FatalError("SE file cannot be found.")
 
         #Make temporary working directory and idx directory
         try:
-            working_dir = params['working_dir']
+            working_dir = self.params['working_dir']
             idx_dir = os.path.realpath(os.path.join(working_dir, 'idx'))
             os.mkdir(idx_dir)
-            params['working_dir'] = working_dir
+            self.params['working_dir'] = working_dir
         except Exception as exc:
-            txt = "Error creating working directory for Sample: %s" % (params['sample']) + '\n\t' + str(exc)
-            raise exceptions.FatalException(txt)
+            txt = "Error creating working directory for Sample: %s" % (self.params['sample']) + '\n\t' + str(exc)
+            raise exceptions.FatalError(txt)
 
         #Check whether to log to temporary file, or default to os.devnull
-        if 'verbose' in params:
+        if 'verbose' in self.params:
             out = open(os.path.join(working_dir, "mapping_log.txt"), 'w')
         else:
             out = open(os.devnull, 'w')
 
         #Build index
         base = os.path.join(idx_dir, 'idx')
-        ret = subprocess.call(['bowtie2-build', '-f', params['target'], base], stdout=out, stderr=out)
+        ret = subprocess.call(['bowtie2-build', '-f', self.params['reference'], base], stdout=out, stderr=out)
         if ret != 0:
-            raise exceptions.FatalException("Error creating bowtie2 index for Sample: %s" % params['sample'])
+            raise exceptions.FatalError("Error creating bowtie2 index for Sample: %s" % self.params['sample'])
 
         #Do bowtie2 mapping:
         args = ['bowtie2', '--local', '-x', base]
-        if 'PE1' in params and 'PE2' in params:
-            args += ['-1', params['PE1'], '-2', params['PE2']]
-        if 'SE' in params:
-            args += ['-U', params['SE']]
+        if 'PE1' in self.params and 'PE2' in self.params:
+            args += ['-1', self.params['PE1'], '-2', self.params['PE2']]
+        if 'SE' in self.params:
+            args += ['-U', self.params['SE']]
         args += ['-S', os.path.join(working_dir, 'mapping.sam')]
         ret = subprocess.call(args, stdout=out, stderr=out)
         out.close()
         if ret != 0:
-            raise exceptions.FatalException("Error running bowtie2 mapping for Sample: %s" % params['sample'])
+            raise exceptions.FatalError("Error running bowtie2 mapping for Sample: %s" % self.params['sample'])
 
         #Extract the SAM to a dict
-        read_map = self.SAM_to_dict(self, filename=os.path.join(working_dir, 'mapping.sam'))
-        self.write_dict(self, os.path.join(working_dir, 'mapping_dict.tsv'), read_map)
+        read_map = self.SAM_to_dict(os.path.join(working_dir, 'mapping.sam'))
+        self.write_dict(os.path.join(working_dir, 'mapping_dict.tsv'), read_map)
+        #clean up intermediary files:
+        os.remove(os.path.join(working_dir, 'mapping.sam'))
+        os.system("rm -rf %s" % base)
 
-        #return the params with the mapping_dict for the next step:
-        params['mapping_dict'] = os.path.join(working_dir, 'mapping_dict.tsv')
-        return params
+        #return the self.params with the mapping_dict for the next step:
+        self.params['mapping_dict'] = os.path.join(working_dir, 'mapping_dict.tsv')
+        return self.params
 
-    def run_blat(self, params):
+    def run_blat(self):
         #Check for necessary params:
-        if not ('sample' in params and 'reference' in params and 'working_dir' in params and (('PE1' in params and 'PE2' in params) or 'SE' in params)):
-            raise exceptions.FatalException('Missing params in run_bowtie2.')
+        if not ('sample' in self.params and 'reference' in self.params and 'working_dir' in self.params and (('PE1' in self.params and 'PE2' in self.params) or 'SE' in self.params)):
+            raise exceptions.FatalError('Missing self.params in run_bowtie2.')
         #Check for necessary files:
-        if os.path.exists(params['reference']) is False:
-            raise exceptions.FatalException("Missing reference file for mapping")
-        if 'PE1' in params and 'PE2' in params:
-            if not (os.path.exists(params['PE1']) and os.path.exists(params['PE2'])):
-                raise exceptions.FatalException("One or both PE files can not be found for mapping.")
-        if 'SE' in params:
-            if not os.path.exists(params['SE']):
-                raise exceptions.FatalException("SE file cannot be found.")
+        if os.path.exists(self.params['reference']) is False:
+            raise exceptions.FatalError("Missing reference file for mapping")
+        if 'PE1' in self.params and 'PE2' in self.params:
+            if not (os.path.exists(self.params['PE1']) and os.path.exists(self.params['PE2'])):
+                raise exceptions.FatalError("One or both PE files can not be found for mapping.")
+        if 'SE' in self.params:
+            if not os.path.exists(self.params['SE']):
+                raise exceptions.FatalError("SE file cannot be found.")
 
         #Blat doesn't need an index
-        working_dir = params['working_dir']
+        working_dir = self.params['working_dir']
 
         #Check whether to log to temporary file, or default to os.devnull
-        if 'verbose' in params:
+        if 'verbose' in self.params:
             out = open(os.path.join(working_dir, "mapping_log.txt"), 'w')
         else:
             out = open(os.devnull, 'w')
 
         #Build a temporary txt file with all of the reads:
         allreads_outf = open(os.path.join(working_dir, 'reads.txt'), 'w')
-        if 'PE1' in params and 'PE2' in params:
-            allreads_outf.write(params['PE1'] + '\n')
-            allreads_outf.write(params['PE2'] + '\n')
-        if 'SE' in params:
-            allreads_outf.write(params['SE'] + '\n')
+        if 'PE1' in self.params and 'PE2' in self.params:
+            allreads_outf.write(self.params['PE1'] + '\n')
+            allreads_outf.write(self.params['PE2'] + '\n')
+        if 'SE' in self.params:
+            allreads_outf.write(self.params['SE'] + '\n')
         allreads_outf.close()
 
         #Do blat mapping
-        args = ['blat', params['reference'], os.path.join(working_dir, 'reads.txt')]
-        if 'fastq' in params:
+        args = ['blat', self.params['reference'], os.path.join(working_dir, 'reads.txt')]
+        if 'format' in self.params and self.params['format'] == 'fastq':
             args.append('-fastq')
-        if 'fastmap' in params:
+        if 'fastmap' in self.params:
             args.append('-fastMap')
         args.append(os.path.join(working_dir, 'mapping.psl'))
 
         ret = subprocess.call(args, stdout=out, stderr=out)
         out.close()
         if ret != 0:
-            raise exceptions.FatalException('Error running blat mapping for sample: %s' % params['sample'])
+            raise exceptions.FatalError('Error running blat mapping for sample: %s \n\t %s' % (self.params['sample'], " ".join(args)))
 
         #Extract the PSL to a dict
-        read_map = self.PSL_to_dict(self, filename=os.path.join(working_dir, 'mapping.psl'))
-        self.write_dict(self, os.path.join(working_dir, 'mapping_dict.tsv'), read_map)
+        read_map = self.PSL_to_dict(os.path.join(working_dir, 'mapping.psl'))
+        self.write_dict(os.path.join(working_dir, 'mapping_dict.tsv'), read_map)
+        os.remove(os.path.join(working_dir, 'mapping.psl'))
 
-        #Return the params with the mapping_dict for the next step:
-        params['mapping_dict'] = os.path.join(working_dir, 'mapping_dict.tsv')
-        return params
+        #Return the self.params with the mapping_dict for the next step:
+        self.params['mapping_dict'] = os.path.join(working_dir, 'mapping_dict.tsv')
+        return self.params
 
     def SAM_to_dict(self, filename):
         """ Read a SAM file to a mapping dict and return it """
         #Check for necessary files:
         if os.path.exists(filename) is False:
-            raise exceptions.FatalException("Missing SAM file")
+            raise exceptions.FatalError("Missing SAM file")
         try:
             inf = open(filename, 'r')
         except Exception as exc:
             txt = "Failed to open SAM file %s" % filename
             txt += '\n\t' + str(exc)
-            raise exceptions.FatalException(txt)
+            raise exceptions.FatalError(txt)
         read_map = {}  # target:{read} dictionary of dictionaries
         i = 0
         #startT = time.time()
@@ -218,3 +226,6 @@ class MapperRunner:
             outf.write(k + '\t' + ",".join(read_map[k].keys()) + '\n')
         outf.close()
         #logger.info("Wrote all values to txt in %s seconds" % (time.time() - startT))
+
+    def queue(self, ref_q):
+        self.ref_q = ref_q
