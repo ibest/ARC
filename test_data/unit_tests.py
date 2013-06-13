@@ -22,21 +22,27 @@ if lib_path not in sys.path:
 
 ######### __init__.py tests ##########
 
-from ARC.__init__ import read_config, setup
+from ARC.__init__ import read_config, setup, build_indexes
+
+
 pp = pprint.PrettyPrinter(indent=2)
-print "Testing ARC.__init__ read_config()"
+print "-------------Testing ARC.__init__ read_config()-------------"
 config = read_config()
 print "Config:"
 pp.pprint(config)
 
-print "Testing ARC.__init__ setup()"
+print "\n\n-------------Testing ARC.__init__ setup()-------------"
 setup(config)
 
+print "\n\n-------------Testing ARC.__init__ build_indexes()-------------"
+build_indexes(config)
 
-######### Mapper tests ##########
+
+######### Blat Mapper tests ##########
+print "\n\n-------------Testing ARC.mapper MapperRunner()-------------"
 from ARC.mapper import MapperRunner
 
-#We haven't quite figured out how to handle params parsing:
+#Set up params for calling the mapper:
 blat_p = []
 for sample in config['Samples']:
     s = config['Samples'][sample]

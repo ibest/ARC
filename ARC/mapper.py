@@ -40,13 +40,17 @@ class MapperRunner:
         if self.params['mapper'] == 'blat':
             print "Running the blat for %s" % self.params['sample']
             self.run_blat()
+        #Mapping is done, run splitreads:
+        self.splitreads()
+
+    def splitreads(self):
+        """ Split reads and then kick off assemblies once the reads are split """
 
     def run_bowtie2(self):
         """
+        Builds idx and runs bowtie2 -I 0 -X 1500 --local
         Expects params:
-            sample - required
-            target - required
-            PE1 and PE2 or SE
+            sample, target, reference, working_dir, PE1 and PE2 and/or SE
         """
         #Check for necessary params:
         if not ('sample' in self.params and 'reference' in self.params and 'working_dir' in self.params and (('PE1' in self.params and 'PE2' in self.params) or 'SE' in self.params)):
@@ -61,12 +65,11 @@ class MapperRunner:
             if not os.path.exists(self.params['SE']):
                 raise exceptions.FatalError("SE file cannot be found.")
 
-        #Make temporary working directory and idx directory
+        #Make idx directory
         try:
             working_dir = self.params['working_dir']
             idx_dir = os.path.realpath(os.path.join(working_dir, 'idx'))
             os.mkdir(idx_dir)
-            self.params['working_dir'] = working_dir
         except Exception as exc:
             txt = "Error creating working directory for Sample: %s" % (self.params['sample']) + '\n\t' + str(exc)
             raise exceptions.FatalError(txt)
@@ -84,7 +87,7 @@ class MapperRunner:
             raise exceptions.FatalError("Error creating bowtie2 index for Sample: %s" % self.params['sample'])
 
         #Do bowtie2 mapping:
-        args = ['bowtie2', '--local', '-x', base]
+        args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-x', base]
         if 'PE1' in self.params and 'PE2' in self.params:
             args += ['-1', self.params['PE1'], '-2', self.params['PE2']]
         if 'SE' in self.params:
@@ -176,7 +179,7 @@ class MapperRunner:
         #startT = time.time()
         for l in inf:
             i += 1
-            if l[0] != "@":
+            if l[0] != "@":  # skip header lines
                 l2 = l.strip().split()
                 if l2[2] == "*":  # skip unmapped
                     continue
@@ -190,6 +193,7 @@ class MapperRunner:
         return read_map
 
     def PSL_to_dict(self, filename):
+        """Process a PSL file to the dict format """
         try:
             inf = open(filename, 'r')
         except Exception as inst:

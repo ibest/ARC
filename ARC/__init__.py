@@ -16,6 +16,7 @@ import logging
 import os
 import sys
 import subprocess
+from Bio import SeqIO
 from subprocess import CalledProcessError
 from ARC import logger
 #from ARC import mapper
@@ -33,6 +34,9 @@ def main():
 
         logger.info("Setting up working directories...")
         setup(config)
+
+        logger.info("Indexing input files...")
+        build_indexes(config)
 
         logger.info("Setting up multiprocessing...")
         run_spawner(config)
@@ -52,12 +56,28 @@ def main():
 
 def setup(config):
     """ Set up working folder for each sample """
-    for Sample in config['Samples']:
-        working_dir = os.path.realpath('./working_' + Sample)
+    for sample in config['Samples']:
+        working_dir = os.path.realpath('./working_' + sample)
+        config['Samples'][sample]['working_dir'] = working_dir
         os.mkdir(working_dir)
 
 
+def build_indexes(config):
+    """ Build a separate index for each read file in the input, put them in working_dir"""
+    format = config['format']
+    for sample in config['Samples']:
+        s = config['Samples'][sample]
+        working_dir = s['working_dir']
+        if 'PE1' in s:
+            SeqIO.index_db(os.path.realpath(working_dir + "/PE1.idx"), s['PE1'], format, key_function=lambda x: x.split("#")[0])
+        if 'PE2' in s:
+            SeqIO.index_db(os.path.realpath(working_dir + "/PE2.idx"), s['PE2'], format, key_function=lambda x: x.split("#")[0])
+        if 'SE' in s:
+            SeqIO.index_db(os.path.realpath(working_dir + "/SE.idx"), s['SE'], format, key_function=lambda x: x.split("#")[0])
+
+
 def read_config():
+    """Read in ARC_config.txt and put it in a datastructure """
     config = {}
     config['Samples'] = {}
     if os.path.exists('ARC_config.txt') is False:
@@ -139,8 +159,8 @@ def read_config():
         config['verbose'] = False
     if 'format' not in config:
         raise exceptions.FatalError("Error, file format not specificed in ARC_config.txt.")
-    else:
-        assert config['format'] == 'fastq' or config['format'] == 'fasta'
+    if config['format'] != 'fastq' and config['format'] != 'fasta':
+        raise exceptions.FatalError("Error, format is neither fastq or fasta")
 
     return config
 

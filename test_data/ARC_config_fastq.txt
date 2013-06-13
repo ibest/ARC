@@ -23,3 +23,4 @@ Sample1	./reads/Sample1_SE.fastq	SE
 Sample2	./reads/Sample2_R1.fastq	PE1
 Sample2	./reads/Sample2_R2.fastq	PE2
 Sample2	./reads/Sample2_SE.fastq	SE
+
