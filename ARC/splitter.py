@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This class has been deprecated in favor of doing the splitting of reads post mapping as part of MapperRunner.
+"""
+
+
+
 import time
 import subprocess
 import os
@@ -43,21 +49,3 @@ class Splitter:
         if params['mapper'] == 'blat':
             self.run_blat(params)
 
-    def read_dict(self, filename):
-        """ Read a mapping dictionary from a file """
-        startT = time.time()
-        try:
-            inf = open(filename, 'r')
-        except Exception as inst:
-            if type(inst) == IOError:
-                logger.error("Failed to open mapping dictionary %s." % filename)
-            raise inst
-        new_map = {}
-        for l in inf:
-            l2 = l.split('\t')
-            l3 = l2[1].strip().split(",")
-            new_map[l2[0]] = {}
-            for k in l3:
-                new_map[l2[0]][k] = 1
-        logger.info("Read all values to txt in %s seconds" % (time.time() - startT))
-        return new_map

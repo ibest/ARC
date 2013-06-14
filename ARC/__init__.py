@@ -69,11 +69,11 @@ def build_indexes(config):
         s = config['Samples'][sample]
         working_dir = s['working_dir']
         if 'PE1' in s:
-            SeqIO.index_db(os.path.realpath(working_dir + "/PE1.idx"), s['PE1'], format, key_function=lambda x: x.split("#")[0])
+            SeqIO.index_db(os.path.realpath(working_dir + "/PE1.idx"), s['PE1'], format, key_function=lambda x: x.split("/")[0])
         if 'PE2' in s:
-            SeqIO.index_db(os.path.realpath(working_dir + "/PE2.idx"), s['PE2'], format, key_function=lambda x: x.split("#")[0])
+            SeqIO.index_db(os.path.realpath(working_dir + "/PE2.idx"), s['PE2'], format, key_function=lambda x: x.split("/")[0])
         if 'SE' in s:
-            SeqIO.index_db(os.path.realpath(working_dir + "/SE.idx"), s['SE'], format, key_function=lambda x: x.split("#")[0])
+            SeqIO.index_db(os.path.realpath(working_dir + "/SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
 
 
 def read_config():
@@ -93,7 +93,7 @@ def read_config():
                 if len(line2) != 2:
                     raise exceptions.FatalError("Error, parameters not specified correctly, "
                                                 "please use # name=value. Offending entry: \n\t%s" % line)
-                config[line2[0]] = line2[1]
+                config[line2[0].strip()] = line2[1].strip()
             elif header is False:
                 """ Handle Sample information """
                 line2 = line.strip().split('\t')
@@ -101,9 +101,9 @@ def read_config():
                 if len(line2) != 3:
                     raise exceptions.FatalError("Error, sample description entry is not properly"
                                                 "formatted! Offending entry: \n\t%s" % line)
-                Sample_ID = line2[0]
-                FileName = line2[1]
-                FileType = line2[2]
+                Sample_ID = line2[0].strip()
+                FileName = line2[1].strip()
+                FileType = line2[2].strip()
                 if Sample_ID not in config['Samples']:
                     config['Samples'][Sample_ID] = {}
                 if FileType in config['Samples'][Sample_ID]:
@@ -138,6 +138,21 @@ def read_config():
     else:
         raise exceptions.FatalError("Could not find samples in ARC_config.txt")
 
+    #Check that required parameters exist:
+    if 'numcycles' not in config:
+        logger.info("numcycles not specified in ARC_config.txt, defaulting to 1")
+        config['numcycles'] = 1
+    if 'verbose' not in config:
+        config['verbose'] = False
+    if 'format' not in config:
+        raise exceptions.FatalError("Error, file format not specificed in ARC_config.txt.")
+    if config['format'] != 'fastq' and config['format'] != 'fasta':
+        raise exceptions.FatalError("Error, format is neither fastq or fasta")
+    if 'mapper' not in config:
+        raise exceptions.FatalError("Error, mapper not specificed in ARC_config.txt")
+    elif config['mapper'] != 'spades' and config['mapper'] != 'newbler':
+        raise exceptions.FatalError("Error mapper must be either 'spade' or 'newbler'")
+
     #Check that the mapper exists:
     if config['mapper'] == 'blat':
         try:
@@ -151,16 +166,17 @@ def read_config():
         except CalledProcessError:
             raise exceptions.FatalError("Cannot find 'bowtie2-build' or bowtie2 in path, or Linux 'which' command is missing")
 
-    #Check that required parameters exist:
-    if 'numcycles' not in config:
-        logger.info("numcycles not specified in ARC_config.txt, defaulting to 1")
-        config['numcycles'] = 1
-    if 'verbose' not in config:
-        config['verbose'] = False
-    if 'format' not in config:
-        raise exceptions.FatalError("Error, file format not specificed in ARC_config.txt.")
-    if config['format'] != 'fastq' and config['format'] != 'fasta':
-        raise exceptions.FatalError("Error, format is neither fastq or fasta")
+    #Check that the assembler exists:
+    if config['assembler'] == 'spades':
+        try:
+            subprocess.check_output(['which', 'spades.py'])
+        except CalledProcessError:
+            raise exceptions.FatalError("Spades assembler specified, but cannot find spades.py")
+    if config['assembler'] == 'newbler':
+        try:
+            subprocess.check_output(['which', 'runAssembly'])
+        except CalledProcessError:
+            raise exceptions.FatalError("Newbler assembler specified, but cannot find runAssembly")
 
     return config
 

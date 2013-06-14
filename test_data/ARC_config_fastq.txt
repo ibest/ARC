@@ -2,6 +2,7 @@
 ## reference: contains reference sequences in fasta format
 ## numcycles: maximum number of times to try remapping
 ## mapper: the mapper to use (blat/bowtie2)
+## assembler: the assembler to use (newbler/spades)
 ## nprocs: number of cores to use
 ## format: fastq or fastq, all must be the same
 ##
@@ -13,6 +14,7 @@
 # reference=./targets.fa
 # numcycles=3
 # mapper=blat
+# assembler
 # nprocs=10
 # format=fastq
 # verbose=True

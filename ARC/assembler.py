@@ -22,19 +22,29 @@ from ARC import exceptions
 
 
 class AssemblyRunner:
+    """
+    This class represents assembly jobs and handles running assemblies.
+    required params:
+        assembler, sample, target, PE1 and PE2 and/or SE, target_dir
+    """
     def __init__(self, params):
         self.params = params
 
-    def start(self, params):
+    def to_dict(self):
+        return {'runner': self,
+                'message': 'Assmelber for Sample: %s Target: %s' % (self.params['sample'], self.params['target']),
+                'params': self.params}
+
+    def start(self):
         #print "Running the mapper"
-        if not('assembler' in params):
+        if not('assembler' in self.params):
             raise exceptions.FatalException("assembler not defined in params")
-        if params['assembler'] == 'newbler':
-            self.run_newbler(params)
-        elif params['assembler'] == 'spades':
-            self.run_spades(params)
+        if self.params['assembler'] == 'newbler':
+            self.run_newbler()
+        elif self.params['assembler'] == 'spades':
+            self.run_spades()
         else:
-            raise exceptions.FatalException("Assembler %s isn't recognized." % params['assembler'])
+            raise exceptions.FatalException("Assembler %s isn't recognized." % self.params['assembler'])
 
     def RunNewbler(self, params):
         #Code for running newbler
@@ -90,7 +100,9 @@ class AssemblyRunner:
             raise exceptions.FatalException('Missing SE file in RunSpades.')
 
         #Build args for assembler call
-        args = ['spades.py']
+        args = ['spades.py', '-t', '1']
+        args.append('-t')
+        args.append('1')
         if 'PE1' in params and 'PE2' in params:
             args += ['-1', params['PE1'], '-2', params['PE2']]
         if 'SE' in params:

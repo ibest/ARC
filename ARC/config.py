@@ -14,5 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This file is deprecated, all config handling is dealt with in __init__.py
+
+"""
+
+
 def read():
   print "Hello from config"

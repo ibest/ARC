@@ -19,11 +19,17 @@ import subprocess
 import os
 from ARC import exceptions
 from ARC import logger
+from ARC import AssemblyRunner
+from Bio import SeqIO
 
 
 class MapperRunner:
     """
     This calss handles mapping jobs, as well as converting map results into a text version of a dict.
+    required params:
+        PE1, PE2, SE, format, mapper, numcycles, reference, sample, verbose, working_dir
+    params added:
+        mapping_dict
     """
     def __init__(self, params):
         self.params = params
@@ -35,16 +41,13 @@ class MapperRunner:
         if not('mapper' in self.params):
             raise exceptions.FatalError("mapper not defined in params")
         if self.params['mapper'] == 'bowtie2':
-            print "Running the bowtie2 for %s" % self.params['sample']
+            print "Running bowtie2 for %s" % self.params['sample']
             self.run_bowtie2()
         if self.params['mapper'] == 'blat':
-            print "Running the blat for %s" % self.params['sample']
+            print "Running blat for %s" % self.params['sample']
             self.run_blat()
         #Mapping is done, run splitreads:
         self.splitreads()
-
-    def splitreads(self):
-        """ Split reads and then kick off assemblies once the reads are split """
 
     def run_bowtie2(self):
         """
@@ -99,10 +102,11 @@ class MapperRunner:
             raise exceptions.FatalError("Error running bowtie2 mapping for Sample: %s" % self.params['sample'])
 
         #Extract the SAM to a dict
-        read_map = self.SAM_to_dict(os.path.join(working_dir, 'mapping.sam'))
-        self.write_dict(os.path.join(working_dir, 'mapping_dict.tsv'), read_map)
+        self.params['mapping_dict'] = self.SAM_to_dict(os.path.join(working_dir, 'mapping.sam'))
+        #read_map = self.SAM_to_dict(os.path.join(working_dir, 'mapping.sam'))
+        #self.write_dict(os.path.join(working_dir, 'mapping_dict.tsv'), read_map)
         #clean up intermediary files:
-        os.remove(os.path.join(working_dir, 'mapping.sam'))
+        #os.remove(os.path.join(working_dir, 'mapping.sam'))
         os.system("rm -rf %s" % base)
 
         #return the self.params with the mapping_dict for the next step:
@@ -155,12 +159,13 @@ class MapperRunner:
             raise exceptions.FatalError('Error running blat mapping for sample: %s \n\t %s' % (self.params['sample'], " ".join(args)))
 
         #Extract the PSL to a dict
-        read_map = self.PSL_to_dict(os.path.join(working_dir, 'mapping.psl'))
-        self.write_dict(os.path.join(working_dir, 'mapping_dict.tsv'), read_map)
-        os.remove(os.path.join(working_dir, 'mapping.psl'))
+        self.params['mapping_dict'] = self.PSL_to_dict(os.path.join(working_dir, 'mapping.psl'))
+        #read_map = self.PSL_to_dict(os.path.join(working_dir, 'mapping.psl'))
+        #self.write_dict(os.path.join(working_dir, 'mapping_dict.tsv'), read_map)
+        #os.remove(os.path.join(working_dir, 'mapping.psl'))
 
         #Return the self.params with the mapping_dict for the next step:
-        self.params['mapping_dict'] = os.path.join(working_dir, 'mapping_dict.tsv')
+        #self.params['mapping_dict'] = os.path.join(working_dir, 'mapping_dict.tsv')
         return self.params
 
     def SAM_to_dict(self, filename):
@@ -176,20 +181,20 @@ class MapperRunner:
             raise exceptions.FatalError(txt)
         read_map = {}  # target:{read} dictionary of dictionaries
         i = 0
-        #startT = time.time()
+        startT = time.time()
         for l in inf:
             i += 1
             if l[0] != "@":  # skip header lines
                 l2 = l.strip().split()
                 if l2[2] == "*":  # skip unmapped
                     continue
-                readid = l2[0]
+                readid = l2[0].split("/")[0]
                 target = l2[2]
                 if target not in read_map:
                     read_map[target] = {}
                 read_map[target][readid] = 1
         #Report total time:
-        #logger.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
+        logger.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
         return read_map
 
     def PSL_to_dict(self, filename):
@@ -214,7 +219,7 @@ class MapperRunner:
             if psl_header and i <= 5:
                 continue
             l2 = l.strip().split("\t")
-            readid = l2[9]
+            readid = l2[9].split("/")[0]
             target = l2[13]
             if target not in read_map:
                 read_map[target] = {}
@@ -222,14 +227,87 @@ class MapperRunner:
         logger.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
         return read_map
 
-    def write_dict(self, filename, read_map):
-        """ Write a mapping dictionary to a file. """
-        #startT = time.time()
-        outf = open(filename, 'w')
-        for k in read_map.keys():
-            outf.write(k + '\t' + ",".join(read_map[k].keys()) + '\n')
-        outf.close()
-        #logger.info("Wrote all values to txt in %s seconds" % (time.time() - startT))
+    # def write_dict(self, filename, read_map):
+    #     """
+    #     Write a mapping dictionary to a file.
+    #     Experimentally not in use, it is faster just to keep the mapping_dict in memory, and probably
+    #     doesn't sacrifice much from a functionality standpoint.
+    #     """
+    #     #startT = time.time()
+    #     outf = open(filename, 'w')
+    #     for k in read_map.keys():
+    #         outf.write(k + '\t' + ",".join(read_map[k].keys()) + '\n')
+    #     outf.close()
+    #     #logger.info("Wrote all values to txt in %s seconds" % (time.time() - startT))
+
+    # def read_dict(self):
+    #     """ Read a mapping dictionary from a file """
+    #     startT = time.time()
+    #     try:
+    #         inf = open(filename, 'r')
+    #     except Exception as inst:
+    #         if type(inst) == IOError:
+    #             logger.error("Failed to open mapping dictionary %s." % filename)
+    #         raise inst
+    #     new_map = {}
+    #     for l in inf:
+    #         l2 = l.split('\t')
+    #         l3 = l2[1].strip().split(",")
+    #         new_map[l2[0]] = {}
+    #         for k in l3:
+    #             new_map[l2[0]][k] = 1
+    #     logger.info("Read all values to txt in %s seconds" % (time.time() - startT))
+    #     return new_map
+
+    def splitreads(self):
+        """ Split reads and then kick off assemblies once the reads are split for a target"""
+        for target in self.mapping_dict:
+            assembly_params = {}
+            target_dir = os.path.realpath(self.params['working_dir'] + "/" + target)
+            os.mkdir(target_dir)
+            reads = self.params['mapping_dict'][target]
+            if 'PE1' in self.params and 'PE2' in self.params:
+                outf_PE1 = open(os.path.realpath(target_dir + "/PE1." + self.params['format']), 'w')
+                outf_PE2 = open(os.path.realpath(target_dir + "/PE2." + self.params['format']), 'w')
+                idx_PE1 = SeqIO.index_db(os.path.realpath(self.params['working_dir'] + "/PE1.idx"))
+                idx_PE2 = SeqIO.index_db(os.path.realpath(self.params['working_dir'] + "/PE2.idx"))
+                assembly_params['PE1'] = os.path.realpath(target_dir + "/PE1." + self.params['format'])
+                assembly_params['PE2'] = os.path.realpath(target_dir + "/PE2." + self.params['format'])
+            if 'SE' in self.params:
+                outf_SE = open(os.path.realpath(target_dir + "/SE." + self.params['format']), 'w')
+                idx_SE = SeqIO.index_db(os.path.realpath(self.params['working_dir'] + "/SE.idx"))
+                assembly_params['SE'] = os.path.realpath(target_dir + "/SE." + self.params['format'])
+            for readID in reads:
+                if 'PE1' in self.params and readID in idx_PE1:
+                    read1 = idx_PE1[readID]
+                    read2 = idx_PE2[readID]
+                    new_readID = readID.replace(":", "_") + ":0:0:0:0#0/"
+                    read1.id = read1.name = new_readID + "1"
+                    read2.id = read2.name = new_readID + "2"
+                    SeqIO.write(read1, outf_PE1, self.params['format'])
+                    SeqIO.write(read2, outf_PE2, self.params['format'])
+                elif 'SE' in self.params and readID in idx_SE:
+                    SeqIO.write(idx_SE[readID], outf_SE, self.params['format'])
+            if 'PE1' in self.params:
+                outf_PE1.close()
+                outf_PE2.close()
+            if 'SE' in self.params:
+                outf_SE.close()
+            #All reads have been written at this point, add an assembly to the queue:
+            assembly_params['sample'] = self.params['sample']
+            assembly_params['target'] = target
+            assembly_params['target_dir'] = target_dir
+            assembly_params['assembler'] = self.params['assembler']
+            ar = AssemblyRunner(assembly_params)
+
+            if 'testing' in self.params:
+                return ar
+            else:
+                #Add job to list:
+                #TODO: Figure out how to do this
+                #Kick off assembler:
+                self.ref_q.put(ar.to_dict())
+        #TODO kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
 
     def queue(self, ref_q):
         self.ref_q = ref_q
