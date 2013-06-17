@@ -14,7 +14,7 @@
 # reference=./targets.fa
 # numcycles=3
 # mapper=blat
-# assembler
+# assembler=newbler
 # nprocs=10
 # format=fastq
 # verbose=True

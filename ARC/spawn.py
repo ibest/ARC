@@ -47,16 +47,20 @@ def run(config):
         s = config['Samples'][sample]
         params = {
             'reference': config['reference'],
-            'numcycles': config['numcycles']
+            'numcycles': config['numcycles'],
+            'working_dir': os.path.realpath('./working_' + sample),
+            'sample': sample,
+            'mapper': config['mapper'],
+            'assembler': config['assembler'],
+            'format': config['format'],
+            'verbose': config['verbose'],
+            'iteration': config['iteration']
         }
         if 'PE1' in s and 'PE2' in s:
             params['PE1'] = s['PE1']
             params['PE2'] = s['PE2']
         if 'SE' in s:
             params['SE'] = s['SE']
-        params['working_dir'] = os.path.realpath('./working_' + sample)
-        params['sample'] = sample
-        params['mapper'] = config['mapper']
 
         mapper = MapperRunner(params)
         ref_q.put(mapper.to_dict())

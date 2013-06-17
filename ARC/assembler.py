@@ -15,9 +15,9 @@
 # limitations under the License.
 
 import time
-from ARC import logger
 import subprocess
 import os
+from ARC import logger
 from ARC import exceptions
 
 
@@ -29,6 +29,9 @@ class AssemblyRunner:
     """
     def __init__(self, params):
         self.params = params
+
+    def queue(self, ref_q):
+        self.ref_q = ref_q
 
     def to_dict(self):
         return {'runner': self,
@@ -84,6 +87,11 @@ class AssemblyRunner:
         out.close()
         if ret != 0:
             raise exceptions.RerunnableError("Newbler assembly failed")
+        else:
+            #Run finished without error
+            outf = open(os.path.join(params['target_dir'], "assembly.log"), 'w')
+            outf.write("1")
+            outf.close()
 
     def RunSpades(self, params):
         """
@@ -101,13 +109,13 @@ class AssemblyRunner:
 
         #Build args for assembler call
         args = ['spades.py', '-t', '1']
-        args.append('-t')
-        args.append('1')
+        if params['format'] == 'fasta':
+            args.append('--only-assembler')  # spades errors on read correction if the input isn't fastq
         if 'PE1' in params and 'PE2' in params:
             args += ['-1', params['PE1'], '-2', params['PE2']]
         if 'SE' in params:
             args += ['-s', params['SE']]
-        args += ['-o', params['target_dir', '-t', '1']]
+        args += ['-o', params['target_dir']]
         if 'verbose' in params:
             out = open(os.path.join(params['target_dir'], "assembly.log"), 'w')
         else:
@@ -119,6 +127,8 @@ class AssemblyRunner:
         if ret != 0:
             raise exceptions.RerunnableError("Assembly failed")
 
+    def queue(self, ref_q):
+        self.ref_q = ref_q
 
 # def run():
 #     print "I'm running the assembler now"

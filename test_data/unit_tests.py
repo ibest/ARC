@@ -22,7 +22,7 @@ if lib_path not in sys.path:
 
 ######### __init__.py tests ##########
 
-from ARC.__init__ import read_config, setup, build_indexes
+from ARC.__init__ import read_config, setup
 
 
 pp = pprint.PrettyPrinter(indent=2)
@@ -34,9 +34,6 @@ pp.pprint(config)
 print "\n\n-------------Testing ARC.__init__ setup()-------------"
 setup(config)
 pp.pprint(config)
-
-print "\n\n-------------Testing ARC.__init__ build_indexes()-------------"
-build_indexes(config)
 
 
 ######### Blat Mapper tests ##########

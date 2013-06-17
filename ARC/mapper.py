@@ -17,10 +17,11 @@
 import time
 import subprocess
 import os
+from Bio import SeqIO
 from ARC import exceptions
 from ARC import logger
 from ARC import AssemblyRunner
-from Bio import SeqIO
+from ARC import AssemblyChecker
 
 
 class MapperRunner:
@@ -34,6 +35,9 @@ class MapperRunner:
     def __init__(self, params):
         self.params = params
 
+    def queue(self, ref_q):
+        self.ref_q = ref_q
+
     def to_dict(self):
         return {'runner': self, 'message': 'Starting mapper for sample %s' % self.params['sample'], 'params': self.params}
 
@@ -41,10 +45,10 @@ class MapperRunner:
         if not('mapper' in self.params):
             raise exceptions.FatalError("mapper not defined in params")
         if self.params['mapper'] == 'bowtie2':
-            print "Running bowtie2 for %s" % self.params['sample']
+            logger.info("Running bowtie2 for %s" % self.params['sample'])
             self.run_bowtie2()
         if self.params['mapper'] == 'blat':
-            print "Running blat for %s" % self.params['sample']
+            logger.info("Running blat for %s" % self.params['sample'])
             self.run_blat()
         #Mapping is done, run splitreads:
         self.splitreads()
@@ -103,15 +107,9 @@ class MapperRunner:
 
         #Extract the SAM to a dict
         self.params['mapping_dict'] = self.SAM_to_dict(os.path.join(working_dir, 'mapping.sam'))
-        #read_map = self.SAM_to_dict(os.path.join(working_dir, 'mapping.sam'))
-        #self.write_dict(os.path.join(working_dir, 'mapping_dict.tsv'), read_map)
         #clean up intermediary files:
-        #os.remove(os.path.join(working_dir, 'mapping.sam'))
+        os.remove(os.path.join(working_dir, 'mapping.sam'))
         os.system("rm -rf %s" % base)
-
-        #return the self.params with the mapping_dict for the next step:
-        self.params['mapping_dict'] = os.path.join(working_dir, 'mapping_dict.tsv')
-        return self.params
 
     def run_blat(self):
         #Check for necessary params:
@@ -160,13 +158,7 @@ class MapperRunner:
 
         #Extract the PSL to a dict
         self.params['mapping_dict'] = self.PSL_to_dict(os.path.join(working_dir, 'mapping.psl'))
-        #read_map = self.PSL_to_dict(os.path.join(working_dir, 'mapping.psl'))
-        #self.write_dict(os.path.join(working_dir, 'mapping_dict.tsv'), read_map)
-        #os.remove(os.path.join(working_dir, 'mapping.psl'))
-
-        #Return the self.params with the mapping_dict for the next step:
-        #self.params['mapping_dict'] = os.path.join(working_dir, 'mapping_dict.tsv')
-        return self.params
+        os.remove(os.path.join(working_dir, 'mapping.psl'))
 
     def SAM_to_dict(self, filename):
         """ Read a SAM file to a mapping dict and return it """
@@ -190,6 +182,9 @@ class MapperRunner:
                     continue
                 readid = l2[0].split("/")[0]
                 target = l2[2]
+                #handle references built using assembled contigs:
+                if len(target.split("_:_")) > 1:
+                    target = target.split("_:_")[1]
                 if target not in read_map:
                     read_map[target] = {}
                 read_map[target][readid] = 1
@@ -219,8 +214,11 @@ class MapperRunner:
             if psl_header and i <= 5:
                 continue
             l2 = l.strip().split("\t")
-            readid = l2[9].split("/")[0]
+            readid = l2[9].split("/")[0]  # remove unique part of PE reads
             target = l2[13]
+            #handle references built using assembled contigs:
+            if len(target.split("_:_")) > 1:
+                target = target.split("_:_")[1]
             if target not in read_map:
                 read_map[target] = {}
             read_map[target][readid] = 1
@@ -261,9 +259,12 @@ class MapperRunner:
 
     def splitreads(self):
         """ Split reads and then kick off assemblies once the reads are split for a target"""
-        for target in self.mapping_dict:
+        checker_params = self.params
+        checker_params['targets'] = {}
+        for target in self.params['mapping_dict']:
             assembly_params = {}
             target_dir = os.path.realpath(self.params['working_dir'] + "/" + target)
+            checker_params['targets'][target_dir] = False
             os.mkdir(target_dir)
             reads = self.params['mapping_dict'][target]
             if 'PE1' in self.params and 'PE2' in self.params:
@@ -304,10 +305,10 @@ class MapperRunner:
                 return ar
             else:
                 #Add job to list:
-                #TODO: Figure out how to do this
-                #Kick off assembler:
                 self.ref_q.put(ar.to_dict())
-        #TODO kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
 
-    def queue(self, ref_q):
-        self.ref_q = ref_q
+        #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
+        checker_params['iteration'] += 1
+        del checker_params['mapping_dict']
+        checker = AssemblyChecker(checker_params)
+        self.ref_q.put(checker.to_dict())

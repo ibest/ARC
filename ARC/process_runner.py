@@ -15,6 +15,7 @@
 import sys
 from Queue import Empty
 from multiprocessing import Process
+import time
 from ARC import logger
 from ARC import exceptions
 
@@ -30,6 +31,7 @@ class ProcessRunner(Process):
     def run(self):
         while True:
             try:
+                time.sleep(0.5)
                 item = self.ref_q.get_nowait()
                 # If we made it this far, we have found something on the
                 # queue so we need to make sure we let the spawner know we
