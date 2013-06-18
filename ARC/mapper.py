@@ -286,16 +286,17 @@ class MapperRunner:
             if 'PE1' in self.params and 'PE2' in self.params:
                 outf_PE1 = open(os.path.realpath(target_dir + "/PE1." + self.params['format']), 'w')
                 outf_PE2 = open(os.path.realpath(target_dir + "/PE2." + self.params['format']), 'w')
-                idx_PE1 = SeqIO.index_db(os.path.realpath(self.params['working_dir'] + "/PE1.idx"))
-                idx_PE2 = SeqIO.index_db(os.path.realpath(self.params['working_dir'] + "/PE2.idx"))
+                idx_PE1 = SeqIO.index_db(os.path.realpath(self.params['working_dir'] + "/PE1.idx"), key_function=lambda x: x.split("/")[0])
+                idx_PE2 = SeqIO.index_db(os.path.realpath(self.params['working_dir'] + "/PE2.idx"), key_function=lambda x: x.split("/")[0])
                 assembly_params['PE1'] = os.path.realpath(target_dir + "/PE1." + self.params['format'])
                 assembly_params['PE2'] = os.path.realpath(target_dir + "/PE2." + self.params['format'])
             if 'SE' in self.params:
                 outf_SE = open(os.path.realpath(target_dir + "/SE." + self.params['format']), 'w')
-                idx_SE = SeqIO.index_db(os.path.realpath(self.params['working_dir'] + "/SE.idx"))
+                idx_SE = SeqIO.index_db(os.path.realpath(self.params['working_dir'] + "/SE.idx"), key_function=lambda x: x.split("/")[0])
                 assembly_params['SE'] = os.path.realpath(target_dir + "/SE." + self.params['format'])
             for readID in reads:
                 if 'PE1' in self.params and readID in idx_PE1:
+                    print "Writing PEs"
                     read1 = idx_PE1[readID]
                     read2 = idx_PE2[readID]
                     new_readID = readID.replace(":", "_") + ":0:0:0:0#0/"
@@ -304,6 +305,7 @@ class MapperRunner:
                     SeqIO.write(read1, outf_PE1, self.params['format'])
                     SeqIO.write(read2, outf_PE2, self.params['format'])
                 elif 'SE' in self.params and readID in idx_SE:
+                    print "Writing SEs"
                     SeqIO.write(idx_SE[readID], outf_SE, self.params['format'])
             if 'PE1' in self.params:
                 outf_PE1.close()
