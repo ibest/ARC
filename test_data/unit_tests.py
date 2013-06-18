@@ -79,6 +79,8 @@ print "\n\n-------------Testing MapperRunner: start()-------------"
 assemblyrunners1 = blat_mapper1.start()
 assemblerunners2 = blat_mapper2.start()
 
+#Test Assembly Checker before assemblies have completed:
+assemblerunners2[]
 
 
 

@@ -136,6 +136,8 @@ def read_config():
         config['numcycles'] = 1
     if 'verbose' not in config:
         config['verbose'] = False
+    if config['verbose'] == 'True':
+        config['verbose'] = True
     if 'format' not in config:
         raise exceptions.FatalError("Error, file format not specificed in ARC_config.txt.")
     if config['format'] != 'fastq' and config['format'] != 'fasta':
@@ -176,6 +178,8 @@ def read_config():
 
     #Set internal defaults:
     config['iteration'] = 0
+    config['numcycles'] = int(config['numcycles'])
+
     return config
 
 

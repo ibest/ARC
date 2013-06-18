@@ -52,6 +52,7 @@ class MapperRunner:
             logger.info("Running blat for %s" % self.params['sample'])
             self.run_blat()
         #Mapping is done, run splitreads:
+        logger.info("Running splitreads for %s" % self.params['sample'])
         self.splitreads()
 
     def run_bowtie2(self):
@@ -263,15 +264,24 @@ class MapperRunner:
         startT = time.time()
         checker_params = self.params
         checker_params['targets'] = {}
-        print self.params['mapping_dict'].keys()
         if 'testing' in self.params:  # added for unit testing
+            print "Running splitreads for %s" % self.params['sample']
             ars = []
         for target in self.params['mapping_dict'].keys():
-            print target
-            assembly_params = {}
+            logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
             target_dir = os.path.realpath(self.params['working_dir'] + "/" + target)
             checker_params['targets'][target_dir] = False
             os.mkdir(target_dir)
+            assembly_params = {
+                'reference': self.params['reference'],
+                'working_dir': self.params['working_dir'],
+                'sample': self.params['sample'],
+                'assembler': self.params['assembler'],
+                'format': self.params['format'],
+                'verbose': self.params['verbose'],
+                'target': target,
+                'target_dir': target_dir
+            }
             reads = self.params['mapping_dict'][target]
             if 'PE1' in self.params and 'PE2' in self.params:
                 outf_PE1 = open(os.path.realpath(target_dir + "/PE1." + self.params['format']), 'w')
@@ -301,10 +311,6 @@ class MapperRunner:
             if 'SE' in self.params:
                 outf_SE.close()
             #All reads have been written at this point, add an assembly to the queue:
-            assembly_params['sample'] = self.params['sample']
-            assembly_params['target'] = target
-            assembly_params['target_dir'] = target_dir
-            assembly_params['assembler'] = self.params['assembler']
             ar = AssemblyRunner(assembly_params)
             logger.info("Split %s reads for target %s in %s seconds" % (len(reads), target, time.time() - startT))
 
@@ -317,6 +323,10 @@ class MapperRunner:
 
         #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
         checker_params['iteration'] += 1
+        print "------------------------------------"
+        print "Iteration %s of numcycles %s" % (checker_params['iteration'], checker_params['numcycles'])
+        print "------------------------------------"
+
         del checker_params['mapping_dict']
         checker = AssemblyChecker(checker_params)
         if 'testing' in self.params:

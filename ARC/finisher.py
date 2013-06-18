@@ -16,7 +16,7 @@
 
 import os
 from Bio import SeqIO
-#from ARC import logger
+from ARC import logger
 #from ARC import exceptions
 
 
@@ -41,27 +41,37 @@ class Finisher:
                 'params': self.params}
 
     def start(self):
+        logger.info("Starting Finisher for sample: %s" % self.params['sample'])
+        print "FINISHER: Iteration", self.params['iteration'], " numcycles", self.params['numcycles']
         if self.params['iteration'] >= self.params['numcycles']:
+            print "FINISHED"
             finished_dir = os.path.realpath('./finished_' + self.params['sample'])
             os.mkdir(finished_dir)
             outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'w')
             finished = True
         else:
-            outfn = os.path.join(self.params['working_dir'], 'I' + str(self.params['iteration']) + '_config.fasta')
+            outfn = os.path.join(self.params['working_dir'], 'I' + str(self.params['iteration']) + '_contigs.fasta')
             outf = open(outfn, 'w')
             finished = False
-        for target in self.params['targets']:
+        for target_folder in self.params['targets']:
+            target = target_folder.split("/")[-1]
             if self.params['assembler'] == 'newbler':
-                contigf = os.path.realpath(self.params['working_dir'] + "/" + target + "/454AllContigs.fna")
+                contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "454AllContigs.fna")
             elif self.params['assembler'] == 'spades':
-                contigf = os.path.realpath(self.params['working_dir'] + "/" + target + "/contigs.fasta")
+                contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "contigs.fasta")
             i = 1
-            for contig in SeqIO.parse(contigf, 'fasta'):
+            contig_inf = open(contigf, 'r')
+            for contig in SeqIO.parse(contig_inf, 'fasta'):
                 contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
-                SeqIO.write(outf, contig, "fasta")
+                SeqIO.write(contig, outf, "fasta")
+                i += 1
+            print "Finished with contigs for target %s" % target
+            contig_inf.close()
+            os.system("rm -rf %s" % target_folder)
         outf.close()
         if finished:
             # do some kind of suprious contig filtering etc
+            print "Assembly finished for sample: %s" % self.params['sample']
             return
         if not finished:
             # Build a new mapper and put it on the queue

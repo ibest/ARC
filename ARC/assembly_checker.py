@@ -15,8 +15,9 @@
 # limitations under the License.
 
 import os
+import time
 #from ARC import exceptions
-#from ARC import logger
+from ARC import logger
 from ARC.finisher import Finisher
 #from ARC import AssemblyChecker
 
@@ -40,18 +41,25 @@ class AssemblyChecker:
 
     def start(self):
         """ run through list of targets, check any that haven't finished already """
+        sample = self.params['sample']
+        logger.info("AssemblyChecker started for sample: %s with %s targets" % (sample, len(self.params['targets'])))
         for k in self.params['targets']:
             if not self.params['targets'][k]:
-                file = os.path.join(self.params['targets'][k], 'finished')
+                file = os.path.join(k, 'finished')
                 if os.path.exists(file):
                     self.params['targets'][k] = True
+                    logger.info("%s exists" % file)
+
         #Now check whether all have finished, if not, add a new AssemblyChecker to the queue
         if len(self.params['targets']) > sum(self.params['targets'].values()):
             #some jobs haven't completed yet
             checker_params = self.params
             checker = AssemblyChecker(checker_params)
+            time.sleep(0.5)
             self.ref_q.put(checker.to_dict())
+            logger.info("Assemblies not complete for sample: %s" % sample)
         else:
             params = self.params
             finisher = Finisher(params)
             self.ref_q.put(finisher.to_dict())
+            logger.info("Assemblies complete for sample: %s" % sample)
