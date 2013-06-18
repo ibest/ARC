@@ -20,8 +20,9 @@ import os
 from Bio import SeqIO
 from ARC import exceptions
 from ARC import logger
-from ARC import AssemblyRunner
-from ARC import AssemblyChecker
+#from ARC import AssemblyRunner
+from ARC.assembler import AssemblyRunner
+from ARC.assembly_checker import AssemblyChecker
 
 
 class MapperRunner:
@@ -158,7 +159,7 @@ class MapperRunner:
 
         #Extract the PSL to a dict
         self.params['mapping_dict'] = self.PSL_to_dict(os.path.join(working_dir, 'mapping.psl'))
-        os.remove(os.path.join(working_dir, 'mapping.psl'))
+        #os.remove(os.path.join(working_dir, 'mapping.psl'))
 
     def SAM_to_dict(self, filename):
         """ Read a SAM file to a mapping dict and return it """
@@ -259,9 +260,14 @@ class MapperRunner:
 
     def splitreads(self):
         """ Split reads and then kick off assemblies once the reads are split for a target"""
+        startT = time.time()
         checker_params = self.params
         checker_params['targets'] = {}
-        for target in self.params['mapping_dict']:
+        print self.params['mapping_dict'].keys()
+        if 'testing' in self.params:  # added for unit testing
+            ars = []
+        for target in self.params['mapping_dict'].keys():
+            print target
             assembly_params = {}
             target_dir = os.path.realpath(self.params['working_dir'] + "/" + target)
             checker_params['targets'][target_dir] = False
@@ -300,9 +306,11 @@ class MapperRunner:
             assembly_params['target_dir'] = target_dir
             assembly_params['assembler'] = self.params['assembler']
             ar = AssemblyRunner(assembly_params)
+            logger.info("Split %s reads for target %s in %s seconds" % (len(reads), target, time.time() - startT))
 
             if 'testing' in self.params:
-                return ar
+                #This is only here to make testing somewhat possible
+                ars.append(ar)
             else:
                 #Add job to list:
                 self.ref_q.put(ar.to_dict())
@@ -311,4 +319,8 @@ class MapperRunner:
         checker_params['iteration'] += 1
         del checker_params['mapping_dict']
         checker = AssemblyChecker(checker_params)
-        self.ref_q.put(checker.to_dict())
+        if 'testing' in self.params:
+            ars.append(checker)
+            return ars
+        else:
+            self.ref_q.put(checker.to_dict())

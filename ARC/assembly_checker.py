@@ -15,9 +15,9 @@
 # limitations under the License.
 
 import os
-from ARC import exceptions
-from ARC import logger
-from ARC import Finisher
+#from ARC import exceptions
+#from ARC import logger
+from ARC.finisher import Finisher
 #from ARC import AssemblyChecker
 
 
@@ -52,6 +52,6 @@ class AssemblyChecker:
             checker = AssemblyChecker(checker_params)
             self.ref_q.put(checker.to_dict())
         else:
-            #all jobs have completed
-            
-
+            params = self.params
+            finisher = Finisher(params)
+            self.ref_q.put(finisher.to_dict())

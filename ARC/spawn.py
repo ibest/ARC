@@ -21,7 +21,7 @@ from Queue import Empty
 from process_runner import ProcessRunner
 from ARC import logger
 from ARC import exceptions
-from mapper import MapperRunner
+from ARC.mapper import MapperRunner
 
 
 def run(config):

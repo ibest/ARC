@@ -27,7 +27,7 @@ from ARC import exceptions
 
 def main():
     try:
-        logger.setup(loglevel=logging.DEBUG)
+        logger.setup(loglevel=logging.INFO)
 
         logger.info("Reading config file...")
         config = read_config()
@@ -38,7 +38,7 @@ def main():
         logger.info("Setting up multiprocessing...")
         run_spawner(config)
 
-        logger.info("Running mapping")
+        #logger.info("Running mapping")
 
         clean()
         return 0
@@ -142,8 +142,12 @@ def read_config():
         raise exceptions.FatalError("Error, format is neither fastq or fasta")
     if 'mapper' not in config:
         raise exceptions.FatalError("Error, mapper not specificed in ARC_config.txt")
-    elif config['mapper'] != 'spades' and config['mapper'] != 'newbler':
-        raise exceptions.FatalError("Error mapper must be either 'spade' or 'newbler'")
+    elif config['mapper'] != 'blat' and config['mapper'] != 'bowtie2':
+        raise exceptions.FatalError("Error mapper must be either 'blat' or 'bowtie2'")
+    if 'assembler' not in config:
+        raise exceptions.FatalError("Error, assembler not specificed in ARC_config.txt")
+    elif config['assembler'] != 'spades' and config['assembler'] != 'newbler':
+        raise exceptions.FatalError("Error assembler must be either 'spades' or 'newbler'")
 
     #Check that the mapper exists:
     if config['mapper'] == 'blat':

@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
+#import time
 import subprocess
 import os
-from ARC import logger
+#from ARC import logger
 from ARC import exceptions
 
 
@@ -127,8 +127,6 @@ class AssemblyRunner:
         if ret != 0:
             raise exceptions.RerunnableError("Assembly failed")
 
-    def queue(self, ref_q):
-        self.ref_q = ref_q
 
 # def run():
 #     print "I'm running the assembler now"
@@ -138,4 +136,3 @@ class AssemblyRunner:
 #     a, b = 0, 1
 #     for i in range(100000):
 #         a, b = b, a + b
-

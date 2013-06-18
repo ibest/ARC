@@ -14,12 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import subprocess
 import os
 from Bio import SeqIO
-from ARC import logger
-from ARC import exceptions
-from ARC import MapperRunner
+#from ARC import logger
+#from ARC import exceptions
 
 
 class Finisher:
@@ -67,6 +65,7 @@ class Finisher:
             return
         if not finished:
             # Build a new mapper and put it on the queue
+            from ARC.mapper import MapperRunner
             params = {
                 'reference': outfn,
                 'numcycles': self.params['numcycles'],
