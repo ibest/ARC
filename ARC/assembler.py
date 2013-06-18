@@ -130,7 +130,11 @@ class AssemblyRunner:
 
         if ret != 0:
             raise exceptions.RerunnableError("Assembly failed")
-
+        else:
+            #Run finished without error
+            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
+            outf.write("1")
+            outf.close()
 
 # def run():
 #     print "I'm running the assembler now"

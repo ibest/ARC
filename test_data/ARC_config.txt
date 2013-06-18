@@ -1,1 +1,1 @@
-ARC_config_fastq.txt
+ARC_config_fastq_bowtie_spades.txt

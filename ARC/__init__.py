@@ -92,7 +92,7 @@ def read_config():
                 # Check that fields are formatted correctly:
                 if len(line2) != 3:
                     raise exceptions.FatalError("Error, sample description entry is not properly"
-                                                "formatted! Offending entry: \n\t%s" % line)
+                                                "formatted! Offending entry: %s" % line)
                 Sample_ID = line2[0].strip()
                 FileName = line2[1].strip()
                 FileType = line2[2].strip()
