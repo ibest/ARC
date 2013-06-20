@@ -44,11 +44,11 @@ class AssemblyChecker:
         """ run through list of targets, check any that haven't finished already """
         sample = self.params['sample']
         logger.info("AssemblyChecker started for sample: %s with %s targets" % (sample, len(self.params['targets'])))
-        for k in self.params['targets']:
-            if not self.params['targets'][k]:
-                file = os.path.join(k, 'finished')
+        for target_folder in self.params['targets']:
+            if not self.params['targets'][target_folder]:
+                file = os.path.join(target_folder, 'finished')
                 if os.path.exists(file):
-                    self.params['targets'][k] = True
+                    self.params['targets'][target_folder] = True
                     logger.info("%s exists" % file)
 
         #Now check whether all have finished, if not, add a new AssemblyChecker to the queue

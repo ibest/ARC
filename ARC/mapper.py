@@ -17,6 +17,7 @@
 import time
 import subprocess
 import os
+from collections import Counter
 from copy import deepcopy
 from Bio import SeqIO
 from ARC import exceptions
@@ -262,35 +263,34 @@ class MapperRunner:
     #     return new_map
 
     def splitreads(self):
-        """ Split reads and then kick off assemblies once the reads are split for a target"""
+        """ Split reads and then kick off assemblies once the reads are split for a target, use safe_targets for names"""
         startT = time.time()
         checker_params = deepcopy(self.params)
         checker_params['targets'] = {}
+        iteration = self.params['iteration']
         if 'readcounts' not in checker_params:
             checker_params['readcounts'] = {}
         for target in self.params['mapping_dict'].keys():
-            logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
-            target_dir = os.path.realpath(self.params['working_dir'] + "/" + target)
+            #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
+            target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
             checker_params['targets'][target_dir] = False
             if target not in checker_params['readcounts']:
-                checker_params['readcounts'][target] = []
+                checker_params['readcounts'][target] = Counter()
             os.mkdir(target_dir)
             assembly_params = deepcopy(self.params)
             assembly_params['target'] = target
             assembly_params['target_dir'] = target_dir
             reads = self.params['mapping_dict'][target]
-            checker_params['readcounts'][target].append(len(reads))
+            checker_params['readcounts'][target][iteration] = len(reads)  # track how many total reads were added for this cycle
+            SEs = PEs = 0
             if 'PE1' in self.params and 'PE2' in self.params:
-                outf_PE1 = open(os.path.realpath(target_dir + "/PE1." + self.params['format']), 'w')
-                outf_PE2 = open(os.path.realpath(target_dir + "/PE2." + self.params['format']), 'w')
-                idx_PE1 = SeqIO.index_db(os.path.realpath(self.params['working_dir'] + "/PE1.idx"), key_function=lambda x: x.split("/")[0])
-                idx_PE2 = SeqIO.index_db(os.path.realpath(self.params['working_dir'] + "/PE2.idx"), key_function=lambda x: x.split("/")[0])
-                assembly_params['PE1'] = os.path.realpath(target_dir + "/PE1." + self.params['format'])
-                assembly_params['PE2'] = os.path.realpath(target_dir + "/PE2." + self.params['format'])
+                outf_PE1 = open(os.path.join(target_dir, "PE1." + self.params['format']), 'w')
+                outf_PE2 = open(os.path.join(target_dir, "PE2." + self.params['format']), 'w')
+                idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=lambda x: x.split("/")[0])
+                idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=lambda x: x.split("/")[0])
             if 'SE' in self.params:
-                outf_SE = open(os.path.realpath(target_dir + "/SE." + self.params['format']), 'w')
-                idx_SE = SeqIO.index_db(os.path.realpath(self.params['working_dir'] + "/SE.idx"), key_function=lambda x: x.split("/")[0])
-                assembly_params['SE'] = os.path.realpath(target_dir + "/SE." + self.params['format'])
+                outf_SE = open(os.path.join(target_dir, "SE." + self.params['format']), 'w')
+                idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=lambda x: x.split("/")[0])
             for readID in reads:
                 if 'PE1' in self.params and readID in idx_PE1:
                     read1 = idx_PE1[readID]
@@ -300,13 +300,24 @@ class MapperRunner:
                     read2.id = read2.name = new_readID + "2"
                     SeqIO.write(read1, outf_PE1, self.params['format'])
                     SeqIO.write(read2, outf_PE2, self.params['format'])
+                    PEs += 1
                 elif 'SE' in self.params and readID in idx_SE:
                     SeqIO.write(idx_SE[readID], outf_SE, self.params['format'])
-            if 'PE1' in self.params:
+                    SEs += 1
+            if 'PE1' in self.params and 'PE2' in self.params:
                 outf_PE1.close()
                 outf_PE2.close()
             if 'SE' in self.params:
                 outf_SE.close()
+
+            #properly handle the case where no reads ended up mapping for the PE or SE inputs:
+            if PEs > 0:
+                assembly_params['PE1'] = os.path.join(target_dir, "PE1." + self.params['format'])
+                assembly_params['PE2'] = os.path.join(target_dir, "PE2." + self.params['format'])
+
+            if SEs > 0:
+                assembly_params['SE'] = os.path.join(target_dir, "SE." + self.params['format'])
+
             #All reads have been written at this point, add an assembly to the queue:
             ar = AssemblyRunner(assembly_params)
             logger.info("Split %s reads for sample %s target %s in %s seconds" % (len(reads), self.params['sample'], target, time.time() - startT))
@@ -315,9 +326,9 @@ class MapperRunner:
 
         #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
         checker_params['iteration'] += 1
-        print "------------------------------------"
-        print "Iteration %s of numcycles %s" % (checker_params['iteration'], checker_params['numcycles'])
-        print "------------------------------------"
+        logger.info("------------------------------------")
+        logger.info("Sample %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
+        logger.info("------------------------------------")
 
         del checker_params['mapping_dict']
         checker = AssemblyChecker(checker_params)

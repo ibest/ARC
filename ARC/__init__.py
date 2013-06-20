@@ -77,6 +77,14 @@ def setup(config):
         if 'SE' in s:
             if not os.path.exists(os.path.join(working_dir, "/SE.idx")):
                 SeqIO.index_db(os.path.realpath(working_dir + "/SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
+        #Read through the reference, set up a set of safe names for the targets:
+        safe_targets = {}
+        i = 0
+        for t in SeqIO.parse(config['reference'], "fasta"):
+            safe_targets[t.name] = "t__%04d" % i
+            safe_targets["t__%04d" % i] = t.name
+            i += 1
+        config['safe_targets'] = safe_targets
 
 
 def read_config():
@@ -92,14 +100,14 @@ def read_config():
             if line[0] == '#':
                 """ Handle global parameters """
                 line = line.strip().strip("# ")
-                line2 = line.split("=")
+                line2 = line.strip().split("=")
                 if len(line2) != 2:
                     raise exceptions.FatalError("Error, parameters not specified correctly, "
                                                 "please use # name=value. Offending entry: \n\t%s" % line)
                 config[line2[0].strip()] = line2[1].strip()
             elif header is False:
                 """ Handle Sample information """
-                line2 = line.strip().split('\t')
+                line2 = line.strip().split()
                 # Check that fields are formatted correctly:
                 if len(line2) != 3:
                     raise exceptions.FatalError("Error, sample description entry is not properly"

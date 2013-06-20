@@ -53,7 +53,8 @@ class Finisher:
             outf = open(outfn, 'w')
             sample_finished = False
         for target_folder in self.params['targets']:
-            target = target_folder.split("/")[-1]
+            safe_target = target_folder.split("/")[-1]
+            target = self.params['safe_targets'][safe_target]
             if self.params['assembler'] == 'newbler':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "454AllContigs.fna")
             elif self.params['assembler'] == 'spades':

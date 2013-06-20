@@ -73,7 +73,8 @@ class AssemblyRunner:
         #Building the args
         args = ['runAssembly']
         args += ['-nobig', '-force', '-cpu', '1']
-        if 'urt' in self.params:
+        if 'urt' in self.params and self.params['iteration'] < self.params['numcycles']:
+            #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
         args += ['-o', os.path.join(self.params['target_dir'], 'assembly')]
         if 'PE1' in self.params and 'PE2' in self.params:
@@ -84,7 +85,7 @@ class AssemblyRunner:
         else:
             out = open(os.devnull, 'w')
 
-        logger.info("Calling newbler for sample: %s" % self.params['sample'])
+        logger.info("Calling newbler for sample: %s target %s" % (self.params['sample'], self.params['target']))
         logger.info(" ".join(args))
         ret = subprocess.call(args, stderr=out, stdout=out)
         out.close()
@@ -124,7 +125,7 @@ class AssemblyRunner:
         else:
             out = open(os.devnull, 'w')
 
-        logger.info("Calling spades for sample: %s" % self.params['sample'])
+        logger.info("Calling spades for sample: %s target %s" % (self.params['sample'], self.params['target']))
         logger.info(" ".join(args))
         ret = subprocess.call(args, stderr=out, stdout=out)
         out.close()
