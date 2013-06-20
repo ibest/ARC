@@ -265,6 +265,7 @@ class MapperRunner:
     def splitreads(self):
         """ Split reads and then kick off assemblies once the reads are split for a target, use safe_targets for names"""
         startT = time.time()
+        self.params['iteration'] += 1
         checker_params = deepcopy(self.params)
         checker_params['targets'] = {}
         iteration = self.params['iteration']
@@ -325,7 +326,6 @@ class MapperRunner:
             self.ref_q.put(ar.to_dict())
 
         #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
-        checker_params['iteration'] += 1
         logger.info("------------------------------------")
         logger.info("Sample %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
         logger.info("------------------------------------")

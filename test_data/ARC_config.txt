@@ -18,6 +18,7 @@
 # nprocs=10
 # format=fastq
 # verbose=True
+# urt=True
 Sample_ID	FileName	FileType
 Sample1	./reads/Sample1_R1.fastq	PE1
 Sample1	./reads/Sample1_R2.fastq	PE2

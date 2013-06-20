@@ -70,13 +70,13 @@ def setup(config):
         """ Build a separate index for each read file in the input, put them in working_dir"""
         if 'PE1' in s:
             if not os.path.exists(os.path.join(working_dir, "/PE1.idx")):
-                SeqIO.index_db(os.path.realpath(working_dir + "/PE1.idx"), s['PE1'], format, key_function=lambda x: x.split("/")[0])
+                SeqIO.index_db(os.path.join(working_dir, "PE1.idx"), s['PE1'], format, key_function=lambda x: x.split("/")[0])
         if 'PE2' in s:
-            if not os.path.exists(os.path.join(working_dir, "/PE2.idx")):
-                SeqIO.index_db(os.path.realpath(working_dir + "/PE2.idx"), s['PE2'], format, key_function=lambda x: x.split("/")[0])
+            if not os.path.exists(os.path.join(working_dir, "PE2.idx")):
+                SeqIO.index_db(os.path.join(working_dir, "PE2.idx"), s['PE2'], format, key_function=lambda x: x.split("/")[0])
         if 'SE' in s:
-            if not os.path.exists(os.path.join(working_dir, "/SE.idx")):
-                SeqIO.index_db(os.path.realpath(working_dir + "/SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
+            if not os.path.exists(os.path.join(working_dir, "SE.idx")):
+                SeqIO.index_db(os.path.join(working_dir, "SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
         #Read through the reference, set up a set of safe names for the targets:
         safe_targets = {}
         i = 0
