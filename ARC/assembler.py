@@ -60,14 +60,14 @@ class AssemblyRunner:
             -urt
         """
         #Check for necessary params:
-        if not (('PE1' in self.params and 'PE2' in self.params) or 'SE' in self.params):
+        if not (('assembly_PE1' in self.params and 'assembly_PE2' in self.params) or 'assembly_SE' in self.params):
             raise exceptions.FatalException('Missing self.params in RunNewbler.')
 
         #Check for necessary files:
-        if 'PE1' in self.params and 'PE2' in self.params and not(os.path.exists(self.params['PE1']) and os.path.exists(self.params['PE2'])):
+        if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params and not(os.path.exists(self.params['assembly_PE1']) or not(os.path.exists(self.params['assembly_PE2']))):
             raise exceptions.FatalException('Missing PE files in RunNewbler.')
 
-        if 'SE' in self.params and not(os.path.exists(self.params['SE'])):
+        if 'assembly_SE' in self.params and not(os.path.exists(self.params['assembly_SE'])):
             raise exceptions.FatalException('Missing SE file in RunNewbler.')
 
         #Building the args
@@ -78,10 +78,10 @@ class AssemblyRunner:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
         args += ['-o', os.path.join(self.params['target_dir'], 'assembly')]
-        if 'PE1' in self.params and 'PE2' in self.params:
-            args += [self.params['PE1'], self.params['PE2']]
-        if 'SE' in self.params:
-            args += [self.params['SE']]
+        if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
+            args += [self.params['assembly_PE1'], self.params['assembly_PE2']]
+        if 'assembly_SE' in self.params:
+            args += [self.params['assembly_SE']]
             out = open(os.path.join(self.params['target_dir'], "assembly.log"), 'w')
         else:
             out = open(os.devnull, 'w')
@@ -103,23 +103,23 @@ class AssemblyRunner:
         Several arguments can be passed to spades.py: -1 [PE1], -2 [PE2], -s [SE], and -o [target_dir]
         """
         #Check that required params are available
-        if not (('PE1' in self.params and 'PE2' in self.params) or ('SE' in self.params)):
+        if not (('assembly_PE1' in self.params and 'assembly_PE2' in self.params) or ('assembly_SE' in self.params)):
             raise exceptions.FatalException('Missing self.params in RunSpades.')
 
         #Check that the files actually exist
-        if 'PE1' in self.params and 'PE2' in self.params and not(os.path.exists(self.params['PE1']) and os.path.exists(self.params['PE2'])):
+        if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params and not(os.path.exists(self.params['assembly_PE1']) or not(os.path.exists(self.params['assembly_PE2']))):
             raise exceptions.FatalException('Missing PE files in RunSpades.')
-        if 'SE' in self.params and not(os.path.exists(self.params['SE'])):
+        if 'assembly_SE' in self.params and not(os.path.exists(self.params['assembly_SE'])):
             raise exceptions.FatalException('Missing SE file in RunSpades.')
 
         #Build args for assembler call
         args = ['spades.py', '-t', '1']
         if self.params['format'] == 'fasta':
             args.append('--only-assembler')  # spades errors on read correction if the input isn't fastq
-        if 'PE1' in self.params and 'PE2' in self.params:
-            args += ['-1', self.params['PE1'], '-2', self.params['PE2']]
+        if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
+            args += ['-1', self.params['assembly_PE1'], '-2', self.params['assembly_PE2']]
         if 'SE' in self.params:
-            args += ['-s', self.params['SE']]
+            args += ['-s', self.params['assembly_SE']]
         args += ['-o', os.path.join(self.params['target_dir'], 'assembly')]
         if 'verbose' in self.params:
             out = open(os.path.join(self.params['target_dir'], "assembly.log"), 'w')

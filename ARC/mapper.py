@@ -105,6 +105,9 @@ class MapperRunner:
         if 'SE' in self.params:
             args += ['-U', self.params['SE']]
         args += ['-S', os.path.join(working_dir, 'mapping.sam')]
+        logger.info("Calling bowtie2 for sample: %s" % self.params['sample'])
+        logger.info(" ".join(args))
+
         ret = subprocess.call(args, stdout=out, stderr=out)
         out.close()
         if ret != 0:
@@ -156,6 +159,8 @@ class MapperRunner:
             args.append('-fastMap')
         args.append(os.path.join(working_dir, 'mapping.psl'))
 
+        logger.info("Calling blat for sample: %s" % self.params['sample'])
+        logger.info(" ".join(args))
         ret = subprocess.call(args, stdout=out, stderr=out)
         out.close()
         if ret != 0:
@@ -313,11 +318,11 @@ class MapperRunner:
 
             #properly handle the case where no reads ended up mapping for the PE or SE inputs:
             if PEs > 0:
-                assembly_params['PE1'] = os.path.join(target_dir, "PE1." + self.params['format'])
-                assembly_params['PE2'] = os.path.join(target_dir, "PE2." + self.params['format'])
+                assembly_params['assembly_PE1'] = os.path.join(target_dir, "PE1." + self.params['format'])
+                assembly_params['assembly_PE2'] = os.path.join(target_dir, "PE2." + self.params['format'])
 
             if SEs > 0:
-                assembly_params['SE'] = os.path.join(target_dir, "SE." + self.params['format'])
+                assembly_params['assembly_SE'] = os.path.join(target_dir, "SE." + self.params['format'])
 
             #All reads have been written at this point, add an assembly to the queue:
             ar = AssemblyRunner(assembly_params)
