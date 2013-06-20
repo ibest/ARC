@@ -28,6 +28,18 @@ class Finisher:
     If params['iteration'] >= params['numcycles'] create a ./finished_SampleN/contigs.fasta folder/file and write there
     else: write to working_dir/IN_contigs.fasta
 
+    Output to finished contigs depends on:
+    1) if params['iteration'] >= params['numcycles'] all output goes to the final contigs file
+        reads also go to final contigs file
+    2) if params['readcounts'][iteration] <= params['readcount'][iteration - 1] meaning no more reads were incorporated
+        reads + contigs go to final output, remove from further mapping/assembly
+    3) if reads were mapped but no contigs were generated, write the reads out as new targets for the next mapping cycle
+    4) if params['readcounts'][iteration] / params['readcount'][iteration - 1] > max_incorportaion:
+        This is probably repetitive sequence,
+    5) if 'map_against_reads' in params and params['iteration'] == 1:
+        On the first iteration, write all reads out as contigs
+        (there is no expectation of an assembly having been done in this case)
+
     """
 
     def __init__(self, params):
@@ -42,6 +54,8 @@ class Finisher:
                 'params': self.params}
 
     def start(self):
+        """
+        """
         logger.info("Starting Finisher for sample:%s iteration %s" % (self.params['sample'], self.params['iteration']))
         #Check whether we have reached max iterations:
         if self.params['iteration'] >= self.params['numcycles']:

@@ -276,7 +276,7 @@ class MapperRunner:
         iteration = self.params['iteration']
         if 'readcounts' not in checker_params:
             checker_params['readcounts'] = {}
-        for target in self.params['mapping_dict'].keys():
+        for target in self.params['mapping_dict']:
             #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
             target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
             checker_params['targets'][target_dir] = False
@@ -287,7 +287,8 @@ class MapperRunner:
             assembly_params['target'] = target
             assembly_params['target_dir'] = target_dir
             reads = self.params['mapping_dict'][target]
-            checker_params['readcounts'][target][iteration] = len(reads)  # track how many total reads were added for this cycle
+            # track how many total reads were added for this cycle
+            checker_params['readcounts'][target][iteration] = len(reads)
             SEs = PEs = 0
             if 'PE1' in self.params and 'PE2' in self.params:
                 outf_PE1 = open(os.path.join(target_dir, "PE1." + self.params['format']), 'w')

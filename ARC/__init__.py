@@ -52,7 +52,12 @@ def main():
 
 
 def setup(config):
-    """ Set up working folder for each sample """
+    """ 
+        Set up working folder for each sample. Also assign a "safe_target" name to each target so that folder creation works.
+        This is a little bit tricky because if the user has targets with the _:_ seperator in the name it messes up the splitter
+        and SAM_to_dict. This code is therefore written with the assumption that the user has put the _:_ in the name purposely
+        so that multiple entries in the reference fasta will be treated as a single target.
+    """
     format = config['format']
     for sample in config['Samples']:
         s = config['Samples'][sample]
@@ -77,13 +82,20 @@ def setup(config):
         if 'SE' in s:
             if not os.path.exists(os.path.join(working_dir, "SE.idx")):
                 SeqIO.index_db(os.path.join(working_dir, "SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
-        #Read through the reference, set up a set of safe names for the targets:
+        #Read through the reference, set up a set of safe names for the targets, :
         safe_targets = {}
         i = 0
+        #If 
         for t in SeqIO.parse(config['reference'], "fasta"):
-            safe_targets[t.name] = "t__%04d" % i
-            safe_targets["t__%04d" % i] = t.name
-            i += 1
+            if len(t.name.split("_:_")) == 1:
+                safe_targets[t.name] = "t__%06d" % i
+                safe_targets["t__%06d" % i] = t.name
+                i += 1
+            else:
+                target = t.name.split("_:_")[1]
+                safe_targets[target] = "t__%06d" % i
+                safe_targets["t__%06d" % i] = target
+                i += 1
         config['safe_targets'] = safe_targets
 
 
