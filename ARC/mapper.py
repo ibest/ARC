@@ -17,6 +17,7 @@
 import time
 import subprocess
 import os
+from copy import deepcopy
 from Bio import SeqIO
 from ARC import exceptions
 from ARC import logger
@@ -78,6 +79,7 @@ class MapperRunner:
         try:
             working_dir = self.params['working_dir']
             idx_dir = os.path.realpath(os.path.join(working_dir, 'idx'))
+            print "working_dir:", working_dir, "idx_dir:", idx_dir
             os.mkdir(idx_dir)
         except Exception as exc:
             txt = "Error creating working directory for Sample: %s" % (self.params['sample']) + '\n\t' + str(exc)
@@ -96,7 +98,7 @@ class MapperRunner:
             raise exceptions.FatalError("Error creating bowtie2 index for Sample: %s" % self.params['sample'])
 
         #Do bowtie2 mapping:
-        args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-x', base]
+        args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', self.params['nprocs'], '-x', base]
         if 'PE1' in self.params and 'PE2' in self.params:
             args += ['-1', self.params['PE1'], '-2', self.params['PE2']]
         if 'SE' in self.params:
@@ -191,7 +193,7 @@ class MapperRunner:
                     read_map[target] = {}
                 read_map[target][readid] = 1
         #Report total time:
-        logger.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
+        logger.info("Sample: %s, Processed %s lines in %s seconds." % (self.params['sample'], i, time.time() - startT))
         return read_map
 
     def PSL_to_dict(self, filename):
@@ -224,7 +226,7 @@ class MapperRunner:
             if target not in read_map:
                 read_map[target] = {}
             read_map[target][readid] = 1
-        logger.info("Processed %s lines in %s seconds." % (i, time.time() - startT))
+        logger.info("Sample: %s, Processed %s lines in %s seconds." % (self.params['sample'], i, time.time() - startT))
         return read_map
 
     # def write_dict(self, filename, read_map):
@@ -262,27 +264,22 @@ class MapperRunner:
     def splitreads(self):
         """ Split reads and then kick off assemblies once the reads are split for a target"""
         startT = time.time()
-        checker_params = self.params
+        checker_params = deepcopy(self.params)
         checker_params['targets'] = {}
-        if 'testing' in self.params:  # added for unit testing
-            print "Running splitreads for %s" % self.params['sample']
-            ars = []
+        if 'readcounts' not in checker_params:
+            checker_params['readcounts'] = {}
         for target in self.params['mapping_dict'].keys():
             logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
             target_dir = os.path.realpath(self.params['working_dir'] + "/" + target)
             checker_params['targets'][target_dir] = False
+            if target not in checker_params['readcounts']:
+                checker_params['readcounts'][target] = []
             os.mkdir(target_dir)
-            assembly_params = {
-                'reference': self.params['reference'],
-                'working_dir': self.params['working_dir'],
-                'sample': self.params['sample'],
-                'assembler': self.params['assembler'],
-                'format': self.params['format'],
-                'verbose': self.params['verbose'],
-                'target': target,
-                'target_dir': target_dir
-            }
+            assembly_params = deepcopy(self.params)
+            assembly_params['target'] = target
+            assembly_params['target_dir'] = target_dir
             reads = self.params['mapping_dict'][target]
+            checker_params['readcounts'][target].append(len(reads))
             if 'PE1' in self.params and 'PE2' in self.params:
                 outf_PE1 = open(os.path.realpath(target_dir + "/PE1." + self.params['format']), 'w')
                 outf_PE2 = open(os.path.realpath(target_dir + "/PE2." + self.params['format']), 'w')
@@ -312,14 +309,9 @@ class MapperRunner:
                 outf_SE.close()
             #All reads have been written at this point, add an assembly to the queue:
             ar = AssemblyRunner(assembly_params)
-            logger.info("Split %s reads for target %s in %s seconds" % (len(reads), target, time.time() - startT))
+            logger.info("Split %s reads for sample %s target %s in %s seconds" % (len(reads), self.params['sample'], target, time.time() - startT))
 
-            if 'testing' in self.params:
-                #This is only here to make testing somewhat possible
-                ars.append(ar)
-            else:
-                #Add job to list:
-                self.ref_q.put(ar.to_dict())
+            self.ref_q.put(ar.to_dict())
 
         #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
         checker_params['iteration'] += 1
@@ -329,8 +321,4 @@ class MapperRunner:
 
         del checker_params['mapping_dict']
         checker = AssemblyChecker(checker_params)
-        if 'testing' in self.params:
-            ars.append(checker)
-            return ars
-        else:
-            self.ref_q.put(checker.to_dict())
+        self.ref_q.put(checker.to_dict())

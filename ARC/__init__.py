@@ -57,15 +57,26 @@ def setup(config):
     for sample in config['Samples']:
         s = config['Samples'][sample]
         working_dir = os.path.realpath('./working_' + sample)
+        finished_dir = os.path.realpath('./finished_' + sample)
         config['Samples'][sample]['working_dir'] = working_dir
-        os.mkdir(working_dir)
+        config['Samples'][sample]['finished_dir'] = finished_dir
+        if os.path.exists(working_dir):
+            logger.info("WARNING working directory already exists for sample %s, deleting old results if any." % sample)
+            os.system('rm -rf %s' % finished_dir)
+            os.mkdir(finished_dir)
+        else:
+            os.mkdir(working_dir)
+            os.mkdir(finished_dir)
         """ Build a separate index for each read file in the input, put them in working_dir"""
         if 'PE1' in s:
-            SeqIO.index_db(os.path.realpath(working_dir + "/PE1.idx"), s['PE1'], format, key_function=lambda x: x.split("/")[0])
+            if not os.path.exists(os.path.join(working_dir, "/PE1.idx")):
+                SeqIO.index_db(os.path.realpath(working_dir + "/PE1.idx"), s['PE1'], format, key_function=lambda x: x.split("/")[0])
         if 'PE2' in s:
-            SeqIO.index_db(os.path.realpath(working_dir + "/PE2.idx"), s['PE2'], format, key_function=lambda x: x.split("/")[0])
+            if not os.path.exists(os.path.join(working_dir, "/PE2.idx")):
+                SeqIO.index_db(os.path.realpath(working_dir + "/PE2.idx"), s['PE2'], format, key_function=lambda x: x.split("/")[0])
         if 'SE' in s:
-            SeqIO.index_db(os.path.realpath(working_dir + "/SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
+            if not os.path.exists(os.path.join(working_dir, "/SE.idx")):
+                SeqIO.index_db(os.path.realpath(working_dir + "/SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
 
 
 def read_config():

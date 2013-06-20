@@ -17,6 +17,7 @@
 import time
 import multiprocessing
 import os
+from copy import deepcopy
 from Queue import Empty
 from process_runner import ProcessRunner
 from ARC import logger
@@ -45,17 +46,11 @@ def run(config):
     #'sample' in params and 'reference' in params and 'working_dir' in params and (('PE1' in params and 'PE2' in params) or 'SE' in params))
     for sample in config['Samples']:
         s = config['Samples'][sample]
-        params = {
-            'reference': config['reference'],
-            'numcycles': config['numcycles'],
-            'working_dir': os.path.realpath('./working_' + sample),
-            'sample': sample,
-            'mapper': config['mapper'],
-            'assembler': config['assembler'],
-            'format': config['format'],
-            'verbose': config['verbose'],
-            'iteration': config['iteration']
-        }
+        params = deepcopy(config)
+        params['working_dir'] = s['working_dir']
+        params['finished_dir'] = s['finished_dir']
+        params['sample'] = sample
+
         if 'PE1' in s and 'PE2' in s:
             params['PE1'] = s['PE1']
             params['PE2'] = s['PE2']
@@ -89,7 +84,7 @@ def run(config):
 
     while True:
         try:
-            time.sleep(0.5)
+            time.sleep(0.1)
             result = result_q.get_nowait()
             if result['status'] == 0:
                 logger.debug("Completed successfully %s" % (result['process']))

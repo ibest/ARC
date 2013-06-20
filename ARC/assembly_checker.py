@@ -16,6 +16,7 @@
 
 import os
 import time
+from copy import deepcopy
 #from ARC import exceptions
 from ARC import logger
 from ARC.finisher import Finisher
@@ -53,13 +54,13 @@ class AssemblyChecker:
         #Now check whether all have finished, if not, add a new AssemblyChecker to the queue
         if len(self.params['targets']) > sum(self.params['targets'].values()):
             #some jobs haven't completed yet
-            checker_params = self.params
+            checker_params = deepcopy(self.params)
             checker = AssemblyChecker(checker_params)
             time.sleep(0.5)
             self.ref_q.put(checker.to_dict())
             logger.info("Assemblies not complete for sample: %s" % sample)
         else:
-            params = self.params
+            params = deepcopy(self.params)
             finisher = Finisher(params)
             self.ref_q.put(finisher.to_dict())
             logger.info("Assemblies complete for sample: %s" % sample)

@@ -88,7 +88,6 @@ class AssemblyRunner:
         logger.info(" ".join(args))
         ret = subprocess.call(args, stderr=out, stdout=out)
         out.close()
-        logger.info("Newbler finished for sample: %s" % self.params['sample'])
         if ret != 0:
             raise exceptions.RerunnableError("Newbler assembly failed")
         else:
@@ -125,6 +124,8 @@ class AssemblyRunner:
         else:
             out = open(os.devnull, 'w')
 
+        logger.info("Calling spades for sample: %s" % self.params['sample'])
+        logger.info(" ".join(args))
         ret = subprocess.call(args, stderr=out, stdout=out)
         out.close()
 
@@ -135,12 +136,3 @@ class AssemblyRunner:
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
             outf.write("1")
             outf.close()
-
-# def run():
-#     print "I'm running the assembler now"
-
-
-# def cpu_intensive():
-#     a, b = 0, 1
-#     for i in range(100000):
-#         a, b = b, a + b

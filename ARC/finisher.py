@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import os
+from copy import deepcopy
 from Bio import SeqIO
 from ARC import logger
 #from ARC import exceptions
@@ -41,18 +42,16 @@ class Finisher:
                 'params': self.params}
 
     def start(self):
-        logger.info("Starting Finisher for sample: %s" % self.params['sample'])
-        print "FINISHER: Iteration", self.params['iteration'], " numcycles", self.params['numcycles']
+        logger.info("Starting Finisher for sample:%s iteration %s" % (self.params['sample'], self.params['iteration']))
+        #Check whether we have reached max iterations:
         if self.params['iteration'] >= self.params['numcycles']:
-            print "FINISHED"
-            finished_dir = os.path.realpath('./finished_' + self.params['sample'])
-            os.mkdir(finished_dir)
+            finished_dir = self.params['finished_dir']
             outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'w')
-            finished = True
+            sample_finished = True
         else:
             outfn = os.path.join(self.params['working_dir'], 'I' + str(self.params['iteration']) + '_contigs.fasta')
             outf = open(outfn, 'w')
-            finished = False
+            sample_finished = False
         for target_folder in self.params['targets']:
             target = target_folder.split("/")[-1]
             if self.params['assembler'] == 'newbler':
@@ -65,28 +64,28 @@ class Finisher:
                 contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
                 SeqIO.write(contig, outf, "fasta")
                 i += 1
-            print "Finished with contigs for target %s" % target
+            logger.info("Finished with contigs for sample %s target %s" % (self.params['sample'], target))
             contig_inf.close()
             os.system("rm -rf %s" % target_folder)
         outf.close()
-        if finished:
+        if sample_finished:
             # do some kind of suprious contig filtering etc
-            print "Assembly finished for sample: %s" % self.params['sample']
+            logger.info("Assembly finished for sample: %s" % self.params['sample'])
+            #write mapping statistics:
+            rc_outf = open(os.path.join(finished_dir, 'readcounts.tsv'), 'w')
+            targets = self.params['readcounts'].keys()
+            rc_outf.write("iteration\t"+"\t".join(targets))
+
+            #for i in range(self.params['numcycles']):
+
+            #for t in targets:
+
             return
-        if not finished:
+        if not sample_finished:
             # Build a new mapper and put it on the queue
             from ARC.mapper import MapperRunner
-            params = {
-                'reference': outfn,
-                'numcycles': self.params['numcycles'],
-                'working_dir': self.params['working_dir'],
-                'sample': self.params['sample'],
-                'mapper': self.params['mapper'],
-                'assembler': self.params['assembler'],
-                'format': self.params['format'],
-                'verbose': self.params['verbose'],
-                'iteration': self.params['iteration']
-            }
+            params = deepcopy(self.params)
+            params['reference'] = outfn
             if 'PE1' in self.params and 'PE2' in self.params:
                 params['PE1'] = self.params['PE1']
                 params['PE2'] = self.params['PE2']
@@ -95,3 +94,4 @@ class Finisher:
 
             mapper = MapperRunner(params)
             self.ref_q.put(mapper.to_dict())
+            logger.info("Added new mapper to que: Sample %s iteration %s" % (self.params['sample'], self.params['iteration']))
