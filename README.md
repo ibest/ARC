@@ -1,6 +1,7 @@
 # ARC (Assembly by Reduced Complexity)
 
 TODO: Write description here
+ARC is a pipeline which facilitates iterative, reference based assemblies with the intent of reducing bias in the resulting contigs as compared to a purely mapping based approach. ARC 
 
 ## Installation
 ### Get the source:
@@ -18,9 +19,10 @@ Move to your directory that you keep all of your python virtual environments and
 ## Usage
 
 Pre-requisites:
-    -Install either bowite2 or blat for mapping. Make sure that the executable for these is in your path.
-    -Combine reads into a maximum of 3 files per sample: PE1, PE2, SE (where PE stands for Paired End, and SE for Single End). These files can be fasta or fastq formatted.
-    -Ensure that the targets file is in fasta format and that all entries have unique names.
+
+    *Install either bowite2 or blat for mapping. Make sure that the executable for these is in your path.
+    *Combine reads into a maximum of 3 files per sample: PE1, PE2, SE (where PE stands for Paired End, and SE for Single End). These files can be fasta or fastq formatted.
+    *Ensure that the targets file is in fasta format and that all entries have unique names.
 
 1) Create an ARC_config_fastq.txt file using the one in "test_data" as a template. Put this file in a working directory on a drive with plenty of free space.
 2) run ARC: /path_to_arc/bin/ARC
@@ -37,3 +39,6 @@ Pre-requisites:
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+
+
+[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/1c58b31862cc6c8fdb36f4ccf190dd52 "githalytics.com")](http://githalytics.com/ibest/ARC)
