@@ -170,7 +170,9 @@ def read_config():
     if config['verbose'] == 'True':
         config['verbose'] = True
     if 'max_incorportaion' not in config:
-        config['max_incorportaion'] = 5
+        config['max_incorporation'] = 5
+    else:
+        config['max_incorporation'] = int(config['max_incorportaion'])
     if 'format' not in config:
         raise exceptions.FatalError("Error, file format not specificed in ARC_config.txt.")
     if config['format'] != 'fastq' and config['format'] != 'fasta':

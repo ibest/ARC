@@ -77,7 +77,6 @@ class Finisher:
             if sample_finished:  # everything goes into the final file/folders.
                 self.write_target(target, target_folder, outf=fin_outf, finished=True)
             elif map_against_reads:
-                print "MAP AGAINST READS!!! 1"
                 self.write_target(target, target_folder, outf=remap_outf, finished=False, map_against_reads=True)
                 targets_written += 1
             else:
@@ -86,7 +85,7 @@ class Finisher:
                 previous_reads = self.params['readcounts'][target][iteration - 1]
                 #Check read counts and retire target, or send it back for re-mapping depending on mapped reads
                 if iteration > 1 and cur_reads != 0 and previous_reads != 0:
-                    if cur_reads / previous_reads > self.params['max_incorportaion']:
+                    if cur_reads / previous_reads > self.params['max_incorporation']:
                         logger.info("Sample %s target %s identified as a repeat, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
                     elif cur_reads <= previous_reads:
