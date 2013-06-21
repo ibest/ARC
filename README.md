@@ -43,4 +43,4 @@ Pre-requisites:
 
 [![githalytics.com alpha](https://cruel-carlota.pagodabox.com/1c58b31862cc6c8fdb36f4ccf190dd52 "githalytics.com")](http://githalytics.com/ibest/ARC)
 
-[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/24522eae689a9523f24a014f7afbe9ac "githalytics.com")](http://githalytics.com/ibest/ARC)
+[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/23406c26a8e65285a4b6e64bec82ec27 "githalytics.com")](http://githalytics.com/ibest/ARC)
