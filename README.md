@@ -61,7 +61,7 @@ Move to the directory where you keep all of your python virtual environments and
     
     $ ./ARC/bin/ARC
 
-## Testing your install:
+### Testing your install:
     
     A small test assembly can be run using the included test data and the following commands:
 
