@@ -49,17 +49,17 @@ Move to the directory where you keep all of your python virtual environments and
 
 ## Usage
 
-Pre-requisites:
+### Prerequisites:
 
 * Either bowite2 or blat must be available in your path. 
-    *Note that blat currently only supports FASTA format. We have contacted the author with a patch to add FASTQ support and hope that it will be incorporated soon.
+    * Note that blat currently only supports FASTA format. We have contacted the author with a patch to add FASTQ support and hope that it will be incorporated soon.
 * Combine reads into a maximum of 3 files per sample: PE1, PE2, SE (where PE stands for Paired End, and SE for Single End). These files can be fasta or fastq formatted.
 * Ensure that the targets file is in fasta format and that all entries have unique names.
 * Create a file named ARC_config.txt (see the files in test_data for an example). Put this file in a working directory on a drive with plenty of free space.
 * Run ARC using the approach appropriate to the installation method selected.
 
 ### Outputs
-ARC will create a set of folders. These will be labeled working_* and finished_*
+ARC will create a set of folders corresponding to the samples included in the ARC_config.txt. These will be labeled working_* and finished_*.
 
 
 ## Testing your install:
@@ -75,12 +75,8 @@ ARC will create a set of folders. These will be labeled working_* and finished_*
 All configuration for ARC is stored in the ARC_config.txt file. 
 
 
-## Contributing
 
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+## Tips and tricks for advanced users
+* Starting with multiple sequences for a single Target: ARC
 
 [![githalytics.com alpha](https://cruel-carlota.pagodabox.com/ccea24d058d3315f3610784acc00af67 "githalytics.com")](http://githalytics.com/ibest/ARC)
