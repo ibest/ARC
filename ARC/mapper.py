@@ -94,6 +94,8 @@ class MapperRunner:
 
         #Build index
         base = os.path.join(idx_dir, 'idx')
+        logger.info("Calling bowtie2-build for sample: %s" % self.params['sample'])
+        logger.info(" ".join(['bowtie2-build', '-f', self.params['reference'], base]))
         ret = subprocess.call(['bowtie2-build', '-f', self.params['reference'], base], stdout=out, stderr=out)
         if ret != 0:
             raise exceptions.FatalError("Error creating bowtie2 index for Sample: %s" % self.params['sample'])
@@ -279,7 +281,6 @@ class MapperRunner:
         for target in self.params['mapping_dict']:
             #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
             target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
-            checker_params['targets'][target_dir] = False
             if target not in checker_params['readcounts']:
                 checker_params['readcounts'][target] = Counter()
             os.mkdir(target_dir)
@@ -328,8 +329,10 @@ class MapperRunner:
             #All reads have been written at this point, add an assembly to the queue:
             ar = AssemblyRunner(assembly_params)
             logger.info("Split %s reads for sample %s target %s in %s seconds" % (len(reads), self.params['sample'], target, time.time() - startT))
-
-            self.ref_q.put(ar.to_dict())
+            #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
+            if PEs + SEs > 0:
+                checker_params['targets'][target_dir] = False
+                self.ref_q.put(ar.to_dict())
 
         #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
         logger.info("------------------------------------")
@@ -337,5 +340,8 @@ class MapperRunner:
         logger.info("------------------------------------")
 
         del checker_params['mapping_dict']
-        checker = AssemblyChecker(checker_params)
-        self.ref_q.put(checker.to_dict())
+        if len(checker_params['targets']) > 0:
+            checker = AssemblyChecker(checker_params)
+            self.ref_q.put(checker.to_dict())
+        else:
+            logger.info("No reads mapped for sample %s, no more work to do." % checker_params['sample'])

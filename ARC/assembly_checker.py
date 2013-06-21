@@ -56,7 +56,7 @@ class AssemblyChecker:
             #some jobs haven't completed yet
             checker_params = deepcopy(self.params)
             checker = AssemblyChecker(checker_params)
-            time.sleep(0.5)
+            time.sleep(2)
             self.ref_q.put(checker.to_dict())
             logger.info("Assemblies not complete for sample: %s" % sample)
         else:

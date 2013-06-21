@@ -39,7 +39,6 @@ class AssemblyRunner:
                 'params': self.params}
 
     def start(self):
-        #print "Running the mapper"
         if not('assembler' in self.params):
             raise exceptions.FatalException("assembler not defined in params")
         if self.params['assembler'] == 'newbler':
@@ -73,7 +72,6 @@ class AssemblyRunner:
         #Building the args
         args = ['runAssembly']
         args += ['-nobig', '-force', '-cpu', '1']
-        print self.params['iteration'],  self.params['numcycles']
         if 'urt' in self.params and self.params['iteration'] < self.params['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']

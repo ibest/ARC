@@ -169,6 +169,8 @@ def read_config():
         config['verbose'] = False
     if config['verbose'] == 'True':
         config['verbose'] = True
+    if 'max_incorportaion' not in config:
+        config['max_incorportaion'] = 5
     if 'format' not in config:
         raise exceptions.FatalError("Error, file format not specificed in ARC_config.txt.")
     if config['format'] != 'fastq' and config['format'] != 'fasta':

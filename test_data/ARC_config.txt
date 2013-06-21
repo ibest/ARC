@@ -12,13 +12,14 @@
 ## FileType: PE1, PE2, or SE
 ## FileFormat: fasta or fastq
 # reference=./targets.fa
-# numcycles=3
+# numcycles=10
 # mapper=bowtie2
 # assembler=newbler
 # nprocs=10
 # format=fastq
 # verbose=True
 # urt=True
+# map_against_reads=True
 Sample_ID	FileName	FileType
 Sample1	./reads/Sample1_R1.fastq	PE1
 Sample1	./reads/Sample1_R2.fastq	PE2

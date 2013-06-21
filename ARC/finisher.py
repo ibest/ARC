@@ -54,9 +54,154 @@ class Finisher:
                 'params': self.params}
 
     def start(self):
+        logger.info("Starting finisher for sample: %s" % self.params['sample'])
+        finished_dir = self.params['finished_dir']
+        sample_finished = False
+        map_against_reads = False
+        targets_written = 0
+        #Set up output for both finished and additional mapping outputs
+        fin_outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'w')
+        remap_outf = open(os.path.join(self.params['working_dir'], 'I' + str(self.params['iteration']) + '_contigs.fasta'), 'w')
+        #check whether the sample is globally finished
+        if self.params['iteration'] >= self.params['numcycles']:
+            sample_finished = True
+        if 'map_against_reads' in self.params and self.params['iteration'] == 1:
+            logger.info("Sample %s: map_against_reads is set, writing all reads to contigs" % self.params['sample'])
+            map_against_reads = True
+
+        #loop over the current set of targets_folders
+        for target_folder in self.params['targets']:
+            safe_target = target_folder.split("/")[-1]  # get last element of path name
+            target = self.params['safe_targets'][safe_target]
+            logger.info("Starting finisher for sample: %s, target %s" % (self.params['sample'], target))
+            if sample_finished:  # everything goes into the final file/folders.
+                self.write_target(target, target_folder, outf=fin_outf, finished=True)
+            elif map_against_reads:
+                print "MAP AGAINST READS!!! 1"
+                self.write_target(target, target_folder, outf=remap_outf, finished=False, map_against_reads=True)
+                targets_written += 1
+            else:
+                iteration = self.params['iteration']
+                cur_reads = self.params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
+                previous_reads = self.params['readcounts'][target][iteration - 1]
+                #Check read counts and retire target, or send it back for re-mapping depending on mapped reads
+                if iteration > 1 and cur_reads != 0 and previous_reads != 0:
+                    if cur_reads / previous_reads > self.params['max_incorportaion']:
+                        logger.info("Sample %s target %s identified as a repeat, no more mapping will be done" % (self.params['sample'], target))
+                        self.write_target(target, target_folder, outf=fin_outf, finished=True)
+                    elif cur_reads <= previous_reads:
+                        logger.info("-------------Sample %s target %s did not incorporate any more reads, no more mapping will be done" % (self.params['sample'], target))
+                        self.write_target(target, target_folder, outf=fin_outf, finished=True)
+                    else:
+                        #nothing fancy is going on, just write the contigs out for remapping
+                        self.write_target(target, target_folder, outf=remap_outf, finished=False)
+                        targets_written += 1
+                else:
+                    #nothing fancy is going on, just write the contigs out for remapping
+                    self.write_target(target, target_folder, outf=remap_outf, finished=False)
+                    targets_written += 1
+        if targets_written > 0:
+            # Build a new mapper and put it on the queue
+            from ARC.mapper import MapperRunner
+            params = deepcopy(self.params)
+            params['reference'] = os.path.join(self.params['working_dir'], 'I' + str(self.params['iteration']) + '_contigs.fasta')
+            if 'PE1' in self.params and 'PE2' in self.params:
+                params['PE1'] = self.params['PE1']
+                params['PE2'] = self.params['PE2']
+            if 'SE' in self.params:
+                params['SE'] = self.params['SE']
+
+            mapper = MapperRunner(params)
+            self.ref_q.put(mapper.to_dict())
+            logger.info("Added new mapper to queue: Sample %s iteration %s" % (self.params['sample'], self.params['iteration']))
+        else:
+            logger.info("MapperRunner not added to queue")
+
+    def write_target(self, target, target_folder, outf, finished=False, map_against_reads=False):
+        print "MAP AGAINST READS!!! 2"
+        if not map_against_reads:
+            if self.params['assembler'] == 'newbler':
+                contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "454AllContigs.fna")
+            elif self.params['assembler'] == 'spades':
+                contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "contigs.fasta")
+            i = 0
+            contig_inf = open(contigf, 'r')
+            for contig in SeqIO.parse(contig_inf, 'fasta'):
+                i += 1
+                contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
+                SeqIO.write(contig, outf, "fasta")
+            contig_inf.close()
+            logger.info("Finished with contigs for sample %s target %s" % (self.params['sample'], target))
+        # either map_against_reads was passed in, or
+        # no contigs were assembled and target isn't finished --> write reads as contigs
+        if map_against_reads or (i == 0 and not finished):
+            i = 0
+            logger.info("Sample %s target %s: Writing reads as contigs for mapping" % (self.params['sample'], target))
+            if 'PE1' in self.params and 'PE2' in self.params:
+                inf_PE1n = os.path.join(target_folder, "PE1." + self.params['format'])
+                inf_PE2n = os.path.join(target_folder, "PE2." + self.params['format'])
+                if os.path.exists(inf_PE1n) and os.path.exists(inf_PE2n):
+                    inf_PE1 = open(inf_PE1n, 'r')
+                    inf_PE2 = open(inf_PE2n, 'r')
+                    for r in SeqIO.parse(inf_PE1, self.params['format']):
+                        i += 1
+                        r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
+                        SeqIO.write(r, outf, "fasta")
+                    for r in SeqIO.parse(inf_PE2, self.params['format']):
+                        i += 1
+                        r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
+                        SeqIO.write(r, outf, "fasta")
+                    inf_PE1.close()
+                    inf_PE2.close()
+
+            if 'SE' in self.params:
+                inf_SEn = os.path.join(target_folder, "SE." + self.params['format'])
+                if os.path.exists(inf_SEn):
+                    inf_SE = open(inf_SEn, 'r')
+                for r in SeqIO.parse(inf_SE, self.params['format']):
+                    i += 1
+                    r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
+                    SeqIO.write(r, outf, "fasta")
+                inf_SE.close()
+
+        if finished:
+            #Also write reads:
+            if 'PE1' in self.params and 'PE2' in self.params:
+                inf_PE1n = os.path.join(target_folder, "PE1." + self.params['format'])
+                inf_PE2n = os.path.join(target_folder, "PE2." + self.params['format'])
+                if os.path.exists(inf_PE1n) and os.path.exists(inf_PE2n):
+                    inf_PE1 = open(inf_PE1n, 'r')
+                    inf_PE2 = open(inf_PE2n, 'r')
+
+                    outf_PE1 = open(os.path.join(self.params['finished_dir'], "PE1." + self.params['format']), 'a')
+                    outf_PE2 = open(os.path.join(self.params['finished_dir'], "PE2." + self.params['format']), 'a')
+
+                    for r in SeqIO.parse(inf_PE1, self.params['format']):
+                        r.description = self.params['sample'] + "_:_" + target
+                        SeqIO.write(r, outf_PE1, self.params['format'])
+                    for r in SeqIO.parse(inf_PE2, self.params['format']):
+                        r.description = self.params['sample'] + "_:_" + target
+                        SeqIO.write(r, outf_PE2, self.params['format'])
+                    outf_PE1.close()
+                    outf_PE2.close()
+
+            if 'SE' in self.params:
+                inf_SEn = os.path.join(target_folder, "SE." + self.params['format'])
+                if os.path.exists(inf_SEn):
+                    inf_SE = open(inf_SEn, 'r')
+                    outf_SE = open(os.path.join(self.params['finished_dir'], "SE." + self.params['format']), 'a')
+                    for r in SeqIO.parse(inf_SE, self.params['format']):
+                        r.description = self.params['sample'] + "_:_" + target
+                        SeqIO.write(r, outf_SE, self.params['format'])
+                    outf_SE.close()
+
+        os.system("rm -rf %s" % target_folder)
+
+    def old_start(self):
         """
         """
         logger.info("Starting Finisher for sample:%s iteration %s" % (self.params['sample'], self.params['iteration']))
+
         #Check whether we have reached max iterations:
         if self.params['iteration'] >= self.params['numcycles']:
             finished_dir = self.params['finished_dir']
@@ -110,3 +255,4 @@ class Finisher:
             mapper = MapperRunner(params)
             self.ref_q.put(mapper.to_dict())
             logger.info("Added new mapper to que: Sample %s iteration %s" % (self.params['sample'], self.params['iteration']))
+
