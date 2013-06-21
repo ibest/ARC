@@ -1,5 +1,4 @@
-# ARC 
-## (Assembly by Reduced Complexity)
+# ARC (Assembly by Reduced Complexity)
 
 TODO: Write description here
 ARC is a pipeline which facilitates iterative, reference based assemblies with the intent of reducing bias in the resulting contigs as compared to a purely mapping based approach. ARC 
