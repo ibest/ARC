@@ -72,7 +72,7 @@ class AssemblyRunner:
         #Building the args
         args = ['runAssembly']
         args += ['-nobig', '-force', '-cpu', '1']
-        if 'urt' in self.params and self.params['iteration'] < self.params['numcycles']:
+        if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
         args += ['-o', os.path.join(self.params['target_dir'], 'assembly')]
@@ -80,6 +80,7 @@ class AssemblyRunner:
             args += [self.params['assembly_PE1'], self.params['assembly_PE2']]
         if 'assembly_SE' in self.params:
             args += [self.params['assembly_SE']]
+        if self.params['verbose']:
             out = open(os.path.join(self.params['target_dir'], "assembly.log"), 'w')
         else:
             out = open(os.devnull, 'w')
@@ -119,7 +120,7 @@ class AssemblyRunner:
         if 'SE' in self.params:
             args += ['-s', self.params['assembly_SE']]
         args += ['-o', os.path.join(self.params['target_dir'], 'assembly')]
-        if 'verbose' in self.params:
+        if self.params['verbose']:
             out = open(os.path.join(self.params['target_dir'], "assembly.log"), 'w')
         else:
             out = open(os.devnull, 'w')

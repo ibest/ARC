@@ -80,7 +80,6 @@ class MapperRunner:
         try:
             working_dir = self.params['working_dir']
             idx_dir = os.path.realpath(os.path.join(working_dir, 'idx'))
-            print "working_dir:", working_dir, "idx_dir:", idx_dir
             os.mkdir(idx_dir)
         except Exception as exc:
             txt = "Error creating working directory for Sample: %s" % (self.params['sample']) + '\n\t' + str(exc)

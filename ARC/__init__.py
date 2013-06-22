@@ -165,10 +165,6 @@ def read_config():
     if 'numcycles' not in config:
         logger.info("numcycles not specified in ARC_config.txt, defaulting to 1")
         config['numcycles'] = 1
-    if 'verbose' not in config:
-        config['verbose'] = False
-    if config['verbose'] == 'True':
-        config['verbose'] = True
     if 'max_incorportaion' not in config:
         config['max_incorporation'] = 5
     else:
@@ -185,6 +181,18 @@ def read_config():
         raise exceptions.FatalError("Error, assembler not specificed in ARC_config.txt")
     elif config['assembler'] != 'spades' and config['assembler'] != 'newbler':
         raise exceptions.FatalError("Error assembler must be either 'spades' or 'newbler'")
+    if 'urt' in config and config['urt'].lower() == 'true':
+        config['urt'] = True
+    else:
+        config['urt'] = False
+    if 'verbose' in config and config['verbose'].lower() == 'true':
+        config['verbose'] = True
+    else:
+        config['verbose'] = False
+    if 'map_against_reads' in config and config['map_against_reads'].lower() == 'true':
+        config['map_against_reads'] = True
+    else:
+        config['map_against_reads'] = False
 
     #Check that the mapper exists:
     if config['mapper'] == 'blat':

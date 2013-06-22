@@ -65,7 +65,7 @@ class Finisher:
         #check whether the sample is globally finished
         if self.params['iteration'] >= self.params['numcycles']:
             sample_finished = True
-        if 'map_against_reads' in self.params and self.params['iteration'] == 1:
+        if self.params['map_against_reads'] and self.params['iteration'] == 1:
             logger.info("Sample %s: map_against_reads is set, writing all reads to contigs" % self.params['sample'])
             map_against_reads = True
 
@@ -89,7 +89,7 @@ class Finisher:
                         logger.info("Sample %s target %s identified as a repeat, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
                     elif cur_reads <= previous_reads:
-                        logger.info("-------------Sample %s target %s did not incorporate any more reads, no more mapping will be done" % (self.params['sample'], target))
+                        logger.info("Sample %s target %s did not incorporate any more reads, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
                     else:
                         #nothing fancy is going on, just write the contigs out for remapping
@@ -117,7 +117,6 @@ class Finisher:
             logger.info("MapperRunner not added to queue")
 
     def write_target(self, target, target_folder, outf, finished=False, map_against_reads=False):
-        print "MAP AGAINST READS!!! 2"
         if not map_against_reads:
             if self.params['assembler'] == 'newbler':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "454AllContigs.fna")
