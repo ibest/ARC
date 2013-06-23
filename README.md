@@ -9,11 +9,12 @@ ARC has shown promise in:
 * Assembly of mitochondrial genomes using a distantly related reference
 * Assembly of exome capture data
 * Assembly of chloroplast genomes
+* Transcriptomes (Not tested yet)
 
 ARC is designed to:
 
 * Break large, complex problems into smaller manageable chunks
-* Reduce memory footprint requirements (many assemblies should work on a desktop PC)
+* Reduce memory footprint requirements (many assemblies should work on a desktop/labtop PC)
 * Be highly scalable, running multiple jobs simultaneously in parallel
 * Be easy to use, portable and simple to configure
 
