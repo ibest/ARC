@@ -118,7 +118,7 @@ All configuration for ARC is stored in the ARC_config.txt file. Consult the exam
         * ID_:_Target1_:_seq1
         * ID_:_Target1_:_seq2
 * Setting map_against_reads:
-    * Only a small number of reads may map on the first iteration if your reference is very distantly related or coverage is low. In these situations, set map_against_reads 
+    * Only a small number of reads may map on the first iteration if your reference is very distantly related or coverage is low. In these situations, set map_against_reads=True in the ARC_config.txt file. This will use all of the mapped reads as the new set of targets instead of using contigs. Please note that this feature is experimental and sometimes leads to incorporation of repetitive elements. 
 
 ## Questions/Comments/Suggestions
 Please send questions, comments and suggestions to Sam Hunter (shunter {at} gmail {dot} com).
