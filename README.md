@@ -119,4 +119,7 @@ All configuration for ARC is stored in the ARC_config.txt file. Consult the exam
 * Setting map_against_reads:
     * Only a small number of reads may map on the first iteration if your reference is very distantly related or coverage is low. In these situations, set map_against_reads 
 
+## Questions/Comments/Suggestions
+Please send questions, comments and suggestions to Sam Hunter (shunter {at} gmail {dot} com).
+
 [![githalytics.com alpha](https://cruel-carlota.pagodabox.com/ccea24d058d3315f3610784acc00af67 "githalytics.com")](http://githalytics.com/ibest/ARC)
