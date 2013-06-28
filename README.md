@@ -39,6 +39,7 @@ A mapper and assembler must be installed in your path, the following are current
 * Assembler:
     * Roche/Newbler assembler - http://www.454.com/products/analysis-software/
     * Spades assembler - http://bioinf.spbau.ru/spades/
+* For more information on installing these programs see the Wiki: https://github.com/ibest/ARC/wiki/Details-on-installation
 
 ### Additional Requirements:
 * Python 2.7.X - http://www.python.org/getit/ (not tested, but should work with 3.3X)
