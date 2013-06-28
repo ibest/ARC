@@ -37,7 +37,12 @@ A mapper and assembler must be installed in your path, the following are current
         * Note that Blat currently only supports FASTA format as an input for the reads. We have contacted the author with a patch to add FASTQ support and hope that it will be incorporated in the release version soon. Until then we recommend using Bowtie 2 for aligning FASTQ reads.
 * Assembler:
     * Roche/Newbler assembler - http://www.454.com/products/analysis-software/
-    * Spades assembler -http://bioinf.spbau.ru/spades/
+    * Spades assembler - http://bioinf.spbau.ru/spades/
+
+### Additional Requirements:
+* Python 2.7.X - http://www.python.org/getit/ (not tested, but should work with 3.3X)
+* Python Modules:
+    * BioPython - http://biopython.org/wiki/Download (tested with v 1.6.0, but should work with any recent release)
 
 Any combination of the mappers and assemblers above should work well, however Newbler and Bowtie 2 are typically faster in our tests.
 
