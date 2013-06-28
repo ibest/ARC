@@ -101,6 +101,8 @@ class MapperRunner:
 
         #Do bowtie2 mapping:
         args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', self.params['nprocs'], '-x', base]
+        if self.params['format'] == 'fasta':
+            args += ['-f']
         if 'PE1' in self.params and 'PE2' in self.params:
             args += ['-1', self.params['PE1'], '-2', self.params['PE2']]
         if 'SE' in self.params:
