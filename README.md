@@ -1,6 +1,6 @@
 # ARC (Assembly by Reduced Complexity)
 
-ARC is a pipeline which facilitates iterative, reference based assemblies with the intent of reducing bias in the resulting contigs as compared to a purely mapping based approach. The software is designed to work in situations where a whole-genome assembly is not the objective, or fails to produce good results. ARC decomplexifies the traditionally difficult problem of assembly by subsetting the reads into small, manageable pieces which can then be assembled quickly and efficiently. Applications include any type of targeted sequencing approach in which a set of targets is available to map against.
+ARC is a pipeline which facilitates iterative, reference guided *de nono* assemblies with the intent of 1) reducing time in analysis and increasing accuracy of results by only considering those reads which should assemble together and 2) reduce reference bias as compared to mapping based approaches. The software is designed to work in situations where a whole-genome assembly is not the objective, but rather when the researcher wishes to assemble discreet 'targets' contained within next-generation shotgun sequence data. ARC decomplexifies the traditionally difficult problem of assembly by subsetting the reads into small, manageable pieces which can then be assembled quickly and efficiently. Applications include those in which the researcher wishes to *de novo* assemble specific content and a set of semi-similar reference targets is available to initialize the assembly process.
 
 ARC has shown promise in:
 
@@ -9,11 +9,12 @@ ARC has shown promise in:
 * Assembly of mitochondrial genomes using a distantly related reference
 * Assembly of exome capture data
 * Assembly of chloroplast genomes
+* Transcriptomes (Not tested yet)
 
 ARC is designed to:
 
 * Break large, complex problems into smaller manageable chunks
-* Reduce memory footprint requirements (many assemblies should work on a desktop PC)
+* Reduce memory footprint requirements (many assemblies should work on a desktop/labtop PC)
 * Be highly scalable, running multiple jobs simultaneously in parallel
 * Be easy to use, portable and simple to configure
 
