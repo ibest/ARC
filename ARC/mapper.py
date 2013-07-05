@@ -95,9 +95,16 @@ class MapperRunner:
         base = os.path.join(idx_dir, 'idx')
         logger.info("Calling bowtie2-build for sample: %s" % self.params['sample'])
         logger.info(" ".join(['bowtie2-build', '-f', self.params['reference'], base]))
-        ret = subprocess.call(['bowtie2-build', '-f', self.params['reference'], base], stdout=out, stderr=out)
+        try:
+            ret = subprocess.call(['bowtie2-build', '-f', self.params['reference'], base], stdout=out, stderr=out)
+        except Exception as exc:
+            txt = ("Sample %s: Unhandeled error running bowtie2-build" % self.params['sample']) + '\n\t' + str(exc)
+            out.close()  # make sure that out is closed before throwing exception
+            raise exceptions.FatalError(txt)
+
         if ret != 0:
-            raise exceptions.FatalError("Error creating bowtie2 index for Sample: %s" % self.params['sample'])
+            out.close()
+            raise exceptions.FatalError("Error creating bowtie2 index for Sample: %s, check log file." % self.params['sample'])
 
         #Do bowtie2 mapping:
         args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', self.params['nprocs'], '-x', base]
@@ -111,10 +118,16 @@ class MapperRunner:
         logger.info("Calling bowtie2 for sample: %s" % self.params['sample'])
         logger.info(" ".join(args))
 
-        ret = subprocess.call(args, stdout=out, stderr=out)
+        try:
+            ret = subprocess.call(args, stdout=out, stderr=out)
+            out.close()
+        except Exception as exc:
+            txt = ("Sample %s: Unhandeled error running bowtie2 mapping" % self.params['sample']) + '\n\t' + str(exc)
+            raise exceptions.FatalError(txt)
+
         out.close()
         if ret != 0:
-            raise exceptions.FatalError("Error running bowtie2 mapping for Sample: %s" % self.params['sample'])
+            raise exceptions.FatalError("Sample %s: Bowtie2 mapping returned an error, check log file." % self.params['sample'])
 
         #Extract the SAM to a dict
         self.params['mapping_dict'] = self.SAM_to_dict(os.path.join(working_dir, 'mapping.sam'))
@@ -164,10 +177,15 @@ class MapperRunner:
 
         logger.info("Calling blat for sample: %s" % self.params['sample'])
         logger.info(" ".join(args))
-        ret = subprocess.call(args, stdout=out, stderr=out)
-        out.close()
+        try:
+            ret = subprocess.call(args, stdout=out, stderr=out)
+        except Exception as exc:
+            txt = ("Sample %s: Unhandeled error running bowtie2 mapping, check log file." % self.params['sample']) + '\n\t' + str(exc)
+            raise exceptions.FatalError(txt)
+        finally:
+            out.close()
         if ret != 0:
-            raise exceptions.FatalError('Error running blat mapping for sample: %s \n\t %s' % (self.params['sample'], " ".join(args)))
+            raise exceptions.FatalError('Error running blat mapping for sample: %s , check log file. \n\t %s' % (self.params['sample'], " ".join(args)))
 
         #Extract the PSL to a dict
         self.params['mapping_dict'] = self.PSL_to_dict(os.path.join(working_dir, 'mapping.psl'))
@@ -344,5 +362,7 @@ class MapperRunner:
         if len(checker_params['targets']) > 0:
             checker = AssemblyChecker(checker_params)
             self.ref_q.put(checker.to_dict())
+            #Write out statistics for this iteration:
+            #TODO
         else:
             logger.info("No reads mapped for sample %s, no more work to do." % checker_params['sample'])

@@ -41,14 +41,26 @@ class AssemblyRunner:
     def start(self):
         if not('assembler' in self.params):
             raise exceptions.FatalException("assembler not defined in params")
-        if self.params['assembler'] == 'newbler':
-            logger.info("Running Newbler for sample: %s target: %s" % (self.params['sample'], self.params['target']))
+        if self.params['map_against_reads'] and self.params['iteration'] == 1:
+            #print "ASSEMBLER: %s %s MAP AGAINST READS" % (self.params['sample'], self.params['target'])
+            self.RunMapAgainstReads()
+        elif self.params['assembler'] == 'newbler':
+            #logger.info("Running Newbler for sample: %s target: %s" % (self.params['sample'], self.params['target']))
             self.RunNewbler()
         elif self.params['assembler'] == 'spades':
-            logger.info("Running Spades for sample: %s target: %s" % (self.params['sample'], self.params['target']))
+            #logger.info("Running Spades for sample: %s target: %s" % (self.params['sample'], self.params['target']))
             self.RunSpades()
         else:
             raise exceptions.FatalException("Assembler %s isn't recognized." % self.params['assembler'])
+
+    def RunMapAgainstReads(self):
+        """
+        A pseudo-assembler for cases where we don't actually assemble reads and instead just write them out as contigs.
+        """
+        #print "Creating finished file: " + os.path.join(self.params['target_dir'], 'finished')
+        outf = open(os.path.join(self.params['target_dir'], 'finished'), 'w')
+        outf.write("map_against_reads")
+        outf.close()
 
     def RunNewbler(self):
         #Code for running newbler
@@ -87,14 +99,23 @@ class AssemblyRunner:
 
         logger.info("Calling newbler for sample: %s target %s" % (self.params['sample'], self.params['target']))
         logger.info(" ".join(args))
-        ret = subprocess.call(args, stderr=out, stdout=out)
-        out.close()
+        try:
+            ret = subprocess.call(args, stdout=out, stderr=out)
+        except Exception as exc:
+            txt = ("Sample %s, Target %s: Unhandeled error running Newbler assembly" % (self.params['sample'], self.params['target']))
+            txt += '\n\t' + str(exc)
+            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
+            outf.write("assembly_failed")
+            outf.close()
+            logger.warn(txt)
+        finally:
+            out.close()
         if ret != 0:
-            raise exceptions.RerunnableError("Newbler assembly failed")
+            raise exceptions.RerunnableError("Newbler assembly failed.")
         else:
             #Run finished without error
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
-            outf.write("1")
+            outf.write("assembly_complete")
             outf.close()
 
     def RunSpades(self):
@@ -117,7 +138,7 @@ class AssemblyRunner:
             args.append('--only-assembler')  # spades errors on read correction if the input isn't fastq
         if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
             args += ['-1', self.params['assembly_PE1'], '-2', self.params['assembly_PE2']]
-        if 'SE' in self.params:
+        if 'assembly_SE' in self.params:
             args += ['-s', self.params['assembly_SE']]
         args += ['-o', os.path.join(self.params['target_dir'], 'assembly')]
         if self.params['verbose']:
@@ -127,13 +148,29 @@ class AssemblyRunner:
 
         logger.info("Calling spades for sample: %s target %s" % (self.params['sample'], self.params['target']))
         logger.info(" ".join(args))
-        ret = subprocess.call(args, stderr=out, stdout=out)
-        out.close()
+        try:
+            ret = subprocess.call(args, stderr=out, stdout=out)
+        except Exception as exc:
+            txt = ("Sample %s, Target %s: Unhandeled error running Spades assembly" % (self.params['sample'], self.params['target']))
+            txt += '\n\t' + str(exc)
+            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
+            outf.write("assembly_failed")
+            outf.close()
+            logger.warn(txt)
+            pass
+        finally:
+            out.close()
 
         if ret != 0:
-            raise exceptions.RerunnableError("Assembly failed")
+            #raise exceptions.RerunnableError("Spades assembly failed.")
+            txt = ("Sample %s, Target %s: Error running Spades assembly" % (self.params['sample'], self.params['target']))
+            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
+            outf.write("assembly_failed")
+            outf.close()
+            logger.warn(txt)
+
         else:
             #Run finished without error
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
-            outf.write("1")
+            outf.write("assembly_complete")
             outf.close()

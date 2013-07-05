@@ -52,7 +52,7 @@ def main():
 
 
 def setup(config):
-    """ 
+    """
         Set up working folder for each sample. Also assign a "safe_target" name to each target so that folder creation works.
         This is a little bit tricky because if the user has targets with the _:_ seperator in the name it messes up the splitter
         and SAM_to_dict. This code is therefore written with the assumption that the user has put the _:_ in the name purposely
@@ -68,6 +68,11 @@ def setup(config):
         if os.path.exists(working_dir):
             logger.info("WARNING working directory already exists for sample %s, deleting old results if any." % sample)
             os.system('rm -rf %s' % finished_dir)
+            os.system('rm -rf %s/t__*' % working_dir)
+            os.system('rm -rf %s/*.psl' % working_dir)
+            os.system('rm %s/I*_contigs.fasta' % working_dir)
+            if os.path.exists('%s/idx' % working_dir):
+                os.system('rm -rf %s/idx' % working_dir)
             os.mkdir(finished_dir)
         else:
             os.mkdir(working_dir)
@@ -82,10 +87,9 @@ def setup(config):
         if 'SE' in s:
             if not os.path.exists(os.path.join(working_dir, "SE.idx")):
                 SeqIO.index_db(os.path.join(working_dir, "SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
-        #Read through the reference, set up a set of safe names for the targets, :
+        #Read through the reference, set up a set of safe names for the targets:
         safe_targets = {}
         i = 0
-        #If 
         for t in SeqIO.parse(config['reference'], "fasta"):
             if len(t.name.split("_:_")) == 1:
                 safe_targets[t.name] = "t__%06d" % i
@@ -193,6 +197,10 @@ def read_config():
         config['map_against_reads'] = True
     else:
         config['map_against_reads'] = False
+    if 'minreads' not in config:
+        config['minreads'] = 50
+    else:
+        config['minreads'] = int(config['minreads'])
 
     #Check that the mapper exists:
     if config['mapper'] == 'blat':

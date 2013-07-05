@@ -25,14 +25,35 @@ class Finisher:
     """
     Iterate through all targets, pull out the assembled contigs, rename them to:
     Sample_:_Target_:_ContigN
-    If params['iteration'] >= params['numcycles'] create a ./finished_SampleN/contigs.fasta folder/file and write there
-    else: write to working_dir/IN_contigs.fasta
+    Output to: finished_SAMPLE/contigs.fasta
+                              /PE1.fast(a/q)
+                              /PE2.fast(a/q)
+                              /SE.fast(a/q)
+        OR
+               working_SAMPLE/IN_contigs.fasta
+
+    Finisher knows that an assembly is finished because it finds a "finished" file inside of the assemblies temporary folder.
+    The finished file will contain a status which can be one of the following:
+        assembly_complete : a normal assembly which completed without error
+        assembly_failed   : The assembly failed.
+                            Don't copy contigs.
+                            Copy reads as contigs with name: Sample_:_Target_:_ReadN
+                            (note that if no new reads are mapped, this should auto-terminate, so there should be no need
+                                for a minreads type of control, however this may generate spurious assemblies which will need
+                                to be accounted for in the cleanup module.)
+        map_against_reads : No assembly was attempted.
+                            Copy reads as contigs with name: Sample_:_Target_:_ReadN
+                            (the logic for when to do this will be handled by the AssemblyRunner)
 
     Output to finished contigs depends on:
     1) if params['iteration'] >= params['numcycles'] all output goes to the final contigs file
-        reads also go to final contigs file
+        In the case where no contigs were assembled (finished:assembly_failed or finished:map_against_reads) reads go to contigs file.
+        Reads have the naming convention: Sample_:_Target_:_ReadN
     2) if params['readcounts'][iteration] <= params['readcount'][iteration - 1] meaning no more reads were incorporated
         reads + contigs go to final output, remove from further mapping/assembly
+        In the case where no contigs were assembled (finished:assembly_failed or finished:map_against_reads) reads go to contigs file.
+        Reads have the naming convention: Sample_:_Target_:_ReadN
+
     3) if reads were mapped but no contigs were generated, write the reads out as new targets for the next mapping cycle
     4) if params['readcounts'][iteration] / params['readcount'][iteration - 1] > max_incorportaion:
         This is probably repetitive sequence,
@@ -57,38 +78,46 @@ class Finisher:
         logger.info("Starting finisher for sample: %s" % self.params['sample'])
         finished_dir = self.params['finished_dir']
         sample_finished = False
-        map_against_reads = False
         targets_written = 0
         #Set up output for both finished and additional mapping outputs
-        fin_outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'w')
+        fin_outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'a')
         remap_outf = open(os.path.join(self.params['working_dir'], 'I' + str(self.params['iteration']) + '_contigs.fasta'), 'w')
         #check whether the sample is globally finished
         if self.params['iteration'] >= self.params['numcycles']:
             sample_finished = True
-        if self.params['map_against_reads'] and self.params['iteration'] == 1:
-            logger.info("Sample %s: map_against_reads is set, writing all reads to contigs" % self.params['sample'])
-            map_against_reads = True
+        # if self.params['map_against_reads'] and self.params['iteration'] == 1:
+        #     logger.info("Sample %s: map_against_reads is set, writing all reads to contigs" % self.params['sample'])
+        #     map_against_reads = True
 
         #loop over the current set of targets_folders
         for target_folder in self.params['targets']:
+            target_map_against_reads = False
             safe_target = target_folder.split("/")[-1]  # get last element of path name
             target = self.params['safe_targets'][safe_target]
-            logger.info("Starting finisher for sample: %s, target %s" % (self.params['sample'], target))
+            logger.info("Starting finisher for sample: %s, target: %s" % (self.params['sample'], target))
+            finishedf = open(os.path.join(target_folder, 'finished'), 'r')
+            l = finishedf.readline().strip()
+            finishedf.close()
+            if l == 'assembly_failed' or l == 'map_against_reads':
+                target_map_against_reads = True
+            iteration = self.params['iteration']
+            cur_reads = self.params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
+            previous_reads = self.params['readcounts'][target][iteration - 1]
+
             if sample_finished:  # everything goes into the final file/folders.
                 self.write_target(target, target_folder, outf=fin_outf, finished=True)
-            elif map_against_reads:
+            elif target_map_against_reads and cur_reads > previous_reads and iteration < 3:
+                #Only map against reads if we have improvement in mapping and we haven't been mapping for multiple iterations
                 self.write_target(target, target_folder, outf=remap_outf, finished=False, map_against_reads=True)
                 targets_written += 1
             else:
-                iteration = self.params['iteration']
-                cur_reads = self.params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
-                previous_reads = self.params['readcounts'][target][iteration - 1]
                 #Check read counts and retire target, or send it back for re-mapping depending on mapped reads
                 if iteration > 1 and cur_reads != 0 and previous_reads != 0:
                     if cur_reads / previous_reads > self.params['max_incorporation']:
                         logger.info("Sample %s target %s identified as a repeat, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
-                    elif cur_reads <= previous_reads:
+                    elif cur_reads <= previous_reads and iteration > 2:
+                        #in the cases where map_against_reads is set, allow an extra iteration 
                         logger.info("Sample %s target %s did not incorporate any more reads, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
                     else:
@@ -123,18 +152,21 @@ class Finisher:
             elif self.params['assembler'] == 'spades':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "contigs.fasta")
             i = 0
-            contig_inf = open(contigf, 'r')
-            for contig in SeqIO.parse(contig_inf, 'fasta'):
-                i += 1
-                contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
-                SeqIO.write(contig, outf, "fasta")
-            contig_inf.close()
-            logger.info("Finished with contigs for sample %s target %s" % (self.params['sample'], target))
+            if os.path.exists(contigf):
+                contig_inf = open(contigf, 'r')
+                for contig in SeqIO.parse(contig_inf, 'fasta'):
+                    i += 1
+                    contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
+                    SeqIO.write(contig, outf, "fasta")
+                contig_inf.close()
+                logger.info("Finished with contigs for sample %s target %s" % (self.params['sample'], target))
         # either map_against_reads was passed in, or
-        # no contigs were assembled and target isn't finished --> write reads as contigs
-        if map_against_reads or (i == 0 and not finished):
+        # no contigs were assembled and target isn't finished, or
+        # assembler crashed and no contig file was created
+        # --> write reads as contigs
+        if map_against_reads or i == 0:
             i = 0
-            logger.info("Sample %s target %s: Writing reads as contigs for mapping" % (self.params['sample'], target))
+            logger.info("Sample %s target %s: Writing reads as contigs." % (self.params['sample'], target))
             if 'PE1' in self.params and 'PE2' in self.params:
                 inf_PE1n = os.path.join(target_folder, "PE1." + self.params['format'])
                 inf_PE2n = os.path.join(target_folder, "PE2." + self.params['format'])
@@ -143,11 +175,11 @@ class Finisher:
                     inf_PE2 = open(inf_PE2n, 'r')
                     for r in SeqIO.parse(inf_PE1, self.params['format']):
                         i += 1
-                        r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
+                        r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Read%04d" % i
                         SeqIO.write(r, outf, "fasta")
                     for r in SeqIO.parse(inf_PE2, self.params['format']):
                         i += 1
-                        r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
+                        r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Read%04d" % i
                         SeqIO.write(r, outf, "fasta")
                     inf_PE1.close()
                     inf_PE2.close()
@@ -158,7 +190,7 @@ class Finisher:
                     inf_SE = open(inf_SEn, 'r')
                 for r in SeqIO.parse(inf_SE, self.params['format']):
                     i += 1
-                    r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
+                    r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Read%04d" % i
                     SeqIO.write(r, outf, "fasta")
                 inf_SE.close()
 
@@ -192,65 +224,5 @@ class Finisher:
                         r.description = self.params['sample'] + "_:_" + target
                         SeqIO.write(r, outf_SE, self.params['format'])
                     outf_SE.close()
-
+        #Cleanup temporary assembly, and reads:
         os.system("rm -rf %s" % target_folder)
-
-    def old_start(self):
-        """
-        """
-        logger.info("Starting Finisher for sample:%s iteration %s" % (self.params['sample'], self.params['iteration']))
-
-        #Check whether we have reached max iterations:
-        if self.params['iteration'] >= self.params['numcycles']:
-            finished_dir = self.params['finished_dir']
-            outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'w')
-            sample_finished = True
-        else:
-            outfn = os.path.join(self.params['working_dir'], 'I' + str(self.params['iteration']) + '_contigs.fasta')
-            outf = open(outfn, 'w')
-            sample_finished = False
-        for target_folder in self.params['targets']:
-            safe_target = target_folder.split("/")[-1]
-            target = self.params['safe_targets'][safe_target]
-            if self.params['assembler'] == 'newbler':
-                contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "454AllContigs.fna")
-            elif self.params['assembler'] == 'spades':
-                contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "contigs.fasta")
-            i = 1
-            contig_inf = open(contigf, 'r')
-            for contig in SeqIO.parse(contig_inf, 'fasta'):
-                contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
-                SeqIO.write(contig, outf, "fasta")
-                i += 1
-            logger.info("Finished with contigs for sample %s target %s" % (self.params['sample'], target))
-            contig_inf.close()
-            os.system("rm -rf %s" % target_folder)
-        outf.close()
-        if sample_finished:
-            # do some kind of suprious contig filtering etc
-            logger.info("Assembly finished for sample: %s" % self.params['sample'])
-            #write mapping statistics:
-            rc_outf = open(os.path.join(finished_dir, 'readcounts.tsv'), 'w')
-            targets = self.params['readcounts'].keys()
-            rc_outf.write("iteration\t"+"\t".join(targets))
-
-            #for i in range(self.params['numcycles']):
-
-            #for t in targets:
-
-            return
-        if not sample_finished:
-            # Build a new mapper and put it on the queue
-            from ARC.mapper import MapperRunner
-            params = deepcopy(self.params)
-            params['reference'] = outfn
-            if 'PE1' in self.params and 'PE2' in self.params:
-                params['PE1'] = self.params['PE1']
-                params['PE2'] = self.params['PE2']
-            if 'SE' in self.params:
-                params['SE'] = self.params['SE']
-
-            mapper = MapperRunner(params)
-            self.ref_q.put(mapper.to_dict())
-            logger.info("Added new mapper to que: Sample %s iteration %s" % (self.params['sample'], self.params['iteration']))
-
