@@ -2,7 +2,8 @@
 2013-07-05:
 A number of bugs were found which caused ARC to perform incorrectly including:
  - output only a subset of contigs in the final assemblies
- - crash if no SE reads were mapped and Spades assembler was used (thanks for spotting this https://github.com/brantfaircloth )
+ - crash if no SE reads were mapped and Spades assembler was used (thanks for spotting this https://github.com/brantfaircloth)
+ 
 Please ensure that you have updated your release since June 28, 2013.
 
 # ARC (Assembly by Reduced Complexity)
