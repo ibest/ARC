@@ -29,10 +29,18 @@ class ProcessRunner(Process):
         self.proc = proc
 
     def run(self):
+        """
+        run() will initially sleep for .5 seconds, if an item is then found on the ref_q, it will process items off of the ref_q
+        every .01 second until the ref_q is empty, at which point it will get an Empty exception, and set the sleeptime to 5 seconds.
+        """
+        sleeptime = .5
         while True:
             try:
-                time.sleep(0.5)
+                print "Sleeping", sleeptime
+                time.sleep(sleeptime)
                 item = self.ref_q.get_nowait()
+                sleeptime = .01
+                print "got Item", item['runner'], "sleep time", sleeptime
                 # If we made it this far, we have found something on the
                 # queue so we need to make sure we let the spawner know we
                 # are not done prior to starting so spawner doesn't kill the
@@ -53,6 +61,8 @@ class ProcessRunner(Process):
             except Empty:
                 # Since we aren't allowing the process to exit until the spawner
                 # don't report the status if we are already done
+                sleeptime = 5
+                print "got Empty exception, sleeptime", sleeptime
                 if not self.is_done():
                     logger.debug("[%s] The queue is empty" % (self.name))
                     self.result_q.put({"status": 3, "process": self.name})

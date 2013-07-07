@@ -329,7 +329,9 @@ class MapperRunner:
                     SeqIO.write(read2, outf_PE2, self.params['format'])
                     PEs += 1
                 elif 'SE' in self.params and readID in idx_SE:
-                    SeqIO.write(idx_SE[readID], outf_SE, self.params['format'])
+                    read1 = idx_SE[readID]
+                    read1.id = read1.name = readID.replace(":", "_") + ":0:0:0:0#0/"
+                    SeqIO.write(read1, outf_SE, self.params['format'])
                     SEs += 1
             if 'PE1' in self.params and 'PE2' in self.params:
                 outf_PE1.close()

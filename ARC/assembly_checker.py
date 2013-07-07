@@ -43,7 +43,11 @@ class AssemblyChecker:
     def start(self):
         """ run through list of targets, check any that haven't finished already """
         sample = self.params['sample']
-        logger.info("AssemblyChecker started for sample: %s with %s targets" % (sample, len(self.params['targets'])))
+        completed = 0
+        for t in self.params['targets']:
+            if self.params['targets'][t]:
+                completed += 1
+        logger.info("AssemblyChecker started for sample: %s with %s of %s targets completed" % (sample, len(self.params['targets']), completed))
         for target_folder in self.params['targets']:
             if not self.params['targets'][target_folder]:
                 file = os.path.join(target_folder, 'finished')
@@ -56,7 +60,7 @@ class AssemblyChecker:
             #some jobs haven't completed yet
             checker_params = deepcopy(self.params)
             checker = AssemblyChecker(checker_params)
-            time.sleep(2)
+            time.sleep(5)  # sleep 4 seconds before putting a checker back on the ref_q
             self.ref_q.put(checker.to_dict())
             logger.info("Assemblies not complete for sample: %s" % sample)
         else:
