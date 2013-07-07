@@ -62,9 +62,9 @@ class AssemblyChecker:
             checker = AssemblyChecker(checker_params)
             time.sleep(5)  # sleep 4 seconds before putting a checker back on the ref_q
             self.ref_q.put(checker.to_dict())
-            logger.info("Assemblies not complete for sample: %s" % sample)
+            logger.info("Assemblies not complete for sample: %s with %s of %s targets completed" % (sample, len(self.params['targets']), completed))
         else:
             params = deepcopy(self.params)
             finisher = Finisher(params)
             self.ref_q.put(finisher.to_dict())
-            logger.info("Assemblies complete for sample: %s" % sample)
+            logger.info("Assemblies complete for sample: %s with %s of %s targets completed" % (sample, len(self.params['targets']), completed))
