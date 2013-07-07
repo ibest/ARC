@@ -114,10 +114,10 @@ class Finisher:
                 #Check read counts and retire target, or send it back for re-mapping depending on mapped reads
                 if iteration > 1 and cur_reads != 0 and previous_reads != 0:
                     if cur_reads / previous_reads > self.params['max_incorporation']:
-                        logger.info("Sample %s target %s identified as a repeat, no more mapping will be done" % (self.params['sample'], target))
+                        logger.info("Sample %s target %s hit a repeatitive region, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
-                    elif cur_reads <= previous_reads and iteration > 2:
-                        #in the cases where map_against_reads is set, allow an extra iteration 
+                    elif cur_reads <= previous_reads and iteration > 3:
+                        #Give the mapper a couple extra iterations in case the first mapping got a lot of reads which didn't assemble
                         logger.info("Sample %s target %s did not incorporate any more reads, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
                     else:

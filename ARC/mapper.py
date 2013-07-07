@@ -107,8 +107,11 @@ class MapperRunner:
             raise exceptions.FatalError("Error creating bowtie2 index for Sample: %s, check log file." % self.params['sample'])
 
         #Do bowtie2 mapping:
+        n_bowtieprocs = int(round(max(float(self.params['nprocs'])/len(self.params['Samples']), 1)))
+        #print "Number of bowtie2 procs:", n_bowtieprocs
         #args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', self.params['nprocs'], '-x', base]
-        args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', '1', '-x', base]
+        #args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', '1', '-x', base]
+        args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
         if self.params['format'] == 'fasta':
             args += ['-f']
         if 'PE1' in self.params and 'PE2' in self.params:
