@@ -5,6 +5,10 @@
 ## assembler: the assembler to use (newbler/spades)
 ## nprocs: number of cores to use
 ## format: fastq or fastq, all must be the same
+## verbose: control mapping/assembly log generation (True/False)
+## urt: For Newbler, enable use read tips mode (True/False)
+## map_against_reads: On iteration 1, skip assembly, map against mapped reads (True/False)
+## assemblytimeout: kill assemblies and discard targets if they take longer than N minutes
 ##
 ## Columns:
 ## Sample_ID:Sample_ID
@@ -14,12 +18,13 @@
 # reference=./targets.fa
 # numcycles=100
 # mapper=bowtie2
-# assembler=newbler
+# assembler=spades
 # nprocs=7
 # format=fasta
 # verbose=True
 # urt=True
 # map_against_reads=False
+# assemblytimeout=.2
 Sample_ID	FileName	FileType
 Sample1	./reads/Sample1_R1.fasta	PE1
 Sample1	./reads/Sample1_R2.fasta	PE2

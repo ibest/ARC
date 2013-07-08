@@ -16,6 +16,7 @@ import sys
 from Queue import Empty
 from multiprocessing import Process
 import time
+import os
 from ARC import logger
 from ARC import exceptions
 

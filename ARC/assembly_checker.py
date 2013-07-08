@@ -44,7 +44,7 @@ class AssemblyChecker:
         """ run through list of targets, check any that haven't finished already """
         sample = self.params['sample']
         completed = sum(self.params['targets'].values())
-        logger.info("AssemblyChecker started for sample: %s with %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
+        logger.info("Sample: %s AssemblyChecker started with %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
         for target_folder in self.params['targets']:
             if not self.params['targets'][target_folder]:
                 file = os.path.join(target_folder, 'finished')
@@ -60,9 +60,9 @@ class AssemblyChecker:
             checker = AssemblyChecker(checker_params)
             time.sleep(5)  # sleep 4 seconds before putting a checker back on the ref_q
             self.ref_q.put(checker.to_dict())
-            logger.info("Assemblies not complete for sample: %s with %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
+            logger.info("Sample: %s Assemblies not finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
         else:
             params = deepcopy(self.params)
             finisher = Finisher(params)
             self.ref_q.put(finisher.to_dict())
-            logger.info("Assemblies complete for sample: %s with %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
+            logger.info("Sample: %s Assemblies finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))

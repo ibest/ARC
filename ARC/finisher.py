@@ -75,7 +75,7 @@ class Finisher:
                 'params': self.params}
 
     def start(self):
-        logger.info("Starting finisher for sample: %s" % self.params['sample'])
+        logger.info("Sample: %s Starting finisher" % self.params['sample'])
         finished_dir = self.params['finished_dir']
         sample_finished = False
         targets_written = 0
@@ -94,7 +94,7 @@ class Finisher:
             target_map_against_reads = False
             safe_target = target_folder.split("/")[-1]  # get last element of path name
             target = self.params['safe_targets'][safe_target]
-            logger.info("Starting finisher for sample: %s, target: %s" % (self.params['sample'], target))
+            logger.info("Sample: %s target: %s finishing target.." % (self.params['sample'], target))
             finishedf = open(os.path.join(target_folder, 'finished'), 'r')
             l = finishedf.readline().strip()
             finishedf.close()
@@ -104,7 +104,10 @@ class Finisher:
             cur_reads = self.params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
             previous_reads = self.params['readcounts'][target][iteration - 1]
 
-            if sample_finished:  # everything goes into the final file/folders.
+            if l == 'assembly_killed':
+                #only write out the reads, assembly won't have contigs
+                self.write_target(target, target_folder, outf=fin_outf, finished=False, map_against_reads=False, killed=True)
+            elif sample_finished:  # everything goes into the final file/folders.
                 self.write_target(target, target_folder, outf=fin_outf, finished=True)
             elif target_map_against_reads and cur_reads > previous_reads and iteration < 3:
                 #Only map against reads if we have improvement in mapping and we haven't been mapping for multiple iterations
@@ -141,12 +144,16 @@ class Finisher:
 
             mapper = MapperRunner(params)
             self.ref_q.put(mapper.to_dict())
-            logger.info("Added new mapper to queue: Sample %s iteration %s" % (self.params['sample'], self.params['iteration']))
+            logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
         else:
-            logger.info("MapperRunner not added to queue")
+            logger.info("Sample: %s MapperRunner not added to queue. Work finished." % self.params['sample'])
 
-    def write_target(self, target, target_folder, outf, finished=False, map_against_reads=False):
-        if not map_against_reads:
+    def write_target(self, target, target_folder, outf, finished=False, map_against_reads=False, killed=False):
+        # either map_against_reads was passed in, or
+        # no contigs were assembled and target isn't finished, or
+        # assembler crashed and no contig file was created
+        # --> write reads as contigs
+        if map_against_reads is False and killed is False:
             if self.params['assembler'] == 'newbler':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "454AllContigs.fna")
             elif self.params['assembler'] == 'spades':
@@ -159,12 +166,11 @@ class Finisher:
                     contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
                     SeqIO.write(contig, outf, "fasta")
                 contig_inf.close()
-                logger.info("Finished with contigs for sample %s target %s" % (self.params['sample'], target))
-        # either map_against_reads was passed in, or
-        # no contigs were assembled and target isn't finished, or
-        # assembler crashed and no contig file was created
-        # --> write reads as contigs
-        if map_against_reads or i == 0:
+                logger.info("Sample: %s target: %s Finished writing %s contigs " % (self.params['sample'], target, i))
+            if i == 0 and finished is False:
+                map_against_reads = True
+
+        if map_against_reads:
             i = 0
             logger.info("Sample %s target %s: Writing reads as contigs." % (self.params['sample'], target))
             if 'PE1' in self.params and 'PE2' in self.params:
@@ -194,8 +200,8 @@ class Finisher:
                     SeqIO.write(r, outf, "fasta")
                 inf_SE.close()
 
-        if finished:
-            #Also write reads:
+        if finished or killed:
+            #Write reads:
             if 'PE1' in self.params and 'PE2' in self.params:
                 inf_PE1n = os.path.join(target_folder, "PE1." + self.params['format'])
                 inf_PE2n = os.path.join(target_folder, "PE2." + self.params['format'])

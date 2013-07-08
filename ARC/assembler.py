@@ -17,6 +17,7 @@
 #import time
 import subprocess
 import os
+import time
 from ARC import logger
 from ARC import exceptions
 
@@ -81,8 +82,11 @@ class AssemblyRunner:
         if 'assembly_SE' in self.params and not(os.path.exists(self.params['assembly_SE'])):
             raise exceptions.FatalException('Missing SE file in RunNewbler.')
 
+        sample = self.params['sample']
+        target = self.params['target']
+
         #Building the args
-        args = ['runAssembly']
+        args = ['/bio/local/bin/runAssembly']
         args += ['-nobig', '-force', '-cpu', '1']
         if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
@@ -97,21 +101,44 @@ class AssemblyRunner:
         else:
             out = open(os.devnull, 'w')
 
-        logger.info("Calling newbler for sample: %s target %s" % (self.params['sample'], self.params['target']))
+        logger.info("Calling newbler for sample: %s target %s" % (sample, target))
         logger.info(" ".join(args))
+        killed = False
+        failed = False
         try:
-            ret = subprocess.call(args, stdout=out, stderr=out)
+            #ret = subprocess.call(args, stdout=out, stderr=out)
+            start = time.time()
+            ret = subprocess.Popen(args, stdout=out, stderr=out)
+            while ret.poll() is None:
+                time.sleep(.1)
+                if time.time() - start > self.params['assemblytimeout']:
+                    ret.kill()
+                    killed = True
+                    logger.warn("Sample: %s target: %s Assembly killed after %s seconds" % (sample, target, time.time() - start))
+                    break
         except Exception as exc:
-            txt = ("Sample %s, Target %s: Unhandeled error running Newbler assembly" % (self.params['sample'], self.params['target']))
+            txt = ("Sample: %s, Target: %s: Unhandeled error running Newbler assembly" % (self.params['sample'], self.params['target']))
             txt += '\n\t' + str(exc)
+            logger.warn(txt)
+            failed = True
+            pass
+        finally:
+            out.close()
+
+        #if ret != 0:
+            #raise exceptions.RerunnableError("Newbler assembly failed.")
+        if not killed and ret.poll() != 0:
+            #raise exceptions.RerunnableError("Newbler assembly failed.")
+            failed = True
+
+        if failed:
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
             outf.write("assembly_failed")
             outf.close()
-            logger.warn(txt)
-        finally:
-            out.close()
-        if ret != 0:
-            raise exceptions.RerunnableError("Newbler assembly failed.")
+        if killed:
+            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
+            outf.write("assembly_killed")
+            outf.close()
         else:
             #Run finished without error
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
@@ -132,6 +159,9 @@ class AssemblyRunner:
         if 'assembly_SE' in self.params and not(os.path.exists(self.params['assembly_SE'])):
             raise exceptions.FatalException('Missing SE file in RunSpades.')
 
+        sample = self.params['sample']
+        target = self.params['target']
+
         #Build args for assembler call
         args = ['spades.py', '-t', '1']
         if self.params['format'] == 'fasta':
@@ -146,29 +176,40 @@ class AssemblyRunner:
         else:
             out = open(os.devnull, 'w')
 
-        logger.info("Calling spades for sample: %s target %s" % (self.params['sample'], self.params['target']))
+        logger.info("Sample: %s target: %s Running spades assembler." % (sample, target))
         logger.info(" ".join(args))
+        killed = False
+        failed = False
         try:
-            ret = subprocess.call(args, stderr=out, stdout=out)
+            start = time.time()
+            #ret = subprocess.call(args, stderr=out, stdout=out)
+            ret = subprocess.Popen(args, stdout=out, stderr=out)
+            while ret.poll() is None:
+                time.sleep(.1)
+                if time.time() - start > self.params['assemblytimeout']:
+                    ret.kill()
+                    killed = True
+                    logger.warn("Sample: %s target: %s Assembly killed after %s seconds." % (sample, target, time.time() - start))
+                    break
         except Exception as exc:
-            txt = ("Sample %s, Target %s: Unhandeled error running Spades assembly" % (self.params['sample'], self.params['target']))
+            txt = ("Sample: %s, Target: %s: Unhandeled error running Spades assembly" % (sample, target))
             txt += '\n\t' + str(exc)
-            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
-            outf.write("assembly_failed")
-            outf.close()
             logger.warn(txt)
+            failed = True
             pass
         finally:
             out.close()
 
-        if ret != 0:
-            #raise exceptions.RerunnableError("Spades assembly failed.")
-            txt = ("Sample %s, Target %s: Error running Spades assembly" % (self.params['sample'], self.params['target']))
+        if not killed and ret.poll() != 0:
+            failed = True
+        if failed:
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
             outf.write("assembly_failed")
             outf.close()
-            logger.warn(txt)
-
+        if killed:
+            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
+            outf.write("assembly_killed")
+            outf.close()
         else:
             #Run finished without error
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')

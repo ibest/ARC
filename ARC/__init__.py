@@ -197,10 +197,15 @@ def read_config():
         config['map_against_reads'] = True
     else:
         config['map_against_reads'] = False
-    if 'minreads' not in config:
-        config['minreads'] = 50
+    # if 'minreads' not in config:
+    #     config['minreads'] = 50
+    # else:
+    #     config['minreads'] = int(config['minreads'])
+    if 'assemblytimeout' not in config:
+        config['assemblytimeout'] = 10 * 60  # in seconds
+        logger.warn("Defaulting to 10 minute timeout for assemblies")
     else:
-        config['minreads'] = int(config['minreads'])
+        config['assemblytimeout'] = float(config['assemblytimeout']) * 60
 
     #Check that the mapper exists:
     if config['mapper'] == 'blat':

@@ -42,19 +42,19 @@ class MapperRunner:
         self.ref_q = ref_q
 
     def to_dict(self):
-        return {'runner': self, 'message': 'Starting mapper for sample %s' % self.params['sample'], 'params': self.params}
+        return {'runner': self, 'message': 'Sample: %s Starting mapper.' % self.params['sample'], 'params': self.params}
 
     def start(self):
         if not('mapper' in self.params):
             raise exceptions.FatalError("mapper not defined in params")
         if self.params['mapper'] == 'bowtie2':
-            logger.info("Running bowtie2 for %s" % self.params['sample'])
+            logger.info("Sample: %s Running bowtie2." % self.params['sample'])
             self.run_bowtie2()
         if self.params['mapper'] == 'blat':
-            logger.info("Running blat for %s" % self.params['sample'])
+            logger.info("Sample: %s Running blat." % self.params['sample'])
             self.run_blat()
         #Mapping is done, run splitreads:
-        logger.info("Running splitreads for %s" % self.params['sample'])
+        logger.info("Sample: %s Running splitreads." % self.params['sample'])
         self.splitreads()
 
     def run_bowtie2(self):
@@ -82,7 +82,7 @@ class MapperRunner:
             idx_dir = os.path.realpath(os.path.join(working_dir, 'idx'))
             os.mkdir(idx_dir)
         except Exception as exc:
-            txt = "Error creating working directory for Sample: %s" % (self.params['sample']) + '\n\t' + str(exc)
+            txt = "Sample: %s Error creating working directory." % (self.params['sample']) + '\n\t' + str(exc)
             raise exceptions.FatalError(txt)
 
         #Check whether to log to temporary file, or default to os.devnull
@@ -93,7 +93,7 @@ class MapperRunner:
 
         #Build index
         base = os.path.join(idx_dir, 'idx')
-        logger.info("Calling bowtie2-build for sample: %s" % self.params['sample'])
+        logger.info("Sample: %s Calling bowtie2-build." % self.params['sample'])
         logger.info(" ".join(['bowtie2-build', '-f', self.params['reference'], base]))
         try:
             ret = subprocess.call(['bowtie2-build', '-f', self.params['reference'], base], stdout=out, stderr=out)
@@ -104,7 +104,7 @@ class MapperRunner:
 
         if ret != 0:
             out.close()
-            raise exceptions.FatalError("Error creating bowtie2 index for Sample: %s, check log file." % self.params['sample'])
+            raise exceptions.FatalError("Sample: %s Error creating bowtie2 index, check log file." % self.params['sample'])
 
         #Do bowtie2 mapping:
         n_bowtieprocs = int(round(max(float(self.params['nprocs'])/len(self.params['Samples']), 1)))
@@ -119,7 +119,7 @@ class MapperRunner:
         if 'SE' in self.params:
             args += ['-U', self.params['SE']]
         args += ['-S', os.path.join(working_dir, 'mapping.sam')]
-        logger.info("Calling bowtie2 for sample: %s" % self.params['sample'])
+        logger.info("Sample: %s Calling bowtie2 mapper" % self.params['sample'])
         logger.info(" ".join(args))
 
         try:
@@ -179,7 +179,7 @@ class MapperRunner:
             args.append('-fastMap')
         args.append(os.path.join(working_dir, 'mapping.psl'))
 
-        logger.info("Calling blat for sample: %s" % self.params['sample'])
+        logger.info("Sample: %s Calling blat mapper" % self.params['sample'])
         logger.info(" ".join(args))
         try:
             ret = subprocess.call(args, stdout=out, stderr=out)
@@ -189,7 +189,7 @@ class MapperRunner:
         finally:
             out.close()
         if ret != 0:
-            raise exceptions.FatalError('Error running blat mapping for sample: %s , check log file. \n\t %s' % (self.params['sample'], " ".join(args)))
+            raise exceptions.FatalError('Sample: %s Error running blat mapping, check log file. \n\t %s' % (self.params['sample'], " ".join(args)))
 
         #Extract the PSL to a dict
         self.params['mapping_dict'] = self.PSL_to_dict(os.path.join(working_dir, 'mapping.psl'))
@@ -353,7 +353,7 @@ class MapperRunner:
 
             #All reads have been written at this point, add an assembly to the queue:
             ar = AssemblyRunner(assembly_params)
-            logger.info("Split %s reads for sample %s target %s in %s seconds" % (len(reads), self.params['sample'], target, time.time() - startT))
+            logger.info("Sample: %s target: %s Split %s reads in %s seconds" % (self.params['sample'], target, len(reads), time.time() - startT))
             #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
             if PEs + SEs > 0:
                 checker_params['targets'][target_dir] = False
@@ -361,7 +361,7 @@ class MapperRunner:
 
         #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
         logger.info("------------------------------------")
-        logger.info("Sample %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
+        logger.info("Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
         logger.info("------------------------------------")
 
         del checker_params['mapping_dict']
@@ -371,4 +371,4 @@ class MapperRunner:
             #Write out statistics for this iteration:
             #TODO
         else:
-            logger.info("No reads mapped for sample %s, no more work to do." % checker_params['sample'])
+            logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
