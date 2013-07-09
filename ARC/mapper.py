@@ -299,6 +299,11 @@ class MapperRunner:
         checker_params = deepcopy(self.params)
         checker_params['targets'] = {}
         iteration = self.params['iteration']
+        if 'PE1' in self.params and 'PE2' in self.params:
+            idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=lambda x: x.split("/")[0])
+            idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=lambda x: x.split("/")[0])
+        if 'SE' in self.params:
+            idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=lambda x: x.split("/")[0])
         if 'readcounts' not in checker_params:
             checker_params['readcounts'] = {}
         for target in self.params['mapping_dict']:
@@ -317,11 +322,11 @@ class MapperRunner:
             if 'PE1' in self.params and 'PE2' in self.params:
                 outf_PE1 = open(os.path.join(target_dir, "PE1." + self.params['format']), 'w')
                 outf_PE2 = open(os.path.join(target_dir, "PE2." + self.params['format']), 'w')
-                idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=lambda x: x.split("/")[0])
-                idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=lambda x: x.split("/")[0])
+                #idx_PE1 = self.params['indexes'][sample]['PE1']
+                #idx_PE2 = self.params['indexes'][sample]['PE2']
             if 'SE' in self.params:
                 outf_SE = open(os.path.join(target_dir, "SE." + self.params['format']), 'w')
-                idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=lambda x: x.split("/")[0])
+                #idx_SE = self.params['indexes'][sample]['SE']
             for readID in reads:
                 if 'PE1' in self.params and readID in idx_PE1:
                     read1 = idx_PE1[readID]
@@ -359,11 +364,16 @@ class MapperRunner:
                 checker_params['targets'][target_dir] = False
                 self.ref_q.put(ar.to_dict())
 
-        #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
         logger.info("------------------------------------")
         logger.info("Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
         logger.info("------------------------------------")
+        if 'PE1' in self.params and 'PE2' in self.params:
+            idx_PE1.close()
+            idx_PE2.close()
+        if 'SE' in self.params:
+            idx_SE.close()
 
+        #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
         del checker_params['mapping_dict']
         if len(checker_params['targets']) > 0:
             checker = AssemblyChecker(checker_params)

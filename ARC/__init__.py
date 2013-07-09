@@ -87,6 +87,7 @@ def setup(config):
         if 'SE' in s:
             if not os.path.exists(os.path.join(working_dir, "SE.idx")):
                 SeqIO.index_db(os.path.join(working_dir, "SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
+
         #Read through the reference, set up a set of safe names for the targets:
         safe_targets = {}
         i = 0
