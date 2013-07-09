@@ -142,6 +142,7 @@ class AssemblyRunner:
             outf.close()
         else:
             #Run finished without error
+            logger.info("Sample: %s target: %s Assembly finished in %s seconds" % (sample, target, time.time() - start))
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
             outf.write("assembly_complete")
             outf.close()
@@ -181,8 +182,8 @@ class AssemblyRunner:
         logger.info(" ".join(args))
         killed = False
         failed = False
+        start = time.time()
         try:
-            start = time.time()
             #ret = subprocess.call(args, stderr=out, stdout=out)
             ret = subprocess.Popen(args, stdout=out, stderr=out)
             while ret.poll() is None:
@@ -213,6 +214,7 @@ class AssemblyRunner:
             outf.close()
         else:
             #Run finished without error
+            logger.info("Sample: %s target: %s Assembly finished in %s seconds" % (sample, target, time.time() - start))
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
             outf.write("assembly_complete")
             outf.close()
