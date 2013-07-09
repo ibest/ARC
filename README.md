@@ -1,7 +1,7 @@
 ## News
 2013-07-09:
-New features added and some modifications to output:
 
+New features added and some modifications to output:
     - You can now set an assemblytimeout in ARC_config.txt. ARC will monitor assemblies, and if they run longer than assemblytimeout minutes they will be killed. Preliminary testing has shown that this works great for large projects where some of the targets may contain repeats or flanking regions with repeats which can cause the assembler to founder and block other assemblies from running.
         - assemblytimeout defaults to 10 minutes and accepts fractional values if you would like to limit assemblies to less than a minute.
         - No contigs are output for assemblies that are killed for running too long, however all of the reads which mapped to that contig are written into the finished_* reads files for further analysis if necessary. Additionally, previously generated contigs (if any) will remain in the working*/I*_contigs.fasta intermediate contig files.
