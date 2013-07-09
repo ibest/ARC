@@ -7,6 +7,7 @@ New features added and some modifications to output:
   * No contigs are output for assemblies that are killed for running too long, however all of the reads which mapped to that contig are written into the finished_* reads files for further analysis if necessary. Additionally, previously generated contigs (if any) will remain in the working*/I*_contigs.fasta intermediate contig files.
   *  Previously assemblies which didn't result in any contigs had their reads written to the finished* contigs.fasta. We found that this cluttered up the contigs.fasta file and this behavior has been changed so that reads are now written to the PE1, PE2 and SE fastq/fasta files and no contigs are written.
  * Output has been mostly standardized so that all output starts with "Sample: SampleID target: TargetID" which makes it easy to grep the assembly log and get progress information for a single sample. It is recommended that you run ARC with stdout pipped to a log file to facilitate this: ARC > arc.log
+ * Added an Extensions folder to hold ARC extensions, currently there is only one, check_status.R. Please contact us if you are interested in contributing an extension.
 
 2013-07-05:
 
