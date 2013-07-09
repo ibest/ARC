@@ -86,7 +86,8 @@ class AssemblyRunner:
         target = self.params['target']
 
         #Building the args
-        args = ['/bio/local/bin/runAssembly']
+        #args = ['/bio/local/bin/runAssembly']
+        args = ['runAssembly']
         args += ['-nobig', '-force', '-cpu', '1']
         if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
