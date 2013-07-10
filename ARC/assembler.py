@@ -16,8 +16,10 @@
 
 #import time
 import subprocess
+import errno
 import os
 import time
+import signal
 from ARC import logger
 from ARC import exceptions
 
@@ -62,6 +64,25 @@ class AssemblyRunner:
         outf = open(os.path.join(self.params['target_dir'], 'finished'), 'w')
         outf.write("map_against_reads")
         outf.close()
+
+    def kill_process_children(self, pid):
+        """
+            Base on code from:
+            http://stackoverflow.com/questions/1191374/subprocess-with-timeout
+            http://stackoverflow.com/questions/6553423/multiple-subprocesses-with-timeouts
+        """
+        p = subprocess.Popen('ps --no-headers -o pid --ppid %d' % pid, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        pids = [pid]
+        pids.extend([int(q) for q in stdout.split()])
+        print "Process had", len(pids), "children."
+        try:
+            for pid in pids:
+                os.kill(pid, signal.SIGKILL)
+                print "--->KILLED", pid
+        except OSError:
+            print "--->OSERROR"
+            pass
 
     def RunNewbler(self):
         #Code for running newbler
@@ -110,12 +131,25 @@ class AssemblyRunner:
             #ret = subprocess.call(args, stdout=out, stderr=out)
             start = time.time()
             ret = subprocess.Popen(args, stdout=out, stderr=out)
+            print "Assembly called"
+            pid = ret.pid  # http://stackoverflow.com/questions/1191374/subprocess-with-timeout
+            print "pid is", pid
+            i = 0
             while ret.poll() is None:
-                time.sleep(.1)
+                print "Assembly wait:", i
+                i += 1
+                time.sleep(.2)
                 if time.time() - start > self.params['assemblytimeout']:
-                    ret.kill()
+                    logger.warn("Sample: %s target: %s Killing assembly after %s seconds" % (sample, target, time.time() - start))
+                    #print "os.waitpid..."
+                    #vals = os.waitpid(pid, 0)
+                    #print "os.waitpid returned", vals
+                    print "Calling kill"
+                    ret.kill()  # Newbler doesn't seem to actually respond to kill all that reliably
+                    time.sleep(2)
+                    print "Calling kill_process_children"
+                    self.kill_process_children(pid)
                     killed = True
-                    logger.warn("Sample: %s target: %s Assembly killed after %s seconds" % (sample, target, time.time() - start))
                     break
         except Exception as exc:
             txt = ("Sample: %s, Target: %s: Unhandeled error running Newbler assembly" % (self.params['sample'], self.params['target']))

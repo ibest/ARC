@@ -18,13 +18,13 @@
 # reference=./targets.fa
 # numcycles=100
 # mapper=bowtie2
-# assembler=spades
+# assembler=newbler
 # nprocs=7
 # format=fasta
 # verbose=True
 # urt=True
 # map_against_reads=False
-# assemblytimeout=.2
+# assemblytimeout=.015
 Sample_ID	FileName	FileType
 Sample1	./reads/Sample1_R1.fasta	PE1
 Sample1	./reads/Sample1_R2.fasta	PE2
