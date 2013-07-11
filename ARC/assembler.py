@@ -105,52 +105,62 @@ class AssemblyRunner:
 
         sample = self.params['sample']
         target = self.params['target']
+        killed = False
+        failed = False
 
-        #Building the args
-        #args = ['/bio/local/bin/runAssembly']
-        args = ['runAssembly']
-        args += ['-nobig', '-force', '-cpu', '1']
-        if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
-            #only run with the -urt switch when it isn't the final assembly
-            args += ['-urt']
-        args += ['-o', os.path.join(self.params['target_dir'], 'assembly')]
-        if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
-            args += [self.params['assembly_PE1'], self.params['assembly_PE2']]
-        if 'assembly_SE' in self.params:
-            args += [self.params['assembly_SE']]
+        #determine whether to pipe output to a file or /dev/null
         if self.params['verbose']:
             out = open(os.path.join(self.params['target_dir'], "assembly.log"), 'w')
         else:
             out = open(os.devnull, 'w')
 
-        logger.info("Calling newbler for sample: %s target %s" % (sample, target))
+        #Build args for newAssembly:
+        args = ['newAssembly', '-force', os.path.join(self.params['target_dir'], 'assembly')]
+        logger.info("Calling newAssembly for sample: %s target %s" % (sample, target))
         logger.info(" ".join(args))
-        killed = False
-        failed = False
+        ret = subprocess.call(args, stdout=out, stderr=out)
+        #Build args for addRun:
+        if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
+            args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
+            args += [self.params['assembly_PE1']]
+            logger.info("Calling addRun for sample: %s target %s" % (sample, target))
+            logger.info(" ".join(args))
+            ret = subprocess.call(args, stdout=out, stderr=out)
+
+            args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
+            args += [self.params['assembly_PE2']]
+            logger.info("Calling addRun for sample: %s target %s" % (sample, target))
+            logger.info(" ".join(args))
+            ret = subprocess.call(args, stdout=out, stderr=out)
+        if 'assembly_SE' in self.params:
+            args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
+            args += [self.params['assembly_SE']]
+            logger.info("Calling addRun for sample: %s target %s" % (sample, target))
+            logger.info(" ".join(args))
+            ret = subprocess.call(args, stdout=out, stderr=out)
+
+        #Build args for runProject
+        args = ['runProject']
+        args += ['-nobig', '-cpu', '1']
+        if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
+            #only run with the -urt switch when it isn't the final assembly
+            args += ['-urt']
+        args += [os.path.join(self.params['target_dir'], 'assembly')]
         try:
-            #ret = subprocess.call(args, stdout=out, stderr=out)
             start = time.time()
+            logger.info("Calling runProject for sample: %s target %s" % (sample, target))
+            logger.info(" ".join(args))
             ret = subprocess.Popen(args, stdout=out, stderr=out)
-            print "Assembly called"
-            pid = ret.pid  # http://stackoverflow.com/questions/1191374/subprocess-with-timeout
-            print "pid is", pid
-            i = 0
             while ret.poll() is None:
-                print "Assembly wait:", i
-                i += 1
-                time.sleep(.2)
                 if time.time() - start > self.params['assemblytimeout']:
                     logger.warn("Sample: %s target: %s Killing assembly after %s seconds" % (sample, target, time.time() - start))
-                    #print "os.waitpid..."
-                    #vals = os.waitpid(pid, 0)
-                    #print "os.waitpid returned", vals
-                    print "Calling kill"
                     ret.kill()  # Newbler doesn't seem to actually respond to kill all that reliably
-                    time.sleep(2)
-                    print "Calling kill_process_children"
-                    self.kill_process_children(pid)
+                    #time.sleep(2)
+                    #print "Calling kill_process_children"
+                    #self.kill_process_children(pid)
                     killed = True
                     break
+                time.sleep(.1)
         except Exception as exc:
             txt = ("Sample: %s, Target: %s: Unhandeled error running Newbler assembly" % (self.params['sample'], self.params['target']))
             txt += '\n\t' + str(exc)
@@ -160,8 +170,59 @@ class AssemblyRunner:
         finally:
             out.close()
 
+        # #Building the args
+        # #args = ['/bio/local/bin/runAssembly']
+        # args = ['runAssembly']
+        # args += ['-nobig', '-force', '-cpu', '1']
+        # if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
+        #     #only run with the -urt switch when it isn't the final assembly
+        #     args += ['-urt']
+        # args += ['-o', os.path.join(self.params['target_dir'], 'assembly')]
+        # if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
+        #     args += [self.params['assembly_PE1'], self.params['assembly_PE2']]
+        # if 'assembly_SE' in self.params:
+        #     args += [self.params['assembly_SE']]
+
+        # logger.info("Calling newbler for sample: %s target %s" % (sample, target))
+        # logger.info(" ".join(args))
+        # killed = False
+        # failed = False
+        # try:
+        #     #ret = subprocess.call(args, stdout=out, stderr=out)
+        #     start = time.time()
+        #     ret = subprocess.Popen(args, stdout=out, stderr=out)
+        #     print "Assembly called"
+        #     pid = ret.pid  # http://stackoverflow.com/questions/1191374/subprocess-with-timeout
+        #     print "pid is", pid
+        #     i = 0
+        #     while ret.poll() is None:
+        #         print "Assembly wait:", i
+        #         i += 1
+        #         time.sleep(.2)
+        #         if time.time() - start > self.params['assemblytimeout']:
+        #             logger.warn("Sample: %s target: %s Killing assembly after %s seconds" % (sample, target, time.time() - start))
+        #             #print "os.waitpid..."
+        #             #vals = os.waitpid(pid, 0)
+        #             #print "os.waitpid returned", vals
+        #             print "Calling kill"
+        #             ret.kill()  # Newbler doesn't seem to actually respond to kill all that reliably
+        #             time.sleep(2)
+        #             print "Calling kill_process_children"
+        #             self.kill_process_children(pid)
+        #             killed = True
+        #             break
+        # except Exception as exc:
+        #     txt = ("Sample: %s, Target: %s: Unhandeled error running Newbler assembly" % (self.params['sample'], self.params['target']))
+        #     txt += '\n\t' + str(exc)
+        #     logger.warn(txt)
+        #     failed = True
+        #     pass
+        # finally:
+        #     out.close()
+
         #if ret != 0:
             #raise exceptions.RerunnableError("Newbler assembly failed.")
+
         if not killed and ret.poll() != 0:
             #raise exceptions.RerunnableError("Newbler assembly failed.")
             failed = True
