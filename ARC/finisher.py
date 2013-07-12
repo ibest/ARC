@@ -81,7 +81,7 @@ class Finisher:
         targets_written = 0
         #Set up output for both finished and additional mapping outputs
         fin_outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'a')
-        remap_outf = open(os.path.join(self.params['working_dir'], 'I' + str(self.params['iteration']) + '_contigs.fasta'), 'w')
+        remap_outf = open(os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta'), 'w')
         #check whether the sample is globally finished
         if self.params['iteration'] >= self.params['numcycles']:
             sample_finished = True
@@ -135,7 +135,7 @@ class Finisher:
             # Build a new mapper and put it on the queue
             from ARC.mapper import MapperRunner
             params = deepcopy(self.params)
-            params['reference'] = os.path.join(self.params['working_dir'], 'I' + str(self.params['iteration']) + '_contigs.fasta')
+            params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
             if 'PE1' in self.params and 'PE2' in self.params:
                 params['PE1'] = self.params['PE1']
                 params['PE2'] = self.params['PE2']
@@ -155,7 +155,7 @@ class Finisher:
         # --> write reads as contigs
         if map_against_reads is False and killed is False:
             if self.params['assembler'] == 'newbler':
-                contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "454AllContigs.fna")
+                contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "assembly", "454AllContigs.fna")
             elif self.params['assembler'] == 'spades':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "contigs.fasta")
             i = 0

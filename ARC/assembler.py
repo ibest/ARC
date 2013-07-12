@@ -75,13 +75,12 @@ class AssemblyRunner:
         stdout, stderr = p.communicate()
         pids = [pid]
         pids.extend([int(q) for q in stdout.split()])
-        print "Process had", len(pids), "children."
+        #print "Process had", len(pids), "children."
         try:
             for pid in pids:
                 os.kill(pid, signal.SIGKILL)
-                print "--->KILLED", pid
         except OSError:
-            print "--->OSERROR"
+            #print "--->OSERROR"
             pass
 
     def RunNewbler(self):
@@ -154,14 +153,11 @@ class AssemblyRunner:
             pid = ret.pid
             while ret.poll() is None:
                 if time.time() - start > self.params['assemblytimeout']:
-                    print "Calling kill_process_children"
                     self.kill_process_children(pid)
-                    logger.warn("Sample: %s target: %s Killing assembly after %s seconds" % (sample, target, time.time() - start))
-                    #ret.kill()  # Newbler doesn't seem to actually respond to kill all that reliably
-                    #time.sleep(2)
+                    logger.warn("Sample: %s target: %s iteration: %s Killing assembly after %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
                     killed = True
                     break
-                time.sleep(.1)
+                time.sleep(.5)
         except Exception as exc:
             txt = ("Sample: %s, Target: %s: Unhandeled error running Newbler assembly" % (self.params['sample'], self.params['target']))
             txt += '\n\t' + str(exc)
@@ -173,56 +169,6 @@ class AssemblyRunner:
 
         #Sometimes newbler doesn't seem to exit completely:
         self.kill_process_children(pid)
-
-        # #Building the args
-        # #args = ['/bio/local/bin/runAssembly']
-        # args = ['runAssembly']
-        # args += ['-nobig', '-force', '-cpu', '1']
-        # if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
-        #     #only run with the -urt switch when it isn't the final assembly
-        #     args += ['-urt']
-        # args += ['-o', os.path.join(self.params['target_dir'], 'assembly')]
-        # if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
-        #     args += [self.params['assembly_PE1'], self.params['assembly_PE2']]
-        # if 'assembly_SE' in self.params:
-        #     args += [self.params['assembly_SE']]
-
-        # logger.info("Calling newbler for sample: %s target %s" % (sample, target))
-        # logger.info(" ".join(args))
-        # killed = False
-        # failed = False
-        # try:
-        #     #ret = subprocess.call(args, stdout=out, stderr=out)
-        #     start = time.time()
-        #     ret = subprocess.Popen(args, stdout=out, stderr=out)
-        #     print "Assembly called"
-        #     pid = ret.pid  # http://stackoverflow.com/questions/1191374/subprocess-with-timeout
-        #     print "pid is", pid
-        #     i = 0
-        #     while ret.poll() is None:
-        #         print "Assembly wait:", i
-        #         i += 1
-        #         time.sleep(.2)
-        #         if time.time() - start > self.params['assemblytimeout']:
-        #             logger.warn("Sample: %s target: %s Killing assembly after %s seconds" % (sample, target, time.time() - start))
-        #             #print "os.waitpid..."
-        #             #vals = os.waitpid(pid, 0)
-        #             #print "os.waitpid returned", vals
-        #             print "Calling kill"
-        #             ret.kill()  # Newbler doesn't seem to actually respond to kill all that reliably
-        #             time.sleep(2)
-        #             print "Calling kill_process_children"
-        #             self.kill_process_children(pid)
-        #             killed = True
-        #             break
-        # except Exception as exc:
-        #     txt = ("Sample: %s, Target: %s: Unhandeled error running Newbler assembly" % (self.params['sample'], self.params['target']))
-        #     txt += '\n\t' + str(exc)
-        #     logger.warn(txt)
-        #     failed = True
-        #     pass
-        # finally:
-        #     out.close()
 
         #if ret != 0:
             #raise exceptions.RerunnableError("Newbler assembly failed.")
@@ -285,13 +231,14 @@ class AssemblyRunner:
         try:
             #ret = subprocess.call(args, stderr=out, stdout=out)
             ret = subprocess.Popen(args, stdout=out, stderr=out)
+            pid = ret.pid
             while ret.poll() is None:
-                time.sleep(.1)
                 if time.time() - start > self.params['assemblytimeout']:
                     ret.kill()
                     killed = True
                     logger.warn("Sample: %s target: %s Assembly killed after %s seconds." % (sample, target, time.time() - start))
                     break
+                time.sleep(.5)
         except Exception as exc:
             txt = ("Sample: %s, Target: %s: Unhandeled error running Spades assembly" % (sample, target))
             txt += '\n\t' + str(exc)
@@ -300,6 +247,9 @@ class AssemblyRunner:
             pass
         finally:
             out.close()
+
+        #Ensure that assembler exits cleanly:
+        self.kill_process_children(pid)
 
         if not killed and ret.poll() != 0:
             failed = True
