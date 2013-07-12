@@ -151,13 +151,14 @@ class AssemblyRunner:
             logger.info("Calling runProject for sample: %s target %s" % (sample, target))
             logger.info(" ".join(args))
             ret = subprocess.Popen(args, stdout=out, stderr=out)
+            pid = ret.pid
             while ret.poll() is None:
                 if time.time() - start > self.params['assemblytimeout']:
+                    print "Calling kill_process_children"
+                    self.kill_process_children(pid)
                     logger.warn("Sample: %s target: %s Killing assembly after %s seconds" % (sample, target, time.time() - start))
-                    ret.kill()  # Newbler doesn't seem to actually respond to kill all that reliably
+                    #ret.kill()  # Newbler doesn't seem to actually respond to kill all that reliably
                     #time.sleep(2)
-                    #print "Calling kill_process_children"
-                    #self.kill_process_children(pid)
                     killed = True
                     break
                 time.sleep(.1)
@@ -169,6 +170,9 @@ class AssemblyRunner:
             pass
         finally:
             out.close()
+
+        #Sometimes newbler doesn't seem to exit completely:
+        self.kill_process_children(pid)
 
         # #Building the args
         # #args = ['/bio/local/bin/runAssembly']
