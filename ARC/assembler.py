@@ -241,7 +241,7 @@ class AssemblyRunner:
             outf.close()
         else:
             #Run finished without error
-            logger.info("Sample: %s target: %s Assembly finished in %s seconds" % (sample, target, time.time() - start))
+            logger.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
             outf.write("assembly_complete")
             outf.close()
@@ -313,7 +313,7 @@ class AssemblyRunner:
             outf.close()
         else:
             #Run finished without error
-            logger.info("Sample: %s target: %s Assembly finished in %s seconds" % (sample, target, time.time() - start))
+            logger.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
             outf.write("assembly_complete")
             outf.close()

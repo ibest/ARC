@@ -358,7 +358,7 @@ class MapperRunner:
 
             #All reads have been written at this point, add an assembly to the queue:
             ar = AssemblyRunner(assembly_params)
-            logger.info("Sample: %s target: %s Split %s reads in %s seconds" % (self.params['sample'], target, len(reads), time.time() - startT))
+            logger.info("Sample: %s target: %s iteration: %s Split %s reads in %s seconds" % (self.params['sample'], target, self.params['iteration'], len(reads), time.time() - startT))
             #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
             if PEs + SEs > 0:
                 checker_params['targets'][target_dir] = False
