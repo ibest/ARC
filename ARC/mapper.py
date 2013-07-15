@@ -294,7 +294,6 @@ class MapperRunner:
 
     def splitreads(self):
         """ Split reads and then kick off assemblies once the reads are split for a target, use safe_targets for names"""
-        startT = time.time()
         self.params['iteration'] += 1
         checker_params = deepcopy(self.params)
         checker_params['targets'] = {}
@@ -307,6 +306,7 @@ class MapperRunner:
         if 'readcounts' not in checker_params:
             checker_params['readcounts'] = {}
         for target in self.params['mapping_dict']:
+            startT = time.time()
             #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
             target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
             if target not in checker_params['readcounts']:
