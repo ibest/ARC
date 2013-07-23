@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2013, Institute for Bioninformatics and Evolutionary Studies
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,24 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-This class has been deprecated in favor of doing the splitting of reads post mapping as part of MapperRunner.
-"""
-
-
-
-import time
-import subprocess
-import os
 from ARC import exceptions
-from ARC import logger
 
 
 class Splitter:
     """
-    This calss handles splitting reads into fastq files and launching assemblies.
-    Once all assemblies are launched, add a job to check that the assemblies have finished.
+    Deprecated in favor of doing the splitting of reads post mapping as
+    part of MapperRunner. This class handles splitting reads into fastq files
+    and launching assemblies. Once all assemblies are launched, add a job to
+    check that the assemblies have finished.
     """
     def __init__(self, params):
         self.params = params
@@ -38,14 +27,9 @@ class Splitter:
     def start(self, params):
         print "Running the splitter"
 
-
-
-
-
         if not('mapper' in params):
             raise exceptions.FatalException("mapper not defined in params")
         if params['mapper'] == 'bowtie2':
             self.run_bowtie2(params)
         if params['mapper'] == 'blat':
             self.run_blat(params)
-

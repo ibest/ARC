@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2013, Institute for Bioninformatics and Evolutionary Studies
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import time
 import multiprocessing
-import os
 from copy import deepcopy
 from Queue import Empty
-from process_runner import ProcessRunner
 from ARC import logger
 from ARC import exceptions
-from ARC.mapper import MapperRunner
+from ARC.runners import MapperRunner
+from ARC.runners import ProcessRunner
 
 
 def run(config):
@@ -35,7 +31,7 @@ def run(config):
 
     ref_q = multiprocessing.Queue()
     result_q = multiprocessing.Queue()
-    finished = multiprocessing.Array('i', [0]*nprocs)
+    finished = multiprocessing.Array('i', [0] * nprocs)
 
     # from test import TestRunner
     # for i in range(50):

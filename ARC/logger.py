@@ -33,6 +33,11 @@ def setup(logfile=None, loglevel=logging.INFO):
     logger.setLevel(loglevel)  # And here
 
 
+def level():
+    logger = logging.getLogger(__name__)
+    return logger.getEffectiveLevel()
+
+
 def info(message):
     logger = logging.getLogger(__name__)
     logger.info("%s" % (message))
@@ -51,3 +56,8 @@ def debug(message):
 def warn(message):
     logger = logging.getLogger(__name__)
     logger.warn("%s" % (message))
+
+
+def exception(exc):
+    logger = logging.getLogger(__name__)
+    logger.exception("%s" % (exc))

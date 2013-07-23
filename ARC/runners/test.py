@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2013, Institute for Bioninformatics and Evolutionary Studies
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,49 +11,52 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import time
-from ARC import logger
-from ARC import queue
+from ARC.runners import BaseRunner
 from random import randint
-from ARC import exceptions
 
 
-class TestRunner:
+class TestRunner(BaseRunner):
+    def execute(self):
+        self.log("Starting run with %d processors" % (self.procs))
+        self.log("Received a value of %d" % (self.params['value']))
+        self.log("Sleeping for %d seconds" % (self.params['sleep']))
 
-    def __init__(self, params={}):
-        self.params = params
+        args = [
+            ['sleep', str(self.params['sleep'])],
+            # This one should cause dd to return a non zero value
+            ["dd", "of=/dev/nulls", "if=/dev/urandom", "bs=1k", "count=10000"],
+            ['sleep', str(self.params['sleep'])],
+            ["dd", "of=/dev/null", "if=/dev/urandom", "bs=1k", "count=20000"],
+            ['sleep', str(self.params['sleep'])],
+            ["dd", "of=/dev/null", "if=/dev/urandom", "bs=1k", "count=30000"],
+            ['sleep', str(self.params['sleep'])],
+            ["dd", "of=/dev/null", "if=/dev/urandom", "bs=1k", "count=40000"],
+            ['sleep', str(self.params['sleep'])],
+            ["dd", "of=/dev/null", "if=/dev/urandom", "bs=1k", "count=50000"],
+            # Popen should barf!
+            ['foo', '-a 42', '/path/to/my/file']]
 
-    def to_dict(self):
-        return {'runner': self, 'message': 'Sample Run', 'params': self.params}
+        self.shell(
+            args[self.params['value']],
+            description="Sample %d" % (self.params['num']),
+            timeout=8)
 
-    def start(self):
-        logger.info("Running foo with %s" % (self.params['foo']))
-        self.cpu_intensive()
+        if self.params['value'] == 8:
+            self.resubmit(
+                params={
+                    'sleep': 1,
+                    'value': 1,
+                    'num': self.params['num']})
+            self.log("Resubmitting job")
+        elif self.params['value'] == 10:
+            newparams = {
+                'value': randint(1, 10),
+                'sleep': randint(1, 10),
+                'num': self.params['num']}
+            job = self.submit(
+                TestRunner,
+                procs=randint(1, 4),
+                params=newparams)
+            self.log("Submitting new job %s" % (job.ident))
 
-        num = randint(0, 10)
-        if num > 8:
-            # logger.info("Not finished yet, adding another test job.")
-            # newjob = TestRunner({'foo': num})
-            # queue.add(self.ref_q, newjob.to_dict())
-            return
-        elif num == 5:
-            # Need to create a new one to make sure the joinablequeue isn't
-            # passed along.
-            rerunjob = TestRunner(self.params)
-            queue.add(self.ref_q, rerunjob.to_dict())
-            raise exceptions.RerunnableError("Oops, need to rerun this one.")
-        elif num == 1:
-            try:
-                # f = open("/foobar")
-                pass
-            except IOError as e:
-                raise exceptions.FatalError(e.strerror)
-
-    def cpu_intensive(self):
-        a, b = 0, 1
-        for i in range(100000):
-            a, b = b, a + b
-        time.sleep(randint(2, 9))
-
-    def queue(self, ref_q):
-        self.ref_q = ref_q
+        self.log("Done")
