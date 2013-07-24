@@ -27,8 +27,8 @@ class AssemblyChecker(BaseRunner):
         assemblies are finished, kick off the finisher process.  Now that we
         have job dependency, this will probably be deprecated.
 
-    required params:
-        'targets': dictionary, keys are paths, values are boolean
+        required params:
+            'targets': dictionary, keys are paths, values are boolean
     """
     def execute(self):
         """
