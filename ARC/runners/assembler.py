@@ -14,256 +14,168 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#import time
-import subprocess
-import errno
 import os
 import time
-import signal
-from ARC import logger
+from ARC.runners import BaseRunner
 from ARC import exceptions
 
 
-class AssemblyRunner:
+class AssemblyRunner(BaseRunner):
     """
     This class represents assembly jobs and handles running assemblies.
     required params:
         assembler, sample, target, PE1 and PE2 and/or SE, target_dir
     """
-    def __init__(self, params):
-        self.params = params
+    def setup(self):
+        pe_run = 'assembly_PE1' and 'assembly_PE2' in self.params
+        se_run = 'assembly_SE' in self.params
+        if not (pe_run or se_run):
+            raise exceptions.FatalException('Missing self.params in RunSpades.')
 
-    def queue(self, ref_q):
-        self.ref_q = ref_q
+        pe_one_path = os.path.exists(self.params['assembly_PE1'])
+        pe_two_path = os.path.exists(self.params['assembly_PE2'])
+        if pe_run and not (pe_one_path and pe_two_path):
+            raise exceptions.FatalException('Missing PE files in RunSpades.')
 
-    def to_dict(self):
-        return {'runner': self,
-                'message': 'Assmelber for Sample: %s Target: %s' % (self.params['sample'], self.params['target']),
-                'params': self.params}
+        se_path = os.path.exists(self.params['assembly_SE'])
+        if se_run and not se_path:
+            raise exceptions.FatalException('Missing SE file in RunSpades.')
 
-    def start(self):
+    def execute(self):
         if not('assembler' in self.params):
             raise exceptions.FatalException("assembler not defined in params")
         if self.params['map_against_reads'] and self.params['iteration'] == 1:
-            #print "ASSEMBLER: %s %s MAP AGAINST READS" % (self.params['sample'], self.params['target'])
             self.RunMapAgainstReads()
         elif self.params['assembler'] == 'newbler':
-            #logger.info("Running Newbler for sample: %s target: %s" % (self.params['sample'], self.params['target']))
             self.RunNewbler()
         elif self.params['assembler'] == 'spades':
-            #logger.info("Running Spades for sample: %s target: %s" % (self.params['sample'], self.params['target']))
             self.RunSpades()
         else:
-            raise exceptions.FatalException("Assembler %s isn't recognized." % self.params['assembler'])
+            raise exceptions.FatalException(
+                "Assembler %s isn't recognized." % self.params['assembler'])
 
     def RunMapAgainstReads(self):
         """
-        A pseudo-assembler for cases where we don't actually assemble reads and instead just write them out as contigs.
+        A pseudo-assembler for cases where we don't actually assemble reads
+        and instead just write them out as contigs.
         """
-        #print "Creating finished file: " + os.path.join(self.params['target_dir'], 'finished')
         outf = open(os.path.join(self.params['target_dir'], 'finished'), 'w')
         outf.write("map_against_reads")
         outf.close()
 
-    def kill_process_children(self, pid):
-        """
-            Base on code from:
-            http://stackoverflow.com/questions/1191374/subprocess-with-timeout
-            http://stackoverflow.com/questions/6553423/multiple-subprocesses-with-timeouts
-        """
-        p = subprocess.Popen('ps --no-headers -o pid --ppid %d' % pid, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        pids = [pid]
-        pids.extend([int(q) for q in stdout.split()])
-        #print "Process had", len(pids), "children."
-        try:
-            for pid in pids:
-                os.kill(pid, signal.SIGKILL)
-        except OSError:
-            #print "--->OSERROR"
-            pass
-
     def RunNewbler(self):
-        #Code for running newbler
         """
         Expects params keys:
             PE1 and PE2 and/or SE
             target_dir
             -urt
         """
-        #Check for necessary params:
-        if not (('assembly_PE1' in self.params and 'assembly_PE2' in self.params) or 'assembly_SE' in self.params):
-            raise exceptions.FatalException('Missing self.params in RunNewbler.')
-
-        #Check for necessary files:
-        if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params and not(os.path.exists(self.params['assembly_PE1']) or not(os.path.exists(self.params['assembly_PE2']))):
-            raise exceptions.FatalException('Missing PE files in RunNewbler.')
-
-        if 'assembly_SE' in self.params and not(os.path.exists(self.params['assembly_SE'])):
-            raise exceptions.FatalException('Missing SE file in RunNewbler.')
-
         sample = self.params['sample']
         target = self.params['target']
-        killed = False
-        failed = False
 
-        #determine whether to pipe output to a file or /dev/null
-        if self.params['verbose']:
-            out = open(os.path.join(self.params['target_dir'], "assembly.log"), 'w')
-        else:
-            out = open(os.devnull, 'w')
+        # Build args for newAssembly:
+        self.info("Calling newAssembly for sample: %s target %s" % (sample, target))
 
-        #Build args for newAssembly:
         args = ['newAssembly', '-force', os.path.join(self.params['target_dir'], 'assembly')]
-        logger.info("Calling newAssembly for sample: %s target %s" % (sample, target))
-        logger.info(" ".join(args))
-        ret = subprocess.call(args, stdout=out, stderr=out)
-        #Build args for addRun:
+        self.shell(
+            args,
+            description='Newbler newAssembly (sample: %s target %s)' % (sample, target),
+            logfile='assembly.log',
+            working_dir=self.params['target_dir'],
+            verbose=self.params['verbose'])
+
         if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
+            self.info("Calling addRun for sample: %s target %s" % (sample, target))
+
             args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
             args += [self.params['assembly_PE1']]
-            logger.info("Calling addRun for sample: %s target %s" % (sample, target))
-            logger.info(" ".join(args))
-            ret = subprocess.call(args, stdout=out, stderr=out)
+            self.shell(
+                args,
+                description='Newbler addRun PE1 (sample: %s target %s)' % (sample, target),
+                logfile='assembly.log',
+                working_dir=self.params['target_dir'],
+                verbose=self.params['verbose'])
+
+            self.info("Calling addRun for sample: %s target %s" % (sample, target))
 
             args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
             args += [self.params['assembly_PE2']]
-            logger.info("Calling addRun for sample: %s target %s" % (sample, target))
-            logger.info(" ".join(args))
-            ret = subprocess.call(args, stdout=out, stderr=out)
+            self.shell(
+                args,
+                description='Newbler addRun PE2 (sample: %s target %s)' % (sample, target),
+                logfile='assembly.log',
+                working_dir=self.params['target_dir'],
+                verbose=self.params['verbose'])
+
         if 'assembly_SE' in self.params:
+            self.info("Calling addRun for sample: %s target %s" % (sample, target))
+
             args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
             args += [self.params['assembly_SE']]
-            logger.info("Calling addRun for sample: %s target %s" % (sample, target))
-            logger.info(" ".join(args))
-            ret = subprocess.call(args, stdout=out, stderr=out)
+            self.shell(
+                args,
+                description='Newbler addRun SE (sample: %s target %s)' % (sample, target),
+                logfile='assembly.log',
+                working_dir=self.params['target_dir'],
+                verbose=self.params['verbose'])
 
         #Build args for runProject
-        args = ['runProject']
-        args += ['-nobig', '-cpu', '1']
+        args = ['runProject', '-nobig', '-cpu', self.procs]
         if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
         args += [os.path.join(self.params['target_dir'], 'assembly')]
-        try:
-            start = time.time()
-            logger.info("Calling runProject for sample: %s target %s" % (sample, target))
-            logger.info(" ".join(args))
-            ret = subprocess.Popen(args, stdout=out, stderr=out)
-            pid = ret.pid
-            while ret.poll() is None:
-                if time.time() - start > self.params['assemblytimeout']:
-                    self.kill_process_children(pid)
-                    logger.warn("Sample: %s target: %s iteration: %s Killing assembly after %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
-                    killed = True
-                    break
-                time.sleep(.5)
-        except Exception as exc:
-            txt = ("Sample: %s, Target: %s: Unhandeled error running Newbler assembly" % (self.params['sample'], self.params['target']))
-            txt += '\n\t' + str(exc)
-            logger.warn(txt)
-            failed = True
-            pass
-        finally:
-            out.close()
 
-        #Sometimes newbler doesn't seem to exit completely:
-        self.kill_process_children(pid)
+        start = time.time()
+        self.shell(
+            args,
+            description='Newbler Assembly (sample: %s target %s)' % (sample, target),
+            logfile='assembly.log',
+            working_dir=self.params['target_dir'],
+            verbose=self.params['verbose'],
+            timeout=self.params['assemblytimeout'])
 
-        #if ret != 0:
-            #raise exceptions.RerunnableError("Newbler assembly failed.")
-
-        if not killed and ret.poll() != 0:
-            #raise exceptions.RerunnableError("Newbler assembly failed.")
-            failed = True
-
-        if failed:
-            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
-            outf.write("assembly_failed")
-            outf.close()
-        if killed:
-            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
-            outf.write("assembly_killed")
-            outf.close()
-        else:
-            #Run finished without error
-            logger.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
-            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
-            outf.write("assembly_complete")
-            outf.close()
+        self.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
+        outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
+        outf.write("assembly_complete")
+        outf.close()
 
     def RunSpades(self):
         """
         Several arguments can be passed to spades.py: -1 [PE1], -2 [PE2], -s [SE], and -o [target_dir]
         """
-        #Check that required params are available
-        if not (('assembly_PE1' in self.params and 'assembly_PE2' in self.params) or ('assembly_SE' in self.params)):
-            raise exceptions.FatalException('Missing self.params in RunSpades.')
-
-        #Check that the files actually exist
-        if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params and not(os.path.exists(self.params['assembly_PE1']) or not(os.path.exists(self.params['assembly_PE2']))):
-            raise exceptions.FatalException('Missing PE files in RunSpades.')
-        if 'assembly_SE' in self.params and not(os.path.exists(self.params['assembly_SE'])):
-            raise exceptions.FatalException('Missing SE file in RunSpades.')
-
         sample = self.params['sample']
         target = self.params['target']
 
         #Build args for assembler call
         args = ['spades.py', '-t', '1']
+
         if self.params['format'] == 'fasta':
-            args.append('--only-assembler')  # spades errors on read correction if the input isn't fastq
+            # spades errors on read correction if the input isn't fastq
+            args.append('--only-assembler')
+
         if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
-            args += ['-1', self.params['assembly_PE1'], '-2', self.params['assembly_PE2']]
+            args += [
+                '-1', self.params['assembly_PE1'],
+                '-2', self.params['assembly_PE2']]
+
         if 'assembly_SE' in self.params:
             args += ['-s', self.params['assembly_SE']]
+
         args += ['-o', os.path.join(self.params['target_dir'], 'assembly')]
-        if self.params['verbose']:
-            out = open(os.path.join(self.params['target_dir'], "assembly.log"), 'w')
-        else:
-            out = open(os.devnull, 'w')
 
-        logger.info("Sample: %s target: %s Running spades assembler." % (sample, target))
-        logger.info(" ".join(args))
-        killed = False
-        failed = False
+        self.info("Sample: %s target: %s Running spades assembler." % (sample, target))
+
         start = time.time()
-        try:
-            #ret = subprocess.call(args, stderr=out, stdout=out)
-            ret = subprocess.Popen(args, stdout=out, stderr=out)
-            pid = ret.pid
-            while ret.poll() is None:
-                if time.time() - start > self.params['assemblytimeout']:
-                    ret.kill()
-                    killed = True
-                    logger.warn("Sample: %s target: %s Assembly killed after %s seconds." % (sample, target, time.time() - start))
-                    break
-                time.sleep(.5)
-        except Exception as exc:
-            txt = ("Sample: %s, Target: %s: Unhandeled error running Spades assembly" % (sample, target))
-            txt += '\n\t' + str(exc)
-            logger.warn(txt)
-            failed = True
-            pass
-        finally:
-            out.close()
+        self.shell(
+            args,
+            description='Spades Assembly (sample: %s target %s)' % (sample, target),
+            logfile='assembly.log',
+            working_dir=self.params['target_dir'],
+            verbose=self.params['verbose'],
+            timeout=self.params['assemblytimeout'])
 
-        #Ensure that assembler exits cleanly:
-        self.kill_process_children(pid)
-
-        if not killed and ret.poll() != 0:
-            failed = True
-        if failed:
-            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
-            outf.write("assembly_failed")
-            outf.close()
-        if killed:
-            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
-            outf.write("assembly_killed")
-            outf.close()
-        else:
-            #Run finished without error
-            logger.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
-            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
-            outf.write("assembly_complete")
-            outf.close()
+        self.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
+        outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
+        outf.write("assembly_complete")
+        outf.close()
