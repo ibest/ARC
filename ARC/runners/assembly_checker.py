@@ -37,10 +37,12 @@ class AssemblyChecker(BaseRunner):
         """
         sample = self.params['sample']
         completed = sum(self.params['targets'].values())
+
         msg = "Sample: %s AssemblyChecker started with " % (sample)
         msg += "%s of %s targets completed" % (
             sample, completed, len(self.params['targets']))
         self.info(msg)
+        
         for target_folder in self.params['targets']:
             if not self.params['targets'][target_folder]:
                 file = os.path.join(target_folder, 'finished')
