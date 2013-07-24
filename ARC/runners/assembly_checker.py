@@ -42,7 +42,7 @@ class AssemblyChecker(BaseRunner):
         msg += "%s of %s targets completed" % (
             sample, completed, len(self.params['targets']))
         self.info(msg)
-        
+
         for target_folder in self.params['targets']:
             if not self.params['targets'][target_folder]:
                 file = os.path.join(target_folder, 'finished')
@@ -62,7 +62,7 @@ class AssemblyChecker(BaseRunner):
                 params=self.params)
             msg = "Sample: %s Assemblies not finished: " % (sample)
             msg += "%s of %s targets completed" % (
-                sample, completed, len(self.params['targets']))
+                completed, len(self.params['targets']))
             self.info(msg)
         else:
             self.submit(
@@ -71,5 +71,5 @@ class AssemblyChecker(BaseRunner):
                 params=self.params)
             msg = "Sample: %s Assemblies finished: " % (sample)
             msg += "%s of %s targets completed" % (
-                sample, completed, len(self.params['targets']))
+                completed, len(self.params['targets']))
             self.info(msg)
