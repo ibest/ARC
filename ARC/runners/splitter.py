@@ -16,10 +16,10 @@ from ARC import exceptions
 
 class Splitter:
     """
-    Deprecated in favor of doing the splitting of reads post mapping as
-    part of MapperRunner. This class handles splitting reads into fastq files
-    and launching assemblies. Once all assemblies are launched, add a job to
-    check that the assemblies have finished.
+        Deprecated in favor of doing the splitting of reads post mapping as
+        part of MapperRunner. This class handles splitting reads into fastq
+        files and launching assemblies. Once all assemblies are launched, add
+        a job to check that the assemblies have finished.
     """
     def __init__(self, params):
         self.params = params
