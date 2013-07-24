@@ -41,6 +41,8 @@ class AssemblyRunner(BaseRunner):
         if se_run and not se_path:
             raise exceptions.FatalException('Missing SE file in assembler.')
 
+        self.target_dir = self.params['target_dir']
+
     def execute(self):
         if not('assembler' in self.params):
             raise exceptions.FatalException("assembler not defined in params")
@@ -59,7 +61,7 @@ class AssemblyRunner(BaseRunner):
         A pseudo-assembler for cases where we don't actually assemble reads
         and instead just write them out as contigs.
         """
-        outf = open(os.path.join(self.params['target_dir'], 'finished'), 'w')
+        outf = open(os.path.join(self.target_dir), 'finished'), 'w')
         outf.write("map_against_reads")
         outf.close()
 
@@ -76,47 +78,47 @@ class AssemblyRunner(BaseRunner):
         # Build args for newAssembly:
         self.info("Calling newAssembly for sample: %s target %s" % (sample, target))
 
-        args = ['newAssembly', '-force', os.path.join(self.params['target_dir'], 'assembly')]
+        args = ['newAssembly', '-force', os.path.join(self.target_dir), 'assembly')]
         self.shell(
             args,
             description='Newbler newAssembly (sample: %s target %s)' % (sample, target),
             logfile='assembly.log',
-            working_dir=self.params['target_dir'],
+            working_dir=self.target_dir),
             verbose=self.params['verbose'])
 
         if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
             self.info("Calling addRun for sample: %s target %s" % (sample, target))
 
-            args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
+            args = ['addRun', os.path.join(self.target_dir), 'assembly')]
             args += [self.params['assembly_PE1']]
             self.shell(
                 args,
                 description='Newbler addRun PE1 (sample: %s target %s)' % (sample, target),
                 logfile='assembly.log',
-                working_dir=self.params['target_dir'],
+                working_dir=self.target_dir),
                 verbose=self.params['verbose'])
 
             self.info("Calling addRun for sample: %s target %s" % (sample, target))
 
-            args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
+            args = ['addRun', os.path.join(self.target_dir), 'assembly')]
             args += [self.params['assembly_PE2']]
             self.shell(
                 args,
                 description='Newbler addRun PE2 (sample: %s target %s)' % (sample, target),
                 logfile='assembly.log',
-                working_dir=self.params['target_dir'],
+                working_dir=self.target_dir),
                 verbose=self.params['verbose'])
 
         if 'assembly_SE' in self.params:
             self.info("Calling addRun for sample: %s target %s" % (sample, target))
 
-            args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
+            args = ['addRun', os.path.join(self.target_dir), 'assembly')]
             args += [self.params['assembly_SE']]
             self.shell(
                 args,
                 description='Newbler addRun SE (sample: %s target %s)' % (sample, target),
                 logfile='assembly.log',
-                working_dir=self.params['target_dir'],
+                working_dir=self.target_dir),
                 verbose=self.params['verbose'])
 
         #Build args for runProject
@@ -124,19 +126,19 @@ class AssemblyRunner(BaseRunner):
         if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
-        args += [os.path.join(self.params['target_dir'], 'assembly')]
+        args += [os.path.join(self.target_dir), 'assembly')]
 
         start = time.time()
         self.shell(
             args,
             description='Newbler Assembly (sample: %s target %s)' % (sample, target),
             logfile='assembly.log',
-            working_dir=self.params['target_dir'],
+            working_dir=self.target_dir),
             verbose=self.params['verbose'],
             timeout=self.params['assemblytimeout'])
 
         self.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
-        outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
+        outf = open(os.path.join(self.target_dir), "finished"), 'w')
         outf.write("assembly_complete")
         outf.close()
 
@@ -162,7 +164,7 @@ class AssemblyRunner(BaseRunner):
         if 'assembly_SE' in self.params:
             args += ['-s', self.params['assembly_SE']]
 
-        args += ['-o', os.path.join(self.params['target_dir'], 'assembly')]
+        args += ['-o', os.path.join(self.target_dir), 'assembly')]
 
         self.info("Sample: %s target: %s Running spades assembler." % (sample, target))
 
@@ -171,11 +173,11 @@ class AssemblyRunner(BaseRunner):
             args,
             description='Spades Assembly (sample: %s target %s)' % (sample, target),
             logfile='assembly.log',
-            working_dir=self.params['target_dir'],
+            working_dir=self.target_dir),
             verbose=self.params['verbose'],
             timeout=self.params['assemblytimeout'])
 
         self.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
-        outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
+        outf = open(os.path.join(self.target_dir), "finished"), 'w')
         outf.write("assembly_complete")
         outf.close()

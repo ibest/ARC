@@ -16,31 +16,19 @@
 
 import os
 import time
-from copy import deepcopy
-#from ARC import exceptions
 from ARC import logger
-from ARC.finisher import Finisher
-#from ARC import AssemblyChecker
+from ARC.runner import Finisher
+from ARC.runner import BaseRunner
 
 
-class AssemblyChecker:
+class AssemblyChecker(BaseRunner):
     """
     Checks for "finished" files in each of the assembly folders. Set values of params['assemblies'] to True for
     all finished assemblies. If all assemblies are finished, kick off the finisher process.
     required params:
         'targets': dictionary, keys are paths, values are boolean
     """
-
-    def __init__(self, params):
-        self.params = params
-
-    def queue(self, ref_q):
-        self.ref_q = ref_q
-
-    def to_dict(self):
-        return {'runner': self, 'message': 'Starting AssemblyChecker for sample %s' % self.params['sample'], 'params': self.params}
-
-    def start(self):
+    def execute(self):
         """ run through list of targets, check any that haven't finished already """
         sample = self.params['sample']
         completed = sum(self.params['targets'].values())
@@ -55,14 +43,16 @@ class AssemblyChecker:
 
         #Now check whether all have finished, if not, add a new AssemblyChecker to the queue
         if len(self.params['targets']) > sum(self.params['targets'].values()):
-            #some jobs haven't completed yet
-            checker_params = deepcopy(self.params)
-            checker = AssemblyChecker(checker_params)
-            time.sleep(5)  # sleep 4 seconds before putting a checker back on the ref_q
-            self.ref_q.put(checker.to_dict())
+            # sleep 4 seconds before submitting
+            time.sleep(5)
+            self.submit(
+                AssemblyChecker,
+                procs=1,
+                params=self.params)
             logger.info("Sample: %s Assemblies not finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
         else:
-            params = deepcopy(self.params)
-            finisher = Finisher(params)
-            self.ref_q.put(finisher.to_dict())
+            self.submit(
+                Finisher,
+                procs=1,
+                params=self.params)
             logger.info("Sample: %s Assemblies finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
