@@ -30,16 +30,16 @@ class AssemblyRunner(BaseRunner):
         pe_run = 'assembly_PE1' and 'assembly_PE2' in self.params
         se_run = 'assembly_SE' in self.params
         if not (pe_run or se_run):
-            raise exceptions.FatalException('Missing self.params in RunSpades.')
+            raise exceptions.FatalException('Missing self.params in assembler.')
 
         pe_one_path = os.path.exists(self.params['assembly_PE1'])
         pe_two_path = os.path.exists(self.params['assembly_PE2'])
         if pe_run and not (pe_one_path and pe_two_path):
-            raise exceptions.FatalException('Missing PE files in RunSpades.')
+            raise exceptions.FatalException('Missing PE files in assembler.')
 
         se_path = os.path.exists(self.params['assembly_SE'])
         if se_run and not se_path:
-            raise exceptions.FatalException('Missing SE file in RunSpades.')
+            raise exceptions.FatalException('Missing SE file in assembler.')
 
     def execute(self):
         if not('assembler' in self.params):
