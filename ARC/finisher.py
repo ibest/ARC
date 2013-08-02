@@ -166,7 +166,7 @@ class Finisher:
                     contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
                     SeqIO.write(contig, outf, "fasta")
                 contig_inf.close()
-                logger.info("Sample: %s target: %s Finished writing %s contigs " % (self.params['sample'], target, i))
+                logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs " % (self.params['sample'], target, self.params['iteration'], i))
             if i == 0 and finished is False:
                 map_against_reads = True
 

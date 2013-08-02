@@ -1,5 +1,5 @@
 #rm -rf working*
 #rm -rf finished_*
 echo "See runarc.log for output...."
-../bin/ARC
+time ../bin/ARC
 # > runarc.log
