@@ -15,12 +15,12 @@ New features added and some modifications to output:
 A number of bugs were found which caused ARC to perform incorrectly including:
  - output only a subset of contigs in the final assemblies
  - crash if no SE reads were mapped and Spades assembler was used (thanks for spotting this https://github.com/brantfaircloth)
- 
+
 Please ensure that you have updated your release since June 28, 2013.
 
 # ARC (Assembly by Reduced Complexity)
 
-ARC is a pipeline which facilitates iterative, reference guided *de nono* assemblies with the intent of 1) reducing time in analysis and increasing accuracy of results by only considering those reads which should assemble together and 2) reduce reference bias as compared to mapping based approaches. The software is designed to work in situations where a whole-genome assembly is not the objective, but rather when the researcher wishes to assemble discreet 'targets' contained within next-generation shotgun sequence data. ARC decomplexifies the traditionally difficult problem of assembly by subsetting the reads into small, manageable pieces which can then be assembled quickly and efficiently. Applications include those in which the researcher wishes to *de novo* assemble specific content and a set of semi-similar reference targets is available to initialize the assembly process.
+ARC is a pipeline which facilitates iterative, reference guided *de nono* assemblies with the intent of 1) reducing time in analysis and increasing accuracy of results by only considering those reads which should assemble together and 2) reducing reference bias as compared to mapping based approaches. The software is designed to work in situations where a whole-genome assembly is not the objective, but rather when the researcher wishes to assemble discreet 'targets' contained within next-generation shotgun sequence data. ARC decomplexifies the traditionally difficult problem of assembly by breaking the reads into small, manageable subsets which can then be assembled quickly and efficiently. Applications include those in which the researcher wishes to *de novo* assemble specific content and a set of semi-similar reference targets is available to initialize the assembly process.
 
 ARC has shown promise in:
 
@@ -84,11 +84,11 @@ Move to the directory where you keep all of your python virtual environments and
     $ python setup.py install
 
 ### Option 3: Run from the git-clone folder without installing:
-    
+
     $ ./ARC/bin/ARC
 
 ### Testing your install:
-    
+
     A small test assembly can be run using the included test data and the following commands:
 
     $ cd test_data
@@ -137,7 +137,7 @@ All configuration for ARC is stored in the ARC_config.txt file. Consult the exam
         * ID_:_Target1_:_seq1
         * ID_:_Target1_:_seq2
 * Setting map_against_reads:
-    * Only a small number of reads may map on the first iteration if your reference is very distantly related or coverage is low. In these situations, set map_against_reads=True in the ARC_config.txt file. This will use all of the mapped reads as the new set of targets instead of using contigs. Please note that this feature is experimental and sometimes leads to incorporation of repetitive elements. 
+    * Only a small number of reads may map on the first iteration if your reference is very distantly related or coverage is low. In these situations, set map_against_reads=True in the ARC_config.txt file. This will use all of the mapped reads as the new set of targets instead of using contigs. Please note that this feature is experimental and sometimes leads to incorporation of repetitive elements.
 
 ## Questions/Comments/Suggestions
 Please send questions, comments and suggestions to Sam Hunter (shunter {at} gmail {dot} com).
