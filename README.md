@@ -1,4 +1,8 @@
 ## News
+2013-08-05:
+
+ARC has gone a month since the last reported bug and has performed well on numerous projects. At this point we'd like to release a stable version 1.0 and start implementing enhancements in a development branch.
+
 2013-07-09:
 
 New features added and some modifications to output:
@@ -10,13 +14,6 @@ New features added and some modifications to output:
  * Output has been mostly standardized so that all output starts with "Sample: SampleID target: TargetID" which makes it easy to grep the assembly log and get progress information for a single sample. It is recommended that you run ARC with stdout pipped to a log file to facilitate this: ARC > arc.log
  * Added an Extensions folder to hold ARC extensions, currently there is only one, check_status.R. Please contact us if you are interested in contributing an extension.
 
-2013-07-05:
-
-A number of bugs were found which caused ARC to perform incorrectly including:
- - output only a subset of contigs in the final assemblies
- - crash if no SE reads were mapped and Spades assembler was used (thanks for spotting this https://github.com/brantfaircloth)
-
-Please ensure that you have updated your release since June 28, 2013.
 
 # ARC (Assembly by Reduced Complexity)
 
