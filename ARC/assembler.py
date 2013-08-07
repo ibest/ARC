@@ -115,26 +115,26 @@ class AssemblyRunner:
 
         #Build args for newAssembly:
         args = ['newAssembly', '-force', os.path.join(self.params['target_dir'], 'assembly')]
-        logger.info("Calling newAssembly for sample: %s target %s" % (sample, target))
+        #logger.info("Calling newAssembly for sample: %s target %s" % (sample, target))
         logger.info(" ".join(args))
         ret = subprocess.call(args, stdout=out, stderr=out)
         #Build args for addRun:
-        if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
+        if 'assembly_PE1' and 'assembly_PE2' in self.params:
             args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
             args += [self.params['assembly_PE1']]
-            logger.info("Calling addRun for sample: %s target %s" % (sample, target))
+            #logger.info("Calling addRun for sample: %s target %s" % (sample, target))
             logger.info(" ".join(args))
             ret = subprocess.call(args, stdout=out, stderr=out)
 
             args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
             args += [self.params['assembly_PE2']]
-            logger.info("Calling addRun for sample: %s target %s" % (sample, target))
+            #logger.info("Calling addRun for sample: %s target %s" % (sample, target))
             logger.info(" ".join(args))
             ret = subprocess.call(args, stdout=out, stderr=out)
         if 'assembly_SE' in self.params:
             args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
             args += [self.params['assembly_SE']]
-            logger.info("Calling addRun for sample: %s target %s" % (sample, target))
+            #logger.info("Calling addRun for sample: %s target %s" % (sample, target))
             logger.info(" ".join(args))
             ret = subprocess.call(args, stdout=out, stderr=out)
 
@@ -147,7 +147,7 @@ class AssemblyRunner:
         args += [os.path.join(self.params['target_dir'], 'assembly')]
         try:
             start = time.time()
-            logger.info("Calling runProject for sample: %s target %s" % (sample, target))
+            #logger.info("Calling runProject for sample: %s target %s" % (sample, target))
             logger.info(" ".join(args))
             ret = subprocess.Popen(args, stdout=out, stderr=out)
             pid = ret.pid

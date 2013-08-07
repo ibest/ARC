@@ -136,7 +136,7 @@ class MapperRunner:
         #Extract the SAM to a dict
         self.params['mapping_dict'] = self.SAM_to_dict(os.path.join(working_dir, 'mapping.sam'))
         #clean up intermediary files:
-        os.remove(os.path.join(working_dir, 'mapping.sam'))
+        #os.remove(os.path.join(working_dir, 'mapping.sam'))
         os.system("rm -rf %s" % idx_dir)
 
     def run_blat(self):
@@ -195,18 +195,51 @@ class MapperRunner:
         self.params['mapping_dict'] = self.PSL_to_dict(os.path.join(working_dir, 'mapping.psl'))
         #os.remove(os.path.join(working_dir, 'mapping.psl'))
 
+    # def SAM_to_dict(self, filename):
+    #     """ Read a SAM file to a mapping dict and return it """
+    #     #Check for necessary files:
+    #     if os.path.exists(filename) is False:
+    #         raise exceptions.FatalError("Missing SAM file")
+    #     try:
+    #         inf = open(filename, 'r')
+    #     except Exception as exc:
+    #         txt = "Failed to open SAM file %s" % filename
+    #         txt += '\n\t' + str(exc)
+    #         raise exceptions.FatalError(txt)
+    #     read_map = {}  # target:{read} dictionary of dictionaries
+    #     i = 0
+    #     startT = time.time()
+    #     for l in inf:
+    #         i += 1
+    #         if l[0] != "@":  # skip header lines
+    #             l2 = l.strip().split()
+    #             if l2[2] == "*":  # skip unmapped
+    #                 continue
+    #             readid = l2[0].split("/")[0]
+    #             target = l2[2]
+    #             #handle references built using assembled contigs:
+    #             if len(target.split("_:_")) > 1:
+    #                 target = target.split("_:_")[1]
+    #             if target not in read_map:
+    #                 read_map[target] = {}
+    #             read_map[target][readid] = 1
+    #     #Report total time:
+    #     logger.info("Sample: %s, Processed %s lines in %s seconds." % (self.params['sample'], i, time.time() - startT))
+    #     return read_map
+
     def SAM_to_dict(self, filename):
         """ Read a SAM file to a mapping dict and return it """
-        #Check for necessary files:
-        if os.path.exists(filename) is False:
-            raise exceptions.FatalError("Missing SAM file")
+        # This read_map is: {'readid':['target1','target2'...'targetn']}
+        # Check for necessary files:
+        if not os.path.exists(filename):
+            raise exceptions.FatalError("Sample: %s Missing SAM file" % self.params['sample'])
         try:
             inf = open(filename, 'r')
         except Exception as exc:
             txt = "Failed to open SAM file %s" % filename
             txt += '\n\t' + str(exc)
             raise exceptions.FatalError(txt)
-        read_map = {}  # target:{read} dictionary of dictionaries
+        read_map = {}
         i = 0
         startT = time.time()
         for l in inf:
@@ -217,18 +250,18 @@ class MapperRunner:
                     continue
                 readid = l2[0].split("/")[0]
                 target = l2[2]
-                #handle references built using assembled contigs:
                 if len(target.split("_:_")) > 1:
                     target = target.split("_:_")[1]
-                if target not in read_map:
-                    read_map[target] = {}
-                read_map[target][readid] = 1
+                if readid not in read_map:
+                    read_map[readid] = list()
+                read_map[readid].append(target)
         #Report total time:
-        logger.info("Sample: %s, Processed %s lines in %s seconds." % (self.params['sample'], i, time.time() - startT))
+        logger.info("Sample: %s, SAM:Processed %s lines in %s seconds" % (self.params['sample'], i, time.time() - startT))
         return read_map
 
     def PSL_to_dict(self, filename):
         """Process a PSL file to the dict format """
+        # This read_map is: {'readid':['target1','target2'...'targetn']}
         try:
             inf = open(filename, 'r')
         except Exception as inst:
@@ -238,9 +271,7 @@ class MapperRunner:
         read_map = {}
         i = 0
         startT = time.time()
-
         psl_header = False
-
         for l in inf:
             i += 1
             #Check for PSL header and skip 5 lines if it exists
@@ -254,11 +285,45 @@ class MapperRunner:
             #handle references built using assembled contigs:
             if len(target.split("_:_")) > 1:
                 target = target.split("_:_")[1]
-            if target not in read_map:
-                read_map[target] = {}
-            read_map[target][readid] = 1
-        logger.info("Sample: %s, Processed %s lines in %s seconds." % (self.params['sample'], i, time.time() - startT))
+            if readid not in read_map:
+                read_map[readid] = list()
+            read_map[readid].append(target)
+        logger.info("Sample: %s, PSL:Processed %s lines in %s seconds." % (self.params['sample'], i, time.time() - startT))
         return read_map
+
+
+    # def PSL_to_dict(self, filename):
+    #     """Process a PSL file to the dict format """
+    #     try:
+    #         inf = open(filename, 'r')
+    #     except Exception as inst:
+    #         if type(inst) == IOError:
+    #             logger.error("Failed to open mapping dictionary %s." % filename)
+    #         raise inst
+    #     read_map = {}
+    #     i = 0
+    #     startT = time.time()
+
+    #     psl_header = False
+
+    #     for l in inf:
+    #         i += 1
+    #         #Check for PSL header and skip 5 lines if it exists
+    #         if i == 1 and l.split()[0] == 'psLayout':
+    #             psl_header = True
+    #         if psl_header and i <= 5:
+    #             continue
+    #         l2 = l.strip().split("\t")
+    #         readid = l2[9].split("/")[0]  # remove unique part of PE reads
+    #         target = l2[13]
+    #         #handle references built using assembled contigs:
+    #         if len(target.split("_:_")) > 1:
+    #             target = target.split("_:_")[1]
+    #         if target not in read_map:
+    #             read_map[target] = {}
+    #         read_map[target][readid] = 1
+    #     logger.info("Sample: %s, Processed %s lines in %s seconds." % (self.params['sample'], i, time.time() - startT))
+    #     return read_map
 
     # def write_dict(self, filename, read_map):
     #     """
@@ -292,93 +357,241 @@ class MapperRunner:
     #     logger.info("Read all values to txt in %s seconds" % (time.time() - startT))
     #     return new_map
 
+    def openfile(self, filename):
+        """Simple function, returns a file handle to normal/gzipped files."""
+        if filename.split(".")[-1] == 'gz':
+            import gzip
+            handle = gzip.open(filename, 'rb')
+        else:
+            handle = open(filename, 'r')
+        return handle
+
     def splitreads(self):
-        """ Split reads and then kick off assemblies once the reads are split for a target, use safe_targets for names"""
+        """Split reads into folders, once all reads are split, launch assemblies for each target"""
         self.params['iteration'] += 1
         checker_params = deepcopy(self.params)
         checker_params['targets'] = {}
+        checker_params['readcounts'] = {}
         iteration = self.params['iteration']
-        if 'PE1' in self.params and 'PE2' in self.params:
-            idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=lambda x: x.split("/")[0])
-            idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=lambda x: x.split("/")[0])
-        if 'SE' in self.params:
-            idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=lambda x: x.split("/")[0])
-        if 'readcounts' not in checker_params:
-            checker_params['readcounts'] = {}
-        for target in self.params['mapping_dict']:
+        sample = self.params['sample']
+        outf = {}  # Store output handles for all targets
+        read_map = self.params['mapping_dict']
+        split_targets = {}  # Store count of reads split per target for logging
+        split_PEs = 0  # Store how many total PE reads were split
+        split_SEs = 0  # Store how many total SE reads were split
+        # Extract PE reads:
+        if 'PE1' and 'PE2' in self.params:
             startT = time.time()
-            #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
+            reads = 0
+            inf_PE1 = SeqIO.parse(self.openfile(self.params['PE1']), self.params['format'])
+            inf_PE2 = SeqIO.parse(self.openfile(self.params['PE2']), self.params['format'])
+            try:
+                while 1:
+                    read1 = inf_PE1.next()
+                    read2 = inf_PE2.next()
+                    reads += 1
+                    readid = read1.name.split("/")[0]
+                    if readid in read_map:
+                        split_PEs += 1
+                        targets = read_map[readid]
+                        for target in targets:
+                            if target not in split_targets:
+                                split_targets[target] = {}
+                                split_targets[target]['PE'] = 0
+                                split_targets[target]['SE'] = 0
+                            split_targets[target]['PE'] += 1
+                            if target not in outf:
+                                target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
+                                if not os.path.exists(target_dir):
+                                    os.mkdir(target_dir)
+                                outf[target] = {}
+                                outf[target]['PE1'] = open(os.path.join(target_dir, "PE1." + self.params['format']), 'w')
+                                outf[target]['PE2'] = open(os.path.join(target_dir, "PE2." + self.params['format']), 'w')
+                            SeqIO.write(read1, outf[target]['PE1'], self.params['format'])
+                            SeqIO.write(read2, outf[target]['PE2'], self.params['format'])
+            except StopIteration:
+                pass
+            # finally:
+            #     txt = "Sample: " + sample + " iteration: " + str(iteration) + " Split " + str(split_PEs)
+            #     txt += " PE reads from " + str(reads) +" records in " + str(round(time.time() - startT, 1)) + " seconds, "
+            #     txt += str(round(reads/(time.time() - startT), 2)) + " reads/second processed."
+            #     logger.info(txt)
+        #Extract SE reads:
+        if 'SE' in self.params:
+            startT = time.time()
+            inf_SE = SeqIO.parse(self.openfile(self.params['SE']), self.params['format'])
+            reads = 0
+            try:
+                while 1:
+                    read1 = inf_SE.next()
+                    reads += 1
+                    readid = read1.name.split("/")[0]
+                    if readid in read_map:
+                        split_SEs += 1
+                        targets = read_map[readid]
+                        for target in targets:
+                            if target not in split_targets:
+                                split_targets[target] = {}
+                                split_targets[target]['SE'] = 0
+                                split_targets[target]['PE'] = 0
+                            split_targets[target]['SE'] += 1
+                            if target not in outf:
+                                target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
+                                if not os.path.exists(target_dir):
+                                    os.mkdir(target_dir)
+                                outf[target] = {}
+                            if 'SE' not in outf[target]:
+                                target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
+                                outf[target]['SE'] = open(os.path.join(target_dir, "SE." + self.params['format']), 'w')
+                            SeqIO.write(read1, outf[target]['SE'], self.params['format'])
+            except StopIteration:
+                pass
+            # finally:
+            #     txt = "Sample:" + sample + " iteration: " + str(iteration) + " Split " + str(split_SEs)
+            #     txt += " SE reads from " + str(reads) + "  records in " + str(round(time.time() - startT, 1)) + " seconds, "
+            #     txt += str(round(reads/(time.time() - startT), 2)) + " reads/second processed."
+            #     logger.info(txt)
+        #Close all output files:
+        for k in outf:
+            if 'PE1' and 'PE2' in outf[k]:
+                outf[k]['PE1'].close()
+                outf[k]['PE2'].close()
+            if 'SE' in outf[k]:
+                outf[k]['SE'].close()
+        #Set up assembler jobs:
+        assembly_jobs = 0
+        for target in split_targets:
             target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
-            if target not in checker_params['readcounts']:
-                checker_params['readcounts'][target] = Counter()
-            os.mkdir(target_dir)
             assembly_params = deepcopy(self.params)
             assembly_params['target'] = target
             assembly_params['target_dir'] = target_dir
-            reads = self.params['mapping_dict'][target]
-            # track how many total reads were added for this cycle
-            checker_params['readcounts'][target][iteration] = len(reads)
-            SEs = PEs = 0
-            if 'PE1' in self.params and 'PE2' in self.params:
-                outf_PE1 = open(os.path.join(target_dir, "PE1." + self.params['format']), 'w')
-                outf_PE2 = open(os.path.join(target_dir, "PE2." + self.params['format']), 'w')
-                #idx_PE1 = self.params['indexes'][sample]['PE1']
-                #idx_PE2 = self.params['indexes'][sample]['PE2']
-            if 'SE' in self.params:
-                outf_SE = open(os.path.join(target_dir, "SE." + self.params['format']), 'w')
-                #idx_SE = self.params['indexes'][sample]['SE']
-            for readID in reads:
-                if 'PE1' in self.params and readID in idx_PE1:
-                    read1 = idx_PE1[readID]
-                    read2 = idx_PE2[readID]
-                    new_readID = readID.replace(":", "_") + ":0:0:0:0#0/"
-                    read1.id = read1.name = new_readID + "1"
-                    read2.id = read2.name = new_readID + "2"
-                    SeqIO.write(read1, outf_PE1, self.params['format'])
-                    SeqIO.write(read2, outf_PE2, self.params['format'])
-                    PEs += 1
-                elif 'SE' in self.params and readID in idx_SE:
-                    read1 = idx_SE[readID]
-                    read1.id = read1.name = readID.replace(":", "_") + ":0:0:0:0#0/"
-                    SeqIO.write(read1, outf_SE, self.params['format'])
-                    SEs += 1
-            if 'PE1' in self.params and 'PE2' in self.params:
-                outf_PE1.close()
-                outf_PE2.close()
-            if 'SE' in self.params:
-                outf_SE.close()
-
             #properly handle the case where no reads ended up mapping for the PE or SE inputs:
-            if PEs > 0:
+            if split_targets[target]['PE'] > 0:
                 assembly_params['assembly_PE1'] = os.path.join(target_dir, "PE1." + self.params['format'])
                 assembly_params['assembly_PE2'] = os.path.join(target_dir, "PE2." + self.params['format'])
-
-            if SEs > 0:
+            if split_targets[target]['SE'] > 0:
                 assembly_params['assembly_SE'] = os.path.join(target_dir, "SE." + self.params['format'])
-
             #All reads have been written at this point, add an assembly to the queue:
             ar = AssemblyRunner(assembly_params)
-            logger.info("Sample: %s target: %s iteration: %s Split %s reads in %s seconds" % (self.params['sample'], target, self.params['iteration'], len(reads), time.time() - startT))
-            #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
-            if PEs + SEs > 0:
+            if split_targets[target]['PE'] + split_targets[target]['SE'] > 0:
                 checker_params['targets'][target_dir] = False
                 self.ref_q.put(ar.to_dict())
+                assembly_jobs += 1
+            else:
+                logger.info("Sample: %s target: %s iteration: %s No reads mapped." % (sample, target, iteration))
 
         logger.info("------------------------------------")
-        logger.info("Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
+        logger.info("| Sample: %s Iteration %s of numcycles %s" % (sample, iteration, checker_params['numcycles']))
+        logger.info("| Launched %s assemblies" % assembly_jobs)
         logger.info("------------------------------------")
-        if 'PE1' in self.params and 'PE2' in self.params:
-            idx_PE1.close()
-            idx_PE2.close()
-        if 'SE' in self.params:
-            idx_SE.close()
 
-        #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
+        #Kick off a job which checks if all assemblies are done, also write stats
         del checker_params['mapping_dict']
         if len(checker_params['targets']) > 0:
             checker = AssemblyChecker(checker_params)
             self.ref_q.put(checker.to_dict())
+
             #Write out statistics for this iteration:
-            #TODO
+            stats_outf = open(os.path.join(self.params['working_dir'], 'mapping_stats.tsv'), 'a')
+            for target in split_targets:
+                stats_outf.write('\t'.join([sample, target, str(iteration), str(split_targets[target]['PE']), str(split_targets[target]['SE'])]) + '\n')
+                txt = "Sample: %s target: %s iteration: %s Split PE: %s SE: %s" % (sample, target, iteration, split_targets[target]['PE'], split_targets[target]['SE'])
+                logger.info(txt)
+                if target not in checker_params['readcounts']:
+                    checker_params['readcounts'][target] = Counter()
+                checker_params['readcounts'][target][iteration] = split_targets[target]['PE'] + split_targets[target]['SE']
+            stats_outf.close()
         else:
             logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
+
+
+    # def splitreads(self):
+    #     """ Split reads and then kick off assemblies once the reads are split for a target, use safe_targets for names"""
+    #     self.params['iteration'] += 1
+    #     checker_params = deepcopy(self.params)
+    #     checker_params['targets'] = {}
+    #     iteration = self.params['iteration']
+    #     if 'PE1' in self.params and 'PE2' in self.params:
+    #         idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=lambda x: x.split("/")[0])
+    #         idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=lambda x: x.split("/")[0])
+    #     if 'SE' in self.params:
+    #         idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=lambda x: x.split("/")[0])
+    #     if 'readcounts' not in checker_params:
+    #         checker_params['readcounts'] = {}
+    #     for target in self.params['mapping_dict']:
+    #         startT = time.time()
+    #         #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
+    #         target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
+    #         if target not in checker_params['readcounts']:
+    #             checker_params['readcounts'][target] = Counter()
+    #         os.mkdir(target_dir)
+    #         assembly_params = deepcopy(self.params)
+    #         assembly_params['target'] = target
+    #         assembly_params['target_dir'] = target_dir
+    #         reads = self.params['mapping_dict'][target]
+    #         # track how many total reads were added for this cycle
+    #         checker_params['readcounts'][target][iteration] = len(reads)
+    #         SEs = PEs = 0
+    #         if 'PE1' in self.params and 'PE2' in self.params:
+    #             outf_PE1 = open(os.path.join(target_dir, "PE1." + self.params['format']), 'w')
+    #             outf_PE2 = open(os.path.join(target_dir, "PE2." + self.params['format']), 'w')
+    #             #idx_PE1 = self.params['indexes'][sample]['PE1']
+    #             #idx_PE2 = self.params['indexes'][sample]['PE2']
+    #         if 'SE' in self.params:
+    #             outf_SE = open(os.path.join(target_dir, "SE." + self.params['format']), 'w')
+    #             #idx_SE = self.params['indexes'][sample]['SE']
+    #         for readID in reads:
+    #             if 'PE1' in self.params and readID in idx_PE1:
+    #                 read1 = idx_PE1[readID]
+    #                 read2 = idx_PE2[readID]
+    #                 new_readID = readID.replace(":", "_") + ":0:0:0:0#0/"
+    #                 read1.id = read1.name = new_readID + "1"
+    #                 read2.id = read2.name = new_readID + "2"
+    #                 SeqIO.write(read1, outf_PE1, self.params['format'])
+    #                 SeqIO.write(read2, outf_PE2, self.params['format'])
+    #                 PEs += 1
+    #             elif 'SE' in self.params and readID in idx_SE:
+    #                 read1 = idx_SE[readID]
+    #                 read1.id = read1.name = readID.replace(":", "_") + ":0:0:0:0#0/"
+    #                 SeqIO.write(read1, outf_SE, self.params['format'])
+    #                 SEs += 1
+    #         if 'PE1' in self.params and 'PE2' in self.params:
+    #             outf_PE1.close()
+    #             outf_PE2.close()
+    #         if 'SE' in self.params:
+    #             outf_SE.close()
+
+    #         #properly handle the case where no reads ended up mapping for the PE or SE inputs:
+    #         if PEs > 0:
+    #             assembly_params['assembly_PE1'] = os.path.join(target_dir, "PE1." + self.params['format'])
+    #             assembly_params['assembly_PE2'] = os.path.join(target_dir, "PE2." + self.params['format'])
+
+    #         if SEs > 0:
+    #             assembly_params['assembly_SE'] = os.path.join(target_dir, "SE." + self.params['format'])
+
+    #         #All reads have been written at this point, add an assembly to the queue:
+    #         ar = AssemblyRunner(assembly_params)
+    #         logger.info("Sample: %s target: %s iteration: %s Split %s reads in %s seconds" % (self.params['sample'], target, self.params['iteration'], len(reads), time.time() - startT))
+    #         #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
+    #         if PEs + SEs > 0:
+    #             checker_params['targets'][target_dir] = False
+    #             self.ref_q.put(ar.to_dict())
+
+    #     logger.info("------------------------------------")
+    #     logger.info("Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
+    #     logger.info("------------------------------------")
+    #     if 'PE1' in self.params and 'PE2' in self.params:
+    #         idx_PE1.close()
+    #         idx_PE2.close()
+    #     if 'SE' in self.params:
+    #         idx_SE.close()
+
+    #     #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
+    #     del checker_params['mapping_dict']
+    #     if len(checker_params['targets']) > 0:
+    #         checker = AssemblyChecker(checker_params)
+    #         self.ref_q.put(checker.to_dict())
+    #         #Write out statistics for this iteration:
+    #         #TODO
+    #     else:
+    #         logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])

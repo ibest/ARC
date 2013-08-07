@@ -94,7 +94,7 @@ class Finisher:
             target_map_against_reads = False
             safe_target = target_folder.split("/")[-1]  # get last element of path name
             target = self.params['safe_targets'][safe_target]
-            logger.info("Sample: %s target: %s finishing target.." % (self.params['sample'], target))
+            #logger.info("Sample: %s target: %s finishing target.." % (self.params['sample'], target))
             finishedf = open(os.path.join(target_folder, 'finished'), 'r')
             l = finishedf.readline().strip()
             finishedf.close()
@@ -192,13 +192,14 @@ class Finisher:
 
             if 'SE' in self.params:
                 inf_SEn = os.path.join(target_folder, "SE." + self.params['format'])
+                # Check that SE reads were mapped and only write them out if so
                 if os.path.exists(inf_SEn):
                     inf_SE = open(inf_SEn, 'r')
-                for r in SeqIO.parse(inf_SE, self.params['format']):
-                    i += 1
-                    r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Read%04d" % i
-                    SeqIO.write(r, outf, "fasta")
-                inf_SE.close()
+                    for r in SeqIO.parse(inf_SE, self.params['format']):
+                        i += 1
+                        r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Read%04d" % i
+                        SeqIO.write(r, outf, "fasta")
+                    inf_SE.close()
 
         if finished or killed:
             #Write reads:

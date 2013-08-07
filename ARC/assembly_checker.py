@@ -47,10 +47,10 @@ class AssemblyChecker:
         logger.info("Sample: %s AssemblyChecker started with %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
         for target_folder in self.params['targets']:
             if not self.params['targets'][target_folder]:
-                file = os.path.join(target_folder, 'finished')
-                if os.path.exists(file):
+                ffile = os.path.join(target_folder, 'finished')
+                if os.path.exists(ffile):
                     self.params['targets'][target_folder] = True
-                    logger.info("%s exists" % file)
+                    #logger.info("%s exists" % file)
                     completed += 1
 
         #Now check whether all have finished, if not, add a new AssemblyChecker to the queue

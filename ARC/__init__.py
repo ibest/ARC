@@ -58,11 +58,13 @@ def setup(config):
         and SAM_to_dict. This code is therefore written with the assumption that the user has put the _:_ in the name purposely
         so that multiple entries in the reference fasta will be treated as a single target.
     """
-    format = config['format']
+    #format = config['format']
     for sample in config['Samples']:
-        s = config['Samples'][sample]
         working_dir = os.path.realpath('./working_' + sample)
         finished_dir = os.path.realpath('./finished_' + sample)
+        #Check wheter finished_dir already exists, and exit if it does
+        if os.path.exists(finished_dir):
+            raise exceptions.FatalError("%s already exists, please remove or rename this folder and re-run ARC." % finished_dir)
         config['Samples'][sample]['working_dir'] = working_dir
         config['Samples'][sample]['finished_dir'] = finished_dir
         if os.path.exists(working_dir):
@@ -77,16 +79,21 @@ def setup(config):
         else:
             os.mkdir(working_dir)
             os.mkdir(finished_dir)
-        """ Build a separate index for each read file in the input, put them in working_dir"""
-        if 'PE1' in s:
-            if not os.path.exists(os.path.join(working_dir, "/PE1.idx")):
-                SeqIO.index_db(os.path.join(working_dir, "PE1.idx"), s['PE1'], format, key_function=lambda x: x.split("/")[0])
-        if 'PE2' in s:
-            if not os.path.exists(os.path.join(working_dir, "PE2.idx")):
-                SeqIO.index_db(os.path.join(working_dir, "PE2.idx"), s['PE2'], format, key_function=lambda x: x.split("/")[0])
-        if 'SE' in s:
-            if not os.path.exists(os.path.join(working_dir, "SE.idx")):
-                SeqIO.index_db(os.path.join(working_dir, "SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
+        stats_outf = open(os.path.join(working_dir, 'mapping_stats.tsv'), 'w')
+        stats_outf.write('\t'.join(["Sample", "Target", "Iteration", "PE", "SE"]) + '\n')
+        stats_outf.close()
+        ## instead of building indexes, we'll just split them using one iteration
+        ## Build a separate index for each read file in the input, put them in working_dir
+
+        # if 'PE1' in s:
+        #     if not os.path.exists(os.path.join(working_dir, "/PE1.idx")):
+        #         SeqIO.index_db(os.path.join(working_dir, "PE1.idx"), s['PE1'], format, key_function=lambda x: x.split("/")[0])
+        # if 'PE2' in s:
+        #     if not os.path.exists(os.path.join(working_dir, "PE2.idx")):
+        #         SeqIO.index_db(os.path.join(working_dir, "PE2.idx"), s['PE2'], format, key_function=lambda x: x.split("/")[0])
+        # if 'SE' in s:
+        #     if not os.path.exists(os.path.join(working_dir, "SE.idx")):
+        #         SeqIO.index_db(os.path.join(working_dir, "SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
 
         #Read through the reference, set up a set of safe names for the targets:
         safe_targets = {}
@@ -115,7 +122,7 @@ def read_config():
     for line in inf:
         if len(line) > 2 and line[0:2] != '##':
             if line[0] == '#':
-                """ Handle global parameters """
+                # Handle global parameters
                 line = line.strip().strip("# ")
                 line2 = line.strip().split("=")
                 if len(line2) != 2:
@@ -123,7 +130,7 @@ def read_config():
                                                 "please use # name=value. Offending entry: \n\t%s" % line)
                 config[line2[0].strip()] = line2[1].strip()
             elif header is False:
-                """ Handle Sample information """
+                # Handle Sample information
                 line2 = line.strip().split()
                 # Check that fields are formatted correctly:
                 if len(line2) != 3:
@@ -149,7 +156,7 @@ def read_config():
         raise exceptions.FatalError('Error, reference not included in ARC_config.txt')
     if len(config['Samples']) > 0:
         for Sample in config['Samples']:
-            if not (('PE1' in config['Samples'][Sample] and 'PE2' in config['Samples'][Sample]) or 'SE' in config['Samples'][Sample]):
+            if not ('PE1' and 'PE2' in config['Samples'][Sample] or 'SE' in config['Samples'][Sample]):
                 raise exceptions.FatalError("Error you must specify PE files and/or a SE file for each sample.")
             if 'PE1' in config['Samples'][Sample]:
                 config['Samples'][Sample]['PE1'] = os.path.realpath(config['Samples'][Sample]['PE1'])
