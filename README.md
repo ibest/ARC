@@ -1,4 +1,11 @@
 ## News
+2013-08-07:
+
+First commit after branching from stable. New features include:
+ * Testing a new approach to splitting reads. Indexes aren't used any more, so space requirements are lower, and speed should (?) be much better.
+ * Support for gzipped input files has been added, just make sure that your files end in .gz (not yet tested)
+ * Mapping statistics are now written to a file! Look for them in working_SampleN/mapping_stats.tsv (tab-separated, with header, R compatible)
+
 2013-07-09:
 
 New features added and some modifications to output:

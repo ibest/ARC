@@ -371,7 +371,8 @@ class MapperRunner:
         self.params['iteration'] += 1
         checker_params = deepcopy(self.params)
         checker_params['targets'] = {}
-        checker_params['readcounts'] = {}
+        if 'readcounts' not in checker_params:
+            checker_params['readcounts'] = {}
         iteration = self.params['iteration']
         sample = self.params['sample']
         outf = {}  # Store output handles for all targets
@@ -393,7 +394,7 @@ class MapperRunner:
                     readid = read1.name.split("/")[0]
                     if readid in read_map:
                         split_PEs += 1
-                        targets = read_map[readid]
+                        targets = set(read_map[readid])  # ensure that reads are written multiple times to the same target
                         for target in targets:
                             if target not in split_targets:
                                 split_targets[target] = {}
@@ -428,7 +429,7 @@ class MapperRunner:
                     readid = read1.name.split("/")[0]
                     if readid in read_map:
                         split_SEs += 1
-                        targets = read_map[readid]
+                        targets = set(read_map[readid])
                         for target in targets:
                             if target not in split_targets:
                                 split_targets[target] = {}
@@ -500,6 +501,7 @@ class MapperRunner:
                 if target not in checker_params['readcounts']:
                     checker_params['readcounts'][target] = Counter()
                 checker_params['readcounts'][target][iteration] = split_targets[target]['PE'] + split_targets[target]['SE']
+                print "Checker_params:", target, checker_params['readcounts'][target]
             stats_outf.close()
         else:
             logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])

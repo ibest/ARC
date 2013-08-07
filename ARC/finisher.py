@@ -103,7 +103,6 @@ class Finisher:
             iteration = self.params['iteration']
             cur_reads = self.params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
             previous_reads = self.params['readcounts'][target][iteration - 1]
-
             if l == 'assembly_killed':
                 #only write out the reads, assembly won't have contigs
                 self.write_target(target, target_folder, outf=fin_outf, finished=False, map_against_reads=False, killed=True)
