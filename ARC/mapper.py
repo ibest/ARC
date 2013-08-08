@@ -380,10 +380,10 @@ class MapperRunner:
         split_targets = {}  # Store count of reads split per target for logging
         split_PEs = 0  # Store how many total PE reads were split
         split_SEs = 0  # Store how many total SE reads were split
+        reads = 0
+        startT = time.time()
         # Extract PE reads:
         if 'PE1' and 'PE2' in self.params:
-            startT = time.time()
-            reads = 0
             inf_PE1 = SeqIO.parse(self.openfile(self.params['PE1']), self.params['format'])
             inf_PE2 = SeqIO.parse(self.openfile(self.params['PE2']), self.params['format'])
             try:
@@ -419,9 +419,7 @@ class MapperRunner:
             #     logger.info(txt)
         #Extract SE reads:
         if 'SE' in self.params:
-            startT = time.time()
             inf_SE = SeqIO.parse(self.openfile(self.params['SE']), self.params['format'])
-            reads = 0
             try:
                 while 1:
                     read1 = inf_SE.next()
@@ -459,6 +457,12 @@ class MapperRunner:
                 outf[k]['PE2'].close()
             if 'SE' in outf[k]:
                 outf[k]['SE'].close()
+        #Log stats
+        txt = "Sample: " + sample + " iteration: " + str(iteration) + " Split: PE " + str(split_PEs)
+        txt += " SE " + str(split_SEs) + " from " + str(reads) + " records in " + str(round(time.time() - startT, 1)) + " seconds, "
+        txt += str(round(reads/(time.time() - startT), 2)) + " reads/second processed."
+        logger.info(txt)
+
         #Set up assembler jobs:
         assembly_jobs = 0
         for target in split_targets:
@@ -501,7 +505,6 @@ class MapperRunner:
                 if target not in checker_params['readcounts']:
                     checker_params['readcounts'][target] = Counter()
                 checker_params['readcounts'][target][iteration] = split_targets[target]['PE'] + split_targets[target]['SE']
-                print "Checker_params:", target, checker_params['readcounts'][target]
             stats_outf.close()
         else:
             logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
