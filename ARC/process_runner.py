@@ -40,8 +40,8 @@ class ProcessRunner(Process):
                 #print "Sleeping", sleeptime
                 time.sleep(sleeptime)
                 item = self.ref_q.get_nowait()
-                sleeptime = .1
-                #print "got Item", item['runner'], "sleep time", sleeptime
+                sleeptime = 0
+                print "got Item", item['runner'], "sleep time", sleeptime
                 # If we made it this far, we have found something on the
                 # queue so we need to make sure we let the spawner know we
                 # are not done prior to starting so spawner doesn't kill the

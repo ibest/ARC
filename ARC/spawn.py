@@ -81,14 +81,15 @@ def run(config):
 
     status_ok = 0
     status_rerun = 0
-
+    sleeptime = 0.1
     while True:
         try:
-            time.sleep(0.1)
+            time.sleep(sleeptime)
             result = result_q.get_nowait()
             if result['status'] == 0:
                 logger.debug("Completed successfully %s" % (result['process']))
                 status_ok += 1
+                sleeptime = 0
             elif result['status'] == 1:
                 logger.debug("Rerunnable error returned from %s" % (result['process']))
                 status_rerun += 1
@@ -99,6 +100,7 @@ def run(config):
                 raise exceptions.FatalError("Unrecoverable error")
             elif result['status'] == 3:
                 logger.debug("Empty state returned from %s" % (result['process']))
+                sleeptime = 1
             else:
                 logger.error("Unknown state returned from %s" % (result['process']))
                 kill_workers(workers)
