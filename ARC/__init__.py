@@ -22,6 +22,7 @@ from ARC import logger
 #from ARC import mapper
 from ARC import spawn
 from ARC import exceptions
+import time
 #from ARC import config
 
 
@@ -77,7 +78,8 @@ def setup(config):
         else:
             os.mkdir(working_dir)
             os.mkdir(finished_dir)
-        """ Build a separate index for each read file in the input, put them in working_dir"""
+        ## Build a separate index for each read file in the input, put them in working_dir"""
+        start = time.time()
         if 'PE1' in s:
             if not os.path.exists(os.path.join(working_dir, "/PE1.idx")):
                 SeqIO.index_db(os.path.join(working_dir, "PE1.idx"), s['PE1'], format, key_function=lambda x: x.split("/")[0])
@@ -87,6 +89,7 @@ def setup(config):
         if 'SE' in s:
             if not os.path.exists(os.path.join(working_dir, "SE.idx")):
                 SeqIO.index_db(os.path.join(working_dir, "SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
+        logger.info("Sample: %s, indexed reads in %s sectonds." % (sample, time.time()-start))
 
         #Read through the reference, set up a set of safe names for the targets:
         safe_targets = {}

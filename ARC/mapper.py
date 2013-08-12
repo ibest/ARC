@@ -184,7 +184,7 @@ class MapperRunner:
         try:
             ret = subprocess.call(args, stdout=out, stderr=out)
         except Exception as exc:
-            txt = ("Sample %s: Unhandeled error running bowtie2 mapping, check log file." % self.params['sample']) + '\n\t' + str(exc)
+            txt = ("Sample %s: Unhandeled error running blat mapping, check log file." % self.params['sample']) + '\n\t' + str(exc)
             raise exceptions.FatalError(txt)
         finally:
             out.close()
@@ -357,6 +357,7 @@ class MapperRunner:
                 assembly_params['assembly_SE'] = os.path.join(target_dir, "SE." + self.params['format'])
 
             #All reads have been written at this point, add an assembly to the queue:
+            del assembly_params['mapping_dict']
             ar = AssemblyRunner(assembly_params)
             logger.info("Sample: %s target: %s iteration: %s Split %s reads in %s seconds" % (self.params['sample'], target, self.params['iteration'], len(reads), time.time() - startT))
             #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
