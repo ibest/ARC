@@ -53,6 +53,9 @@ class ProcessRunner(Process):
                 job.queue(self.ref_q)
                 job.start()
                 self.result_q.put({"status": 0, "process": self.name})
+                #Try to get garbage collection to clean things up:
+                del item
+                del job
             except exceptions.RerunnableError as e:
                 logger.warn("[%s] A job needs to be rerun: %s" % (self.name, e))
                 self.result_q.put({"status": 1, "process": self.name})

@@ -313,6 +313,7 @@ class MapperRunner:
                 checker_params['readcounts'][target] = Counter()
             os.mkdir(target_dir)
             assembly_params = deepcopy(self.params)
+            #assembly_params = {}
             assembly_params['target'] = target
             assembly_params['target_dir'] = target_dir
             reads = self.params['mapping_dict'][target]
@@ -364,6 +365,7 @@ class MapperRunner:
             if PEs + SEs > 0:
                 checker_params['targets'][target_dir] = False
                 self.ref_q.put(ar.to_dict())
+                del ar
 
         logger.info("------------------------------------")
         logger.info("Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
