@@ -224,7 +224,7 @@ class MapperRunner:
                     read_map[target] = {}
                 read_map[target][readid] = 1
         #Report total time:
-        logger.info("Sample: %s, Processed %s lines in %s seconds." % (self.params['sample'], i, time.time() - startT))
+        logger.info("Sample: %s, Processed %s lines from SAM in %s seconds." % (self.params['sample'], i, time.time() - startT))
         return read_map
 
     def PSL_to_dict(self, filename):
@@ -257,7 +257,7 @@ class MapperRunner:
             if target not in read_map:
                 read_map[target] = {}
             read_map[target][readid] = 1
-        logger.info("Sample: %s, Processed %s lines in %s seconds." % (self.params['sample'], i, time.time() - startT))
+        logger.info("Sample: %s, Processed %s lines from PSL in %s seconds." % (self.params['sample'], i, time.time() - startT))
         return read_map
 
     # def write_dict(self, filename, read_map):
@@ -312,13 +312,22 @@ class MapperRunner:
             if target not in checker_params['readcounts']:
                 checker_params['readcounts'][target] = Counter()
             os.mkdir(target_dir)
-            assembly_params = deepcopy(self.params)
-            #assembly_params = {}
+            #assembly_params = deepcopy(self.params)
+            assembly_params = {}
             assembly_params['target'] = target
             assembly_params['target_dir'] = target_dir
+            assembly_params['iteration'] = iteration
+            assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles']
+            for k in assembler_keys:
+                assembly_params[k] = self.params[k]
+
             reads = self.params['mapping_dict'][target]
             # track how many total reads were added for this cycle
             checker_params['readcounts'][target][iteration] = len(reads)
+            statsf = open(os.path.join(self.params['working_dir'], "mapping_stats.tsv"), 'a')
+            statsf.write('\t'.join([self.params['sample'],target,str(iteration),str(len(reads))]) + '\n')
+            statsf.close()
+
             SEs = PEs = 0
             if 'PE1' in self.params and 'PE2' in self.params:
                 outf_PE1 = open(os.path.join(target_dir, "PE1." + self.params['format']), 'w')
@@ -358,17 +367,17 @@ class MapperRunner:
                 assembly_params['assembly_SE'] = os.path.join(target_dir, "SE." + self.params['format'])
 
             #All reads have been written at this point, add an assembly to the queue:
-            del assembly_params['mapping_dict']
+            #del assembly_params['mapping_dict']
             ar = AssemblyRunner(assembly_params)
             logger.info("Sample: %s target: %s iteration: %s Split %s reads in %s seconds" % (self.params['sample'], target, self.params['iteration'], len(reads), time.time() - startT))
             #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
             if PEs + SEs > 0:
                 checker_params['targets'][target_dir] = False
                 self.ref_q.put(ar.to_dict())
-                del ar
+            del ar
 
         logger.info("------------------------------------")
-        logger.info("Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
+        logger.info("| Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
         logger.info("------------------------------------")
         if 'PE1' in self.params and 'PE2' in self.params:
             idx_PE1.close()
@@ -385,3 +394,5 @@ class MapperRunner:
             #TODO
         else:
             logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
+        #finally delete reference to ref_q
+        del self.ref_q

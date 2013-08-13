@@ -86,7 +86,7 @@ def run(config):
         try:
             time.sleep(sleeptime)
             result = result_q.get_nowait()
-            print "Spawner, setting sleeptime to %s" % sleeptime
+            #print "Spawner, setting sleeptime to %s" % sleeptime
             sleeptime = 0
             if result['status'] == 0:
                 logger.debug("Completed successfully %s" % (result['process']))
@@ -102,7 +102,7 @@ def run(config):
             elif result['status'] == 3:
                 logger.debug("Empty state returned from %s" % (result['process']))
             elif result['status'] == 4:
-                logger.debug("Worker needs to be retired")
+                logger.debug("%s worker needs to be retired" % result['process'])
                 retire_worker(workers, result['process'], ref_q, result_q, finished)
             else:
                 logger.error("Unknown state returned from %s" % (result['process']))
@@ -113,7 +113,7 @@ def run(config):
             raise
         except Empty:
             sleeptime = 5
-            print "Spawn setting sleeptime to", sleeptime
+            #print "Spawn setting sleeptime to", sleeptime
             if not not_done(finished):
                 logger.debug("Results queue is empty and there are no active processes.  Exiting")
                 break
@@ -134,13 +134,13 @@ def retire_worker(workers, process, ref_q, result_q, finished):
     for i in range(len(workers)):
         worker = workers[i]
         if worker.name == process:
-            logger.debug("Terminating working %s" % worker.name)
+            logger.info("Terminating working %s" % worker.name)
             worker.terminate()
             worker = ProcessRunner(ref_q, result_q, finished, i)
             worker.daemon = False
             workers[i] = worker
             worker.start()
-            logger.debug("Started new worker %s" % worker.name)
+            logger.info("Started new worker %s" % worker.name)
 
 def not_done(finished):
     logger.debug("Checking to see if workers are done")

@@ -16,7 +16,7 @@ import sys
 from Queue import Empty
 from multiprocessing import Process
 import time
-import os
+#import os
 from ARC import logger
 from ARC import exceptions
 
@@ -29,6 +29,7 @@ class ProcessRunner(Process):
         self.finished = finished
         self.proc = proc
         self.numjobs = 0
+        self.retired = False
 
     def run(self):
         """
@@ -39,12 +40,7 @@ class ProcessRunner(Process):
         while True:
             try:
                 time.sleep(sleeptime)
-                if self.numjobs > 10:
-                    #Ask for retirement
-                    logger.debug(self.name + " Asking to be retired after %s jobs" % self.numjobs)
-                    self.result_q.put({"status": 4, "process": self.name})
-                    sleeptime = 5
-                else:
+                if not self.retired:
                     item = self.ref_q.get_nowait()
                     sleeptime = 0
                     #print "got Item", item['runner'], "sleep time", sleeptime
@@ -58,12 +54,20 @@ class ProcessRunner(Process):
                     logger.debug("[%s] Processing: %s" % (self.name, item['message']))
                     job.queue(self.ref_q)
                     self.numjobs += 1
-                    print "%s finished a job, total jobs %s" % (self.name, self.numjobs)
                     job.start()
+                    #print "%s finished a job, total jobs %s" % (self.name, self.numjobs)
                     self.result_q.put({"status": 0, "process": self.name})
-                    #Try to get garbage collection to clean things up:
-                    del item
-                    del job
+                if str(job.__class__) == 'ARC.mapper.MapperRunner':
+                    logger.info(self.name + " got a MapperRunner job, asking to be retired after %s jobs" % self.numjobs)
+                    self.result_q.put({"status": 4, "process": self.name})
+                    sleeptime = 5
+                    self.retired = True
+                # if self.numjobs > 10 and not self.retired:
+                #     #Ask for retirement
+                #     logger.debug(self.name + " Asking to be retired after %s jobs" % self.numjobs)
+                #     self.result_q.put({"status": 4, "process": self.name})
+                #     sleeptime = 5
+                #     self.retired = True
             except exceptions.RerunnableError as e:
                 logger.warn("[%s] A job needs to be rerun: %s" % (self.name, e))
                 self.result_q.put({"status": 1, "process": self.name})

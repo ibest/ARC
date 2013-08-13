@@ -28,7 +28,7 @@ import time
 
 def main():
     try:
-        logger.setup(loglevel=logging.DEBUG)
+        logger.setup(loglevel=logging.INFO)
 
         logger.info("Reading config file...")
         config = read_config()
@@ -78,10 +78,14 @@ def setup(config):
         else:
             os.mkdir(working_dir)
             os.mkdir(finished_dir)
+        # Create stats file:
+        statsf = open(os.path.join(working_dir, "mapping_stats.tsv"), 'w')
+        statsf.write('\t'.join(['Sample','Target','Iteration','Reads']) + '\n')
+        statsf.close()
         ## Build a separate index for each read file in the input, put them in working_dir"""
         start = time.time()
         if 'PE1' in s:
-            if not os.path.exists(os.path.join(working_dir, "/PE1.idx")):
+            if not os.path.exists(os.path.join(working_dir, "PE1.idx")):
                 SeqIO.index_db(os.path.join(working_dir, "PE1.idx"), s['PE1'], format, key_function=lambda x: x.split("/")[0])
         if 'PE2' in s:
             if not os.path.exists(os.path.join(working_dir, "PE2.idx")):
@@ -89,7 +93,7 @@ def setup(config):
         if 'SE' in s:
             if not os.path.exists(os.path.join(working_dir, "SE.idx")):
                 SeqIO.index_db(os.path.join(working_dir, "SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
-        logger.info("Sample: %s, indexed reads in %s sectonds." % (sample, time.time()-start))
+        logger.info("Sample: %s, indexed reads in %s seconds." % (sample, time.time()-start))
 
         #Read through the reference, set up a set of safe names for the targets:
         safe_targets = {}

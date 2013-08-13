@@ -45,13 +45,10 @@ class AssemblyRunner:
         if not('assembler' in self.params):
             raise exceptions.FatalError("assembler not defined in params")
         if self.params['map_against_reads'] and self.params['iteration'] == 1:
-            #print "ASSEMBLER: %s %s MAP AGAINST READS" % (self.params['sample'], self.params['target'])
             self.RunMapAgainstReads()
         elif self.params['assembler'] == 'newbler':
-            #logger.info("Running Newbler for sample: %s target: %s" % (self.params['sample'], self.params['target']))
             self.RunNewbler()
         elif self.params['assembler'] == 'spades':
-            #logger.info("Running Spades for sample: %s target: %s" % (self.params['sample'], self.params['target']))
             self.RunSpades()
         else:
             raise exceptions.FatalError("Assembler %s isn't recognized." % self.params['assembler'])
@@ -115,27 +112,27 @@ class AssemblyRunner:
 
         #Build args for newAssembly:
         args = ['newAssembly', '-force', os.path.join(self.params['target_dir'], 'assembly')]
-        logger.info("Calling newAssembly for sample: %s target %s" % (sample, target))
-        logger.info(" ".join(args))
+        logger.debug("Calling newAssembly for sample: %s target %s" % (sample, target))
+        logger.debug(" ".join(args))
         ret = subprocess.call(args, stdout=out, stderr=out)
         #Build args for addRun:
         if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
             args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
             args += [self.params['assembly_PE1']]
-            logger.info("Calling addRun for sample: %s target %s" % (sample, target))
-            logger.info(" ".join(args))
+            logger.debug("Calling addRun for sample: %s target %s" % (sample, target))
+            logger.debug(" ".join(args))
             ret = subprocess.call(args, stdout=out, stderr=out)
 
             args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
             args += [self.params['assembly_PE2']]
-            logger.info("Calling addRun for sample: %s target %s" % (sample, target))
-            logger.info(" ".join(args))
+            logger.debug("Calling addRun for sample: %s target %s" % (sample, target))
+            logger.debug(" ".join(args))
             ret = subprocess.call(args, stdout=out, stderr=out)
         if 'assembly_SE' in self.params:
             args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]
             args += [self.params['assembly_SE']]
-            logger.info("Calling addRun for sample: %s target %s" % (sample, target))
-            logger.info(" ".join(args))
+            logger.debug("Calling addRun for sample: %s target %s" % (sample, target))
+            logger.debug(" ".join(args))
             ret = subprocess.call(args, stdout=out, stderr=out)
 
         #Build args for runProject
@@ -147,8 +144,8 @@ class AssemblyRunner:
         args += [os.path.join(self.params['target_dir'], 'assembly')]
         try:
             start = time.time()
-            logger.info("Calling runProject for sample: %s target %s" % (sample, target))
-            logger.info(" ".join(args))
+            logger.debug("Calling runProject for sample: %s target %s" % (sample, target))
+            logger.debug(" ".join(args))
             ret = subprocess.Popen(args, stdout=out, stderr=out)
             pid = ret.pid
             while ret.poll() is None:
@@ -223,8 +220,8 @@ class AssemblyRunner:
         else:
             out = open(os.devnull, 'w')
 
-        logger.info("Sample: %s target: %s Running spades assembler." % (sample, target))
-        logger.info(" ".join(args))
+        logger.debug("Sample: %s target: %s Running spades assembler." % (sample, target))
+        logger.debug(" ".join(args))
         killed = False
         failed = False
         start = time.time()
