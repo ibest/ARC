@@ -390,9 +390,9 @@ class MapperRunner:
         if len(checker_params['targets']) > 0:
             checker = AssemblyChecker(checker_params)
             self.ref_q.put(checker.to_dict())
-            #Write out statistics for this iteration:
-            #TODO
+
         else:
             logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
-        #finally delete reference to ref_q
+        #finally delete reference to ref_q and params
         del self.ref_q
+        del self.params
