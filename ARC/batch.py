@@ -49,7 +49,6 @@ class Batch:
                 self.bq.rerun(job)
             else:
                 process = self.bq.process(job)
-                print "HIIIIIIIIII: %d" % process.exitcode
                 job.setcomplete(process.exitcode)
                 self.manage_exitcode(job)
                 self.bq.complete(job)
@@ -67,13 +66,12 @@ class Batch:
 
         if code == Job.OK:
             # update stats
-            self.debug("OK")
+            self.debug("Job finished with status OK")
         elif code == Job.FATALERROR:
             self.debug("A fatal error has occurred. Exiting")
             # Kill everything and exit
         elif code == Job.TIMEOUTERROR:
-            self.debug("Timeout occured.  Killing dependent jobs.")
-            # Kill all dependent jobs
+            self.debug("Timeout occured.  Dependent jobs are safe.")
             # update stats
         elif code == Job.RERUNERROR:
             self.warn("Deprecated. Use the resubmit method.")
@@ -96,7 +94,7 @@ class Batch:
         process = self.bq.process(job)
         process.setup()
         process.daemon = False
-        # self.debug("Starting runner[%s]" % (job.ident))
+        self.debug("Starting runner[%s]" % (job.ident))
         process.start()
 
     def run(self):
