@@ -28,6 +28,7 @@ class ProcessRunner(Process):
         self.result_q = result_q
         self.finished = finished
         self.proc = proc
+        self.numjobs = 0
 
     def run(self):
         """
@@ -37,25 +38,32 @@ class ProcessRunner(Process):
         sleeptime = .5
         while True:
             try:
-                #print "Sleeping", sleeptime
                 time.sleep(sleeptime)
-                item = self.ref_q.get_nowait()
-                sleeptime = 0
-                print "got Item", item['runner'], "sleep time", sleeptime
-                # If we made it this far, we have found something on the
-                # queue so we need to make sure we let the spawner know we
-                # are not done prior to starting so spawner doesn't kill the
-                # process
-                self.not_done()
-                # Begin the run
-                job = item['runner']
-                logger.debug("[%s] Processing: %s" % (self.name, item['message']))
-                job.queue(self.ref_q)
-                job.start()
-                self.result_q.put({"status": 0, "process": self.name})
-                #Try to get garbage collection to clean things up:
-                del item
-                del job
+                if self.numjobs > 10:
+                    #Ask for retirement
+                    logger.debug(self.name + " Asking to be retired after %s jobs" % self.numjobs)
+                    self.result_q.put({"status": 4, "process": self.name})
+                    sleeptime = 5
+                else:
+                    item = self.ref_q.get_nowait()
+                    sleeptime = 0
+                    #print "got Item", item['runner'], "sleep time", sleeptime
+                    # If we made it this far, we have found something on the
+                    # queue so we need to make sure we let the spawner know we
+                    # are not done prior to starting so spawner doesn't kill the
+                    # process
+                    self.not_done()
+                    # Begin the run
+                    job = item['runner']
+                    logger.debug("[%s] Processing: %s" % (self.name, item['message']))
+                    job.queue(self.ref_q)
+                    self.numjobs += 1
+                    print "%s finished a job, total jobs %s" % (self.name, self.numjobs)
+                    job.start()
+                    self.result_q.put({"status": 0, "process": self.name})
+                    #Try to get garbage collection to clean things up:
+                    del item
+                    del job
             except exceptions.RerunnableError as e:
                 logger.warn("[%s] A job needs to be rerun: %s" % (self.name, e))
                 self.result_q.put({"status": 1, "process": self.name})

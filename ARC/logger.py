@@ -17,7 +17,7 @@ import sys
 import logging
 
 
-def setup(logfile=None, loglevel=logging.INFO):
+def setup(logfile=None, loglevel=logging.DEBUG):
     #Setup a global logger:
     # global logger
     # How should we handle this gracefully for cases where each component is run independently?

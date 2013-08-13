@@ -38,12 +38,12 @@ class AssemblyRunner:
 
     def to_dict(self):
         return {'runner': self,
-                'message': 'Assmelber for Sample: %s Target: %s' % (self.params['sample'], self.params['target']),
+                'message': 'Assembler for Sample: %s Target: %s' % (self.params['sample'], self.params['target']),
                 'params': self.params}
 
     def start(self):
         if not('assembler' in self.params):
-            raise exceptions.FatalException("assembler not defined in params")
+            raise exceptions.FatalError("assembler not defined in params")
         if self.params['map_against_reads'] and self.params['iteration'] == 1:
             #print "ASSEMBLER: %s %s MAP AGAINST READS" % (self.params['sample'], self.params['target'])
             self.RunMapAgainstReads()
@@ -54,7 +54,7 @@ class AssemblyRunner:
             #logger.info("Running Spades for sample: %s target: %s" % (self.params['sample'], self.params['target']))
             self.RunSpades()
         else:
-            raise exceptions.FatalException("Assembler %s isn't recognized." % self.params['assembler'])
+            raise exceptions.FatalError("Assembler %s isn't recognized." % self.params['assembler'])
 
     def RunMapAgainstReads(self):
         """
@@ -93,14 +93,14 @@ class AssemblyRunner:
         """
         #Check for necessary params:
         if not (('assembly_PE1' in self.params and 'assembly_PE2' in self.params) or 'assembly_SE' in self.params):
-            raise exceptions.FatalException('Missing self.params in RunNewbler.')
+            raise exceptions.FatalError('Missing self.params in RunNewbler.')
 
         #Check for necessary files:
         if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params and not(os.path.exists(self.params['assembly_PE1']) or not(os.path.exists(self.params['assembly_PE2']))):
-            raise exceptions.FatalException('Missing PE files in RunNewbler.')
+            raise exceptions.FatalError('Missing PE files in RunNewbler.')
 
         if 'assembly_SE' in self.params and not(os.path.exists(self.params['assembly_SE'])):
-            raise exceptions.FatalException('Missing SE file in RunNewbler.')
+            raise exceptions.FatalError('Missing SE file in RunNewbler.')
 
         sample = self.params['sample']
         target = self.params['target']
@@ -198,13 +198,13 @@ class AssemblyRunner:
         """
         #Check that required params are available
         if not (('assembly_PE1' in self.params and 'assembly_PE2' in self.params) or ('assembly_SE' in self.params)):
-            raise exceptions.FatalException('Missing self.params in RunSpades.')
+            raise exceptions.FatalError('Missing self.params in RunSpades.')
 
         #Check that the files actually exist
         if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params and not(os.path.exists(self.params['assembly_PE1']) or not(os.path.exists(self.params['assembly_PE2']))):
-            raise exceptions.FatalException('Missing PE files in RunSpades.')
+            raise exceptions.FatalError('Missing PE files in RunSpades.')
         if 'assembly_SE' in self.params and not(os.path.exists(self.params['assembly_SE'])):
-            raise exceptions.FatalException('Missing SE file in RunSpades.')
+            raise exceptions.FatalError('Missing SE file in RunSpades.')
 
         sample = self.params['sample']
         target = self.params['target']

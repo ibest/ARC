@@ -28,7 +28,7 @@ import time
 
 def main():
     try:
-        logger.setup(loglevel=logging.INFO)
+        logger.setup(loglevel=logging.DEBUG)
 
         logger.info("Reading config file...")
         config = read_config()
