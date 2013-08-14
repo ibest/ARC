@@ -267,6 +267,7 @@ class Run:
             params['mapping_procs'] = self.config['mapping_procs']
             params['assembly_procs'] = self.config['assembly_procs']
             params['map_against_reads'] = self.config['map_against_reads']
+            params['max_incorporation'] = self.config['max_incorporation']
             params['assemblytimeout'] = self.config['assemblytimeout']
             params['safe_targets'] = self.config['safe_targets']
             params['working_dir'] = s['working_dir']
