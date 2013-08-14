@@ -15,11 +15,9 @@
 # limitations under the License.
 
 import os
-from copy import deepcopy
 from Bio import SeqIO
 from ARC import logger
 from ARC.runners import BaseRunner
-#from ARC import exceptions
 
 
 class Finisher(BaseRunner):
@@ -157,19 +155,19 @@ class Finisher(BaseRunner):
                     targets_written += 1
         if targets_written > 0:
             # Build a new mapper and put it on the queue
-            from ARC.mapper import MapperRunner
-            params = self.params.copy
-            params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
+            from ARC.runners import MapperRunner
+            mapper_params = self.params.copy()
+            mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
             if 'PE1' in self.params and 'PE2' in self.params:
-                params['PE1'] = self.params['PE1']
-                params['PE2'] = self.params['PE2']
+                mapper_params['PE1'] = self.params['PE1']
+                mapper_params['PE2'] = self.params['PE2']
             if 'SE' in self.params:
-                params['SE'] = self.params['SE']
+                mapper_params['SE'] = self.params['SE']
 
             self.submit(
                 MapperRunner,
                 procs=1,  # This can now be changed in params
-                params=self.params)
+                params=mapper_params)
             # mapper = MapperRunner(params)
             # self.ref_q.put(mapper.to_dict())
             logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
@@ -201,7 +199,7 @@ class Finisher(BaseRunner):
         if map_against_reads:
             i = 0
             logger.info("Sample %s target %s: Writing reads as contigs." % (self.params['sample'], target))
-            if 'PE1' in self.params and 'PE2' in self.params:
+            if 'PE1' and 'PE2' in self.params:
                 inf_PE1n = os.path.join(target_folder, "PE1." + self.params['format'])
                 inf_PE2n = os.path.join(target_folder, "PE2." + self.params['format'])
                 if os.path.exists(inf_PE1n) and os.path.exists(inf_PE2n):
@@ -230,15 +228,23 @@ class Finisher(BaseRunner):
 
         if finished or killed:
             #Write reads:
-            if 'PE1' in self.params and 'PE2' in self.params:
+            if 'PE1' and 'PE2' in self.params:
                 inf_PE1n = os.path.join(target_folder, "PE1." + self.params['format'])
                 inf_PE2n = os.path.join(target_folder, "PE2." + self.params['format'])
                 if os.path.exists(inf_PE1n) and os.path.exists(inf_PE2n):
                     inf_PE1 = open(inf_PE1n, 'r')
                     inf_PE2 = open(inf_PE2n, 'r')
 
-                    outf_PE1 = open(os.path.join(self.params['finished_dir'], "PE1." + self.params['format']), 'a')
-                    outf_PE2 = open(os.path.join(self.params['finished_dir'], "PE2." + self.params['format']), 'a')
+                    outf_PE1 = open(
+                        os.path.join(
+                            self.params['finished_dir'],
+                            "PE1." + self.params['format']
+                        ), 'a')
+                    outf_PE2 = open(
+                        os.path.join(
+                            self.params['finished_dir'],
+                            "PE2." + self.params['format']
+                        ), 'a')
 
                     for r in SeqIO.parse(inf_PE1, self.params['format']):
                         r.description = self.params['sample'] + "_:_" + target

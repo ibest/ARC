@@ -17,6 +17,7 @@
 import time
 import os
 from Bio import SeqIO
+from collections import Counter
 from ARC import logger
 from ARC.runners import BaseRunner
 from ARC.runners import AssemblyRunner
@@ -253,8 +254,12 @@ class MapperRunner(BaseRunner):
             for a target, use safe_targets for names
         """
         self.params['iteration'] += 1
+        self.params['targets'] = {}
 
-        # iteration = self.params['iteration']
+        iteration = self.params['iteration']
+
+        if 'readcounts' not in self.params:
+            self.params['readcounts'] = {}
 
         if 'PE1' in self.params and 'PE2' in self.params:
             idx_PE1 = SeqIO.index_db(
@@ -286,10 +291,13 @@ class MapperRunner(BaseRunner):
                 self.params['safe_targets'][target])
 
             os.mkdir(target_dir)
+            if target not in self.params['readcounts']:
+                self.params['readcounts'][target] = Counter()
             assembly_params = self.params.copy()
             assembly_params['target'] = target
             assembly_params['target_dir'] = target_dir
             reads = self.params['mapping_dict'][target]
+            self.params['readcounts'][target][iteration] = len(reads)
 
             SEs = PEs = 0
 
@@ -354,7 +362,7 @@ class MapperRunner(BaseRunner):
             # Only add an assembly job and AssemblyChecker target if there
             # are >0 reads:
             if PEs + SEs > 0:
-                #checker_params['targets'][target_dir] = False
+                self.params['targets'][target_dir] = False
                 logger.debug("Submitting new assembly")
                 job = self.submit(
                     AssemblyRunner,
