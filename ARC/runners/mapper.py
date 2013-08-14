@@ -31,7 +31,6 @@ class Mapper(ProcessBase):
         mapping_dict
     """
     def setup(self):
-        # logger.debug("Params in mapper setup: %s" % (self.params))
         required_params = 'sample' and 'reference' and 'working_dir' in self.params
         if not required_params:
             raise FatalError('Missing sample, reference or working directory params in mapper.')
@@ -58,10 +57,10 @@ class Mapper(ProcessBase):
             raise FatalError("mapper not defined in params")
 
         if self.params['mapper'] == 'bowtie2':
-            logger.info("Sample: %s Running bowtie2." % self.params['sample'])
+            self.log("Sample: %s Running bowtie2." % self.params['sample'])
             self.run_bowtie2()
         elif self.params['mapper'] == 'blat':
-            logger.info("Sample: %s Running blat." % self.params['sample'])
+            self.log("Sample: %s Running blat." % self.params['sample'])
             self.run_blat()
 
         #Mapping is done, run splitreads:
@@ -205,7 +204,7 @@ class Mapper(ProcessBase):
                 read_map[target][readid] = 1
 
         #Report total time:
-        logger.info("Sample: %s, Processed %s lines in %s seconds." % (
+        self.log("Sample: %s, Processed %s lines in %s seconds." % (
             self.params['sample'], i, time.time() - startT))
         return read_map
 
@@ -242,7 +241,7 @@ class Mapper(ProcessBase):
                 read_map[target] = {}
             read_map[target][readid] = 1
 
-        logger.info("Sample: %s, Processed %s lines in %s seconds." % (
+        self.log("Sample: %s, Processed %s lines in %s seconds." % (
             self.params['sample'], i, time.time() - startT))
 
         return read_map

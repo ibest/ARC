@@ -16,7 +16,6 @@
 
 import os
 from Bio import SeqIO
-from ARC import logger
 from ARC.runners import ProcessBase
 
 
@@ -76,7 +75,7 @@ class Finisher(ProcessBase):
 
     """
     def execute(self):
-        logger.info("Sample: %s Starting finisher" % self.params['sample'])
+        self.log("Sample: %s Starting finisher" % self.params['sample'])
         finished_dir = self.params['finished_dir']
         sample_finished = False
         targets_written = 0
@@ -92,7 +91,7 @@ class Finisher(ProcessBase):
             target_map_against_reads = False
             safe_target = target_folder.split("/")[-1]
             target = self.params['safe_targets'][safe_target]
-            logger.info("Sample: %s target: %s finishing target.." % (
+            self.log("Sample: %s target: %s finishing target.." % (
                 self.params['sample'], target))
             finishedf = open(os.path.join(target_folder, 'finished'), 'r')
             l = finishedf.readline().strip()
@@ -134,13 +133,13 @@ class Finisher(ProcessBase):
                 # re-mapping depending on mapped reads
                 if iteration > 1 and cur_reads != 0 and previous_reads != 0:
                     if cur_reads / previous_reads > self.params['max_incorporation']:
-                        logger.info("Sample %s target %s hit a repeatitive region, no more mapping will be done" % (self.params['sample'], target))
+                        self.log("Sample %s target %s hit a repeatitive region, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
                     elif cur_reads <= previous_reads and iteration > 3:
                         # Give the mapper a couple extra iterations in case
                         # the first mapping got a lot of reads which didn't
                         # assemble
-                        logger.info("Sample %s target %s did not incorporate any more reads, no more mapping will be done" % (self.params['sample'], target))
+                        self.log("Sample %s target %s did not incorporate any more reads, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
                     else:
                         # Nothing fancy is going on, just write the contigs
@@ -168,9 +167,9 @@ class Finisher(ProcessBase):
                 procs=self.params['mapping_procs'],
                 params=mapper_params)
 
-            logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
+            self.log("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
         else:
-            logger.info("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])
+            self.log("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])
 
     def write_target(self, target, target_folder, outf, finished=False, map_against_reads=False, killed=False):
         # either map_against_reads was passed in, or
@@ -190,13 +189,13 @@ class Finisher(ProcessBase):
                     contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
                     SeqIO.write(contig, outf, "fasta")
                 contig_inf.close()
-                logger.info("Sample: %s target: %s Finished writing %s contigs " % (self.params['sample'], target, i))
+                self.log("Sample: %s target: %s Finished writing %s contigs " % (self.params['sample'], target, i))
             if i == 0 and finished is False:
                 map_against_reads = True
 
         if map_against_reads:
             i = 0
-            logger.info("Sample %s target %s: Writing reads as contigs." % (self.params['sample'], target))
+            self.log("Sample %s target %s: Writing reads as contigs." % (self.params['sample'], target))
             if 'PE1' and 'PE2' in self.params:
                 inf_PE1n = os.path.join(target_folder, "PE1." + self.params['format'])
                 inf_PE2n = os.path.join(target_folder, "PE2." + self.params['format'])

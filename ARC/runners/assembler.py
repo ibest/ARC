@@ -16,7 +16,6 @@
 
 import os
 import time
-from ARC import logger
 from ARC.runners import ProcessBase
 from ARC import FatalError
 
@@ -28,7 +27,6 @@ class Assembler(ProcessBase):
         assembler, sample, target, PE1 and PE2 and/or SE, target_dir
     """
     def setup(self):
-        # logger.debug("Params in assembly setup: %s" % (self.params))
         pe_run = 'assembly_PE1' and 'assembly_PE2' in self.params
         se_run = 'assembly_SE' in self.params
         if not (pe_run or se_run):
@@ -80,7 +78,7 @@ class Assembler(ProcessBase):
         target = self.params['target']
 
         # Build args for newAssembly:
-        self.info("Calling newAssembly for sample: %s target %s" % (
+        self.log("Calling newAssembly for sample: %s target %s" % (
             sample, target))
 
         args = [
@@ -96,7 +94,7 @@ class Assembler(ProcessBase):
             verbose=self.params['verbose'])
 
         if 'assembly_PE1' and 'assembly_PE2' in self.params:
-            self.info("Calling addRun for sample: %s target %s" % (
+            self.log("Calling addRun for sample: %s target %s" % (
                 sample, target))
 
             args = [
@@ -112,7 +110,7 @@ class Assembler(ProcessBase):
                 working_dir=self.target_dir,
                 verbose=self.params['verbose'])
 
-            self.info("Calling addRun for sample: %s target %s" % (
+            self.log("Calling addRun for sample: %s target %s" % (
                 sample, target))
 
             args = [
@@ -128,7 +126,7 @@ class Assembler(ProcessBase):
                 verbose=self.params['verbose'])
 
         if 'assembly_SE' in self.params:
-            self.info("Calling addRun for sample: %s target %s" % (
+            self.log("Calling addRun for sample: %s target %s" % (
                 sample, target))
 
             args = [
@@ -167,7 +165,7 @@ class Assembler(ProcessBase):
 
         self.params['targets'][self.target_dir] = True
 
-        self.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
+        self.log("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
         outf = open(os.path.join(self.target_dir, "finished"), 'w')
         outf.write("assembly_complete")
         outf.close()
@@ -197,7 +195,7 @@ class Assembler(ProcessBase):
 
         args += ['-o', os.path.join(self.target_dir, 'assembly')]
 
-        self.info("Sample: %s target: %s Running spades assembler." % (
+        self.log("Sample: %s target: %s Running spades assembler." % (
             sample, target))
 
         start = time.time()
@@ -210,7 +208,7 @@ class Assembler(ProcessBase):
             verbose=self.params['verbose'],
             timeout=self.params['assemblytimeout'])
 
-        self.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
+        self.log("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
         outf = open(os.path.join(self.target_dir, "finished"), 'w')
         outf.write("assembly_complete")
         outf.close()

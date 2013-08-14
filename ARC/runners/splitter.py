@@ -147,7 +147,7 @@ class Splitter(ProcessBase):
                 self.params['iteration'],
                 len(reads))
             msg += " reads in %s seconds" % (time.time() - startT)
-            logger.info(msg)
+            self.log(msg)
 
             # Only add an assembly job and AssemblyChecker target if there
             # are >0 reads:
@@ -160,12 +160,12 @@ class Splitter(ProcessBase):
                     params=assembly_params)
                 assids.append(job.ident)
 
-        logger.info("------------------------------------")
-        logger.info("Sample: %s Iteration %s of numcycles %s" % (
+        self.log("------------------------------------")
+        self.log("Sample: %s Iteration %s of numcycles %s" % (
             self.params['sample'],
             self.params['iteration'],
             self.params['numcycles']))
-        logger.info("------------------------------------")
+        self.log("------------------------------------")
         if 'PE1' in self.params and 'PE2' in self.params:
             idx_PE1.close()
             idx_PE2.close()
