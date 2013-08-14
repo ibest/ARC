@@ -15,6 +15,6 @@ from base import BaseRunner
 from test import TestRunner
 from finisher import Finisher
 from assembler import AssemblyRunner
+from splitter import Splitter
 from mapper import MapperRunner
 from assembly_checker import AssemblyChecker
-from splitter import Splitter
