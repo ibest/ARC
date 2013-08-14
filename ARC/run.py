@@ -157,10 +157,14 @@ class Run:
         if not 'mapping_procs' in self.config:
             self.config['mapping_procs'] = 1
             logger.info("Using the default 1 for number of processors dedicated for multicore mapping")
+        else:
+            self.config['mapping_procs'] = int(self.config['mapping_procs'])
 
         if not 'assembly_procs' in self.config:
             self.config['assembly_procs'] = 1
             logger.info("Using the default 1 for number of processors dedicated for multicore assembly")
+        else:
+            self.config['assembly_procs'] = int(self.config['assembly_procs'])
 
         #Check that the assembler exists:
         if self.config['assembler'] == 'spades':

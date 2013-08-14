@@ -90,7 +90,6 @@ class Finisher(BaseRunner):
         #loop over the current set of targets_folders
         for target_folder in self.params['targets']:
             target_map_against_reads = False
-            # get last element of path name
             safe_target = target_folder.split("/")[-1]
             target = self.params['safe_targets'][safe_target]
             logger.info("Sample: %s target: %s finishing target.." % (
@@ -158,7 +157,7 @@ class Finisher(BaseRunner):
             from ARC.runners import MapperRunner
             mapper_params = self.params.copy()
             mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
-            if 'PE1' in self.params and 'PE2' in self.params:
+            if 'PE1' and 'PE2' in self.params:
                 mapper_params['PE1'] = self.params['PE1']
                 mapper_params['PE2'] = self.params['PE2']
             if 'SE' in self.params:
@@ -166,10 +165,9 @@ class Finisher(BaseRunner):
 
             self.submit(
                 MapperRunner,
-                procs=1,  # This can now be changed in params
+                procs=self.params['mapping_procs'],
                 params=mapper_params)
-            # mapper = MapperRunner(params)
-            # self.ref_q.put(mapper.to_dict())
+
             logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
         else:
             logger.info("Sample: %s MapperRunner not added to queue. Work finished." % self.params['sample'])

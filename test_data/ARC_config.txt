@@ -16,7 +16,7 @@
 ## FileType: PE1, PE2, or SE
 ## FileFormat: fasta or fastq
 # reference=./targets.fa
-# numcycles=100
+# numcycles=10
 # mapper=bowtie2
 # assembler=newbler
 # nprocs=7

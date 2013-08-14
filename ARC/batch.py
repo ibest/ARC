@@ -83,8 +83,8 @@ class Batch:
             # update stats
         elif code == Job.PROCESSERROR:
             self.debug("The runner subprocess failed.")
-            # Kill all dependent jobs
-            # update stats
+            # self.bq.killall()
+            # self.bq.drain()
         else:
             self.error("Unhandled return code %d from %s.  Killing all jobs." % (code, job.ident))
             self.bq.killall()
@@ -102,9 +102,9 @@ class Batch:
         self.stats()
 
         while self.idle_notempty() or self.exec_notempty():
-            executed = self.execute()
             completed = self.complete()
-            time.sleep(0.5)
+            executed = self.execute()
+            time.sleep(0.1)
             if executed or completed:
                 self.stats()
 
@@ -247,9 +247,9 @@ class BatchQueues(object):
         """
         count = 0
         for completed in self.comp_queue:
-            self.debug("COMPLETE: %s" % (completed.ident))
+            # self.debug("COMPLETE: %s" % (completed.ident))
             if completed.ident in job.deps:
-                self.debug("FOUND: %s" % (completed.ident))
+                # self.debug("FOUND: %s" % (completed.ident))
                 count += 1
         completed_deps = len(job.deps) - count
 

@@ -95,12 +95,15 @@ class AssemblyRunner(BaseRunner):
             working_dir=self.target_dir,
             verbose=self.params['verbose'])
 
-        if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
+        if 'assembly_PE1' and 'assembly_PE2' in self.params:
             self.info("Calling addRun for sample: %s target %s" % (
                 sample, target))
 
-            args = ['addRun', os.path.join(self.target_dir, 'assembly')]
-            args += [self.params['assembly_PE1']]
+            args = [
+                'addRun',
+                os.path.join(self.target_dir,
+                'assembly'),
+                self.params['assembly_PE1']]
             self.shell(
                 args,
                 description='Newbler addRun PE1 (sample: %s target %s)' % (
@@ -112,8 +115,10 @@ class AssemblyRunner(BaseRunner):
             self.info("Calling addRun for sample: %s target %s" % (
                 sample, target))
 
-            args = ['addRun', os.path.join(self.target_dir, 'assembly')]
-            args += [self.params['assembly_PE2']]
+            args = [
+                'addRun',
+                os.path.join(self.target_dir, 'assembly'),
+                self.params['assembly_PE2']]
             self.shell(
                 args,
                 description='Newbler addRun PE2 (sample: %s target %s)' % (
@@ -126,8 +131,10 @@ class AssemblyRunner(BaseRunner):
             self.info("Calling addRun for sample: %s target %s" % (
                 sample, target))
 
-            args = ['addRun', os.path.join(self.target_dir, 'assembly')]
-            args += [self.params['assembly_SE']]
+            args = [
+                'addRun',
+                os.path.join(self.target_dir, 'assembly'),
+                self.params['assembly_SE']]
             self.shell(
                 args,
                 description='Newbler addRun SE (sample: %s target %s)' % (
@@ -137,7 +144,12 @@ class AssemblyRunner(BaseRunner):
                 verbose=self.params['verbose'])
 
         #Build args for runProject
-        args = ['runProject', '-nobig', '-cpu', str(self.procs)]
+        args = [
+            'runProject',
+            '-nobig',
+            '-cpu',
+            str(self.procs)]
+
         if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
@@ -152,6 +164,8 @@ class AssemblyRunner(BaseRunner):
             working_dir=self.target_dir,
             verbose=self.params['verbose'],
             timeout=self.params['assemblytimeout'])
+
+        self.params['targets'][self.target_dir] = True
 
         self.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
         outf = open(os.path.join(self.target_dir, "finished"), 'w')

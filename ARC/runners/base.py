@@ -65,7 +65,7 @@ class BaseRunner(Process):
                     msg += "Exceeded timeout. "
                     msg += "%s killed after %d seconds" % (args[0], timeout)
                     raise TimeoutError(msg)
-                time.sleep(0.5)
+                time.sleep(0.1)
         except OSError as exc:
             msg = "Failed to run. \n\t$ %s\n\t! " % (" ".join(args))
             msg += str(exc)
