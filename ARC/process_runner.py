@@ -28,7 +28,7 @@ class ProcessRunner(Process):
         self.result_q = result_q
         self.finished = finished
         self.proc = proc
-        self.numjobs = 0
+        #self.numjobs = 0
         self.retired = False
 
     def run(self):
@@ -53,15 +53,15 @@ class ProcessRunner(Process):
                     job = item['runner']
                     logger.debug("[%s] Processing: %s" % (self.name, item['message']))
                     job.queue(self.ref_q)
-                    self.numjobs += 1
+                    #self.numjobs += 1
                     job.start()
                     #print "%s finished a job, total jobs %s" % (self.name, self.numjobs)
                     self.result_q.put({"status": 0, "process": self.name})
-                # if str(job.__class__) == 'ARC.mapper.MapperRunner':
-                #     logger.info(self.name + " got a MapperRunner job, asking to be retired after %s jobs" % self.numjobs)
-                #     self.result_q.put({"status": 4, "process": self.name})
-                #     sleeptime = 5
-                #     self.retired = True
+                if str(job.__class__) == 'ARC.mapper.MapperRunner':
+                    logger.info(self.name + " got a MapperRunner job, asking to be retired.")
+                    self.result_q.put({"status": 4, "process": self.name})
+                    sleeptime = 20
+                    self.retired = True
                 # if self.numjobs > 10 and not self.retired:
                 #     #Ask for retirement
                 #     logger.debug(self.name + " Asking to be retired after %s jobs" % self.numjobs)

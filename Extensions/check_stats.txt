@@ -1,0 +1,103 @@
+grep "Split" ARC_100_genes.log > ~/split.txt
+
+> dat = read.table("split.txt", sep=" ", fill=T)
+> times = as.numeric(dat$V13)
+Warning message:
+NAs introduced by coercion
+> idx = is.na(times)
+> plot(times[!idx], col=dat$V6[!idx], pch=20)
+
+
+### Split running time ####
+while(TRUE){
+
+system("grep 'Split' log.txt > splits")
+splits = read.table("splits", fill=T)
+#splits = na.omit(dat)
+splits = splits[splits$V11 == "Split",]
+splits_p_s = table( sapply(strsplit(splits$V2, ","), '[', 1) )
+
+
+system("grep 'Assembly finished' log.txt > assemblies")
+assemblies = read.table("assemblies", fill=T)
+#assemblies = na.omit(assemblies)
+assemblies = assemblies[assemblies$V11 == "Assembly",]
+assemblies_p_s = table( sapply(strsplit(assemblies$V2, ","), '[', 1) )
+
+par(mfrow=c(1,5))
+plot(splits$V15, main="Splitting times", xlab="split", ylab="seconds", col=as.factor(splits$V10), pch=".")
+plot(splits_p_s, main="Splits per second", xlab="time", ylab="Splits/Second", type='p', pch=".")
+
+plot(assemblies$V14, main="Assembly times", xlab="assembly", ylab="seconds", col=as.factor(splits$V10), pch=".")
+plot(assemblies_p_s, main="Assemblies per second", xlab="time", ylab="Assemblies/Second", type='p', pch=".")
+
+Sys.sleep(20)
+}
+
+
+### Assemblies per second ####
+system("grep Split log.txt > tmp2")
+splits = read.table("tmp", fill=T)
+splits = na.omit(splits)
+
+splits_p_s = table( sapply(strsplit(splits$V2, ","), '[', 1) )
+splits_p_m = table( substr(splits$V2, 1, 5))
+}
+
+
+### Assembly running time ####
+system("grep 'Assembly finished' log.txt > tmp")
+dat = read.table("tmp", fill=T)
+dat = na.omit(dat)
+#plot(dat$V14, pch=".", cex=2, main="Newbler assembly time",
+#    xlab="Consecuitive Assembly", ylab="Time (s)", col=as.factor(dat$V8))
+
+plot(dat$V14, pch=".", cex=2, main="Newbler assembly time",
+    xlab="Consecuitive Assembly", ylab="Time (s)", col=dat$V10)
+
+#legend("topright", col=unique(as.factor(dat$V8)), pch=20, legend=unique(dat$V8), cex=.4)
+legend(title="Iteration", "topright", col=unique(as.factor(dat$V10)), pch=20, legend=unique(dat$V10), cex=.8)
+
+m = 1:dim(dat)[1]
+l = lm(dat$V14~m)
+abline(l, col="black", lwd=2)
+
+w = median(dat$V14)/dat$V14
+w[dat$V14 < 1] = 1
+ss = smooth.spline(m,  w=w, dat$V14, spar=0.35)
+lines(ss, col="orange", lwd=2)
+
+boxplot(dat$V14~dat$V10)
+
+#lo = loess(m~dat$V12)
+#lines(predict(lo), col='red', lwd=2)
+#lo = loess(dat$V12~m)
+#lines(predict(lo), col='red', lwd=2)
+
+# Get contigs lengths:
+
+lens = fasta.info("100_targets_genes.txt")
+targets = sapply(strsplit(names(lens), "_:_", fixed=T), '[', 2)
+tlenghts = tapply(lens, INDEX=targets, sum)
+dat2 = cbind(dat, tlengths=tlenghts[match(dat$V8, names(tlenghts))])
+boxplot(dat$V12~dat$tlengths)
+cor(dat2$V12,dat2$tlengths)
+
+
+
+### Failed assemblies ####
+system("grep -i kill spades_log.txt > tmp")
+dat = read.table("tmp")
+
+barplot(table(dat$V8))
+
+plot(dat$V12, pch=".", cex=2, main="Spades assembly time",
+    xlab="Consecuitive Assembly", ylab="Time (s)", col=as.factor(dat$V8))
+#legend("topright", col=unique(as.factor(dat$V8)), pch=20, legend=unique(dat$V8), cex=.4)
+
+m = 1:dim(dat)[1]
+l = lm(dat$V12~m+m^2)
+abline(l, col="black", lwd=2)
+
+ss = smooth.spline(m, dat$V12, spar=0.35)
+lines(ss, col="red", lwd=2)

@@ -382,8 +382,11 @@ class MapperRunner:
         if 'PE1' in self.params and 'PE2' in self.params:
             idx_PE1.close()
             idx_PE2.close()
+            del idx_PE1
+            del idx_PE2
         if 'SE' in self.params:
             idx_SE.close()
+            del idx_SE
 
         #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
         del checker_params['mapping_dict']
