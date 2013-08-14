@@ -26,9 +26,9 @@ import sys
 import logging
 
 
-class BaseRunner(Process):
+class ProcessBase(Process):
     def __init__(self, ident, procs, params, bq):
-        super(BaseRunner, self).__init__(
+        super(ProcessBase, self).__init__(
             name="%s[%s]" % (self.__class__.__name__, ident)
         )
         self.id = ident

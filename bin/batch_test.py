@@ -25,7 +25,7 @@ if lib_path not in sys.path:
 from ARC import logger
 from ARC import Batch
 from ARC import BatchQueues
-from ARC.runners import TestRunner
+from ARC.runners import Test
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -57,13 +57,13 @@ if __name__ == '__main__':
         if params['value'] > 9 and i > 3:
             d = -(randint(1, 3))
             job = bq.submit(
-                TestRunner,
+                Test,
                 procs=procs,
                 deps=ids[d:],
                 params=params)
         else:
             job = bq.submit(
-                TestRunner,
+                Test,
                 procs=procs,
                 params=params)
         ids.append(job.ident)

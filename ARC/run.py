@@ -16,7 +16,7 @@ import subprocess
 from subprocess import CalledProcessError
 from ARC import logger
 from ARC import exceptions
-from ARC.runners import MapperRunner
+from ARC.runners import Mapper
 
 
 class Run:
@@ -288,7 +288,7 @@ class Run:
             logger.debug("Params in run submission: %s" % (params))
 
             job = batchqueue.submit(
-                MapperRunner,
+                Mapper,
                 procs=params['mapping_procs'],
                 params=params)
 

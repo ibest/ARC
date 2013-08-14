@@ -11,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from ARC.runners import BaseRunner
+from ARC.runners import ProcessBase
 from random import randint
 
 
-class TestRunner(BaseRunner):
+class Test(ProcessBase):
     def execute(self):
         self.log("Starting run with %d processors" % (self.procs))
         self.log("Received a value of %d" % (self.params['value']))
@@ -54,7 +54,7 @@ class TestRunner(BaseRunner):
                 'sleep': randint(1, 10),
                 'num': self.params['num']}
             job = self.submit(
-                TestRunner,
+                Test,
                 procs=randint(1, 4),
                 params=newparams)
             self.log("Submitting new job %s" % (job.ident))

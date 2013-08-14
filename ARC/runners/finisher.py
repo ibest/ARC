@@ -17,10 +17,10 @@
 import os
 from Bio import SeqIO
 from ARC import logger
-from ARC.runners import BaseRunner
+from ARC.runners import ProcessBase
 
 
-class Finisher(BaseRunner):
+class Finisher(ProcessBase):
     """
     Iterate through all targets, pull out the assembled contigs, rename
     them to:
@@ -51,7 +51,7 @@ class Finisher(BaseRunner):
                             Copy reads as contigs with name:
                                 Sample_:_Target_:_ReadN
                             (the logic for when to do this will be handled
-                            by the AssemblyRunner)
+                            by the Assembler)
 
     Output to finished contigs depends on:
     1) If params['iteration'] >= params['numcycles'] all output goes to
@@ -154,7 +154,7 @@ class Finisher(BaseRunner):
                     targets_written += 1
         if targets_written > 0:
             # Build a new mapper and put it on the queue
-            from ARC.runners import MapperRunner
+            from ARC.runners import Mapper
             mapper_params = self.params.copy()
             mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
             if 'PE1' and 'PE2' in self.params:
@@ -164,13 +164,13 @@ class Finisher(BaseRunner):
                 mapper_params['SE'] = self.params['SE']
 
             self.submit(
-                MapperRunner,
+                Mapper,
                 procs=self.params['mapping_procs'],
                 params=mapper_params)
 
             logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
         else:
-            logger.info("Sample: %s MapperRunner not added to queue. Work finished." % self.params['sample'])
+            logger.info("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])
 
     def write_target(self, target, target_folder, outf, finished=False, map_against_reads=False, killed=False):
         # either map_against_reads was passed in, or

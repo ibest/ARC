@@ -11,10 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from base import BaseRunner
-from test import TestRunner
+from base import ProcessBase
+from test import Test
 from finisher import Finisher
-from assembler import AssemblyRunner
+from assembler import Assembler
 from splitter import Splitter
-from mapper import MapperRunner
-from assembly_checker import AssemblyChecker
+from mapper import Mapper

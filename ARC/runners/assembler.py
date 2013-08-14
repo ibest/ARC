@@ -17,11 +17,11 @@
 import os
 import time
 from ARC import logger
-from ARC.runners import BaseRunner
+from ARC.runners import ProcessBase
 from ARC import FatalError
 
 
-class AssemblyRunner(BaseRunner):
+class Assembler(ProcessBase):
     """
     This class represents assembly jobs and handles running assemblies.
     required params:

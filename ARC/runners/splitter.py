@@ -16,16 +16,16 @@ import os
 from Bio import SeqIO
 from collections import Counter
 from ARC import logger
-from ARC.runners import BaseRunner
-from ARC.runners import AssemblyRunner
+from ARC.runners import ProcessBase
+from ARC.runners import Assembler
 from ARC.runners import Finisher
 from ARC import FatalError
 
 
-class Splitter(BaseRunner):
+class Splitter(ProcessBase):
     """
         Deprecated in favor of doing the splitting of reads post mapping as
-        part of MapperRunner. This class handles splitting reads into fastq
+        part of Mapper. This class handles splitting reads into fastq
         files and launching assemblies. Once all assemblies are launched, add
         a job to check that the assemblies have finished.
     """
@@ -155,7 +155,7 @@ class Splitter(BaseRunner):
                 self.params['targets'][target_dir] = False
                 logger.debug("Submitting new assembly")
                 job = self.submit(
-                    AssemblyRunner,
+                    Assembler,
                     procs=self.params['assembly_procs'],
                     params=assembly_params)
                 assids.append(job.ident)

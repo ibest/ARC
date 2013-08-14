@@ -17,12 +17,12 @@
 import time
 import os
 from ARC import logger
-from ARC.runners import BaseRunner
+from ARC.runners import ProcessBase
 from ARC.runners import Splitter
 from ARC import FatalError
 
 
-class MapperRunner(BaseRunner):
+class Mapper(ProcessBase):
     """
     This calss handles mapping jobs, as well as converting map results into a text version of a dict.
     required params:
