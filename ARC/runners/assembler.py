@@ -16,8 +16,9 @@
 
 import os
 import time
+from ARC import logger
 from ARC.runners import BaseRunner
-from ARC import exceptions
+from ARC import FatalError
 
 
 class AssemblyRunner(BaseRunner):
@@ -27,25 +28,28 @@ class AssemblyRunner(BaseRunner):
         assembler, sample, target, PE1 and PE2 and/or SE, target_dir
     """
     def setup(self):
+        # logger.debug("Params in assembly setup: %s" % (self.params))
         pe_run = 'assembly_PE1' and 'assembly_PE2' in self.params
         se_run = 'assembly_SE' in self.params
         if not (pe_run or se_run):
-            raise exceptions.FatalException('Missing self.params in assembler.')
+            raise FatalError('Missing self.params in assembler.')
 
-        pe_one_path = os.path.exists(self.params['assembly_PE1'])
-        pe_two_path = os.path.exists(self.params['assembly_PE2'])
-        if pe_run and not (pe_one_path and pe_two_path):
-            raise exceptions.FatalException('Missing PE files in assembler.')
+        if pe_run:
+            pe_one_path = os.path.exists(self.params['assembly_PE1'])
+            pe_two_path = os.path.exists(self.params['assembly_PE2'])
+            if not (pe_one_path and pe_two_path):
+                raise FatalError('Missing PE files in assembler.')
 
-        se_path = os.path.exists(self.params['assembly_SE'])
-        if se_run and not se_path:
-            raise exceptions.FatalException('Missing SE file in assembler.')
+        if se_run:
+            se_path = os.path.exists(self.params['assembly_SE'])
+            if not se_path:
+                raise FatalError('Missing SE file in assembler.')
 
         self.target_dir = self.params['target_dir']
 
     def execute(self):
         if not('assembler' in self.params):
-            raise exceptions.FatalException("assembler not defined in params")
+            raise FatalError("assembler not defined in params")
         if self.params['map_against_reads'] and self.params['iteration'] == 1:
             self.RunMapAgainstReads()
         elif self.params['assembler'] == 'newbler':
@@ -53,7 +57,7 @@ class AssemblyRunner(BaseRunner):
         elif self.params['assembler'] == 'spades':
             self.RunSpades()
         else:
-            raise exceptions.FatalException(
+            raise FatalError(
                 "Assembler %s isn't recognized." % self.params['assembler'])
 
     def RunMapAgainstReads(self):
@@ -133,7 +137,7 @@ class AssemblyRunner(BaseRunner):
                 verbose=self.params['verbose'])
 
         #Build args for runProject
-        args = ['runProject', '-nobig', '-cpu', self.procs]
+        args = ['runProject', '-nobig', '-cpu', str(self.procs)]
         if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']

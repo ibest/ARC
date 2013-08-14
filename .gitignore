@@ -1,5 +1,6 @@
 *.py[cod]
-
+test_data/finished*
+test_data/working*
 # C extensions
 *.so
 

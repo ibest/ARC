@@ -16,6 +16,7 @@ import subprocess
 from subprocess import CalledProcessError
 from ARC import logger
 from ARC import exceptions
+from ARC.runners import MapperRunner
 
 
 class Run:
@@ -25,9 +26,6 @@ class Run:
         self.filename = filename
         self.config = {}
         self.load()
-
-    def config(self):
-        return self.config
 
     def load(self):
         """Read in ARC_config.txt and put it in a datastructure """
@@ -156,6 +154,14 @@ class Run:
             except CalledProcessError:
                 raise exceptions.FatalError("Cannot find 'bowtie2-build' or bowtie2 in path, or Linux 'which' command is missing")
 
+        if not 'mapping_procs' in self.config:
+            self.config['mapping_procs'] = 1
+            logger.info("Using the default 1 for number of processors dedicated for multicore mapping")
+
+        if not 'assembly_procs' in self.config:
+            self.config['assembly_procs'] = 1
+            logger.info("Using the default 1 for number of processors dedicated for multicore assembly")
+
         #Check that the assembler exists:
         if self.config['assembler'] == 'spades':
             try:
@@ -172,7 +178,7 @@ class Run:
         self.config['iteration'] = 0
         self.config['numcycles'] = int(self.config['numcycles'])
 
-        return self.config
+        logger.debug("Config dictionary contains: %s" % (self.config))
 
     def setup(self):
         """
@@ -246,3 +252,39 @@ class Run:
                     safe_targets["t__%06d" % i] = target
                     i += 1
             self.config['safe_targets'] = safe_targets
+
+    def submit(self, batchqueue):
+        for sample in self.config['Samples']:
+            s = self.config['Samples'][sample]
+            params = {}
+            params['reference'] = self.config['reference']
+            params['mapper'] = self.config['mapper']
+            params['assembler'] = self.config['assembler']
+            params['verbose'] = self.config['verbose']
+            params['format'] = self.config['format']
+            params['numcycles'] = self.config['numcycles']
+            params['urt'] = self.config['urt']
+            params['mapping_procs'] = self.config['mapping_procs']
+            params['assembly_procs'] = self.config['assembly_procs']
+            params['map_against_reads'] = self.config['map_against_reads']
+            params['assemblytimeout'] = self.config['assemblytimeout']
+            params['safe_targets'] = self.config['safe_targets']
+            params['working_dir'] = s['working_dir']
+            params['finished_dir'] = s['finished_dir']
+            params['sample'] = sample
+            params['iteration'] = 0
+
+            if 'PE1' in s and 'PE2' in s:
+                params['PE1'] = s['PE1']
+                params['PE2'] = s['PE2']
+            if 'SE' in s:
+                params['SE'] = s['SE']
+
+            logger.debug("Params in run submission: %s" % (params))
+
+            job = batchqueue.submit(
+                MapperRunner,
+                procs=params['mapping_procs'],
+                params=params)
+
+

@@ -11,30 +11,37 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
-from ARC.run import Run
-from ARC import spawn
+from ARC import Run
 from ARC import logger
-from ARC import exceptions
+from ARC import Batch
+from ARC import BatchQueues
+from ARC import FatalError
+
 
 class App:
-    def start(self):
+    def start(self, loglevel, configfile='ARC_config.txt'):
         try:
-            logger.setup(loglevel=logging.INFO)
+            logger.setup(loglevel=loglevel)
 
             logger.info("Reading config file...")
-            run = Run('ARC_config.txt')
-            config = run.config()
+            run = Run(configfile)
 
             logger.info("Setting up working directories and building indexes...")
             run.setup()
 
-            logger.info("Setting up multiprocessing...")
-            spawn.run(config)
+            logger.info("Submitting initial mapping runs.")
+            batchqueue = BatchQueues()
+            batch = Batch(batchqueue, procs=int(run.config['nprocs']))
+            run.submit(batchqueue)
+
+            logger.info("Running ARC.")
+            batch.run()
+
+            logger.info("Cleaning up.")
             self.clean()
 
             return 0
-        except exceptions.FatalError as e:
+        except FatalError as e:
             logger.error("A fatal error was encountered. \n\t%s" % str(e))
             return 1
         except (KeyboardInterrupt, SystemExit):
@@ -42,5 +49,5 @@ class App:
             self.clean()
             return 1
 
-    def clean():
+    def clean(self):
         pass

@@ -44,7 +44,7 @@ if __name__ == '__main__':
     logger.setup(loglevel=loglevel)
 
     bq = BatchQueues()
-    b = Batch(bq)
+    b = Batch(bq, procs=4)
 
     ids = []
     for i in xrange(50):

@@ -44,10 +44,12 @@ class BaseRunner(Process):
         kill_children = kwargs.pop('kill_children', True)
         timeout = kwargs.pop('timeout', 0)
 
-        self.log("Running %s" % (" ".join(args)))
+        # self.log("Running %s in %s" % (" ".join(args), working_dir))
 
         if verbose:
-            out = open(os.path.join(working_dir, '/', logfile), 'w')
+            path = os.path.join(working_dir, logfile)
+            self.debug("Logging to %s" % (path))
+            out = open(path, 'w')
         else:
             out = open(os.devnull, 'w')
 
@@ -84,7 +86,6 @@ class BaseRunner(Process):
             msg += "%s returned an error. " % (args[0])
             msg += "check log file.\n\t $ "
             msg += " ".join(args)
-            # raise exceptions.FatalError(msg)
             raise SubprocessError(msg)
 
     def kill_subprocess_children(self, pid):
@@ -128,8 +129,8 @@ class BaseRunner(Process):
     def run(self):
         try:
             self.setup()
-            retval = self.execute()
-            self.teardown()
+            self.execute()
+            retval = Job.OK
         except TimeoutError as exc:
             retval = Job.TIMEOUTERROR
             self.warn(exc.msg)
@@ -146,7 +147,10 @@ class BaseRunner(Process):
             retval = Job.UNKNOWNERROR
             self.exception(exc)
             self.error(exc)
+        finally:
+            self.teardown()
 
+        self.debug("Exiting with exitcode %d." % (retval))
         sys.exit(retval)
 
     def execute(self):
@@ -165,6 +169,10 @@ class BaseRunner(Process):
         else:
             name = self.__class__.__name__
         logger.info("%s: %s" % (name, msg))
+
+    def debug(self, msg):
+        name = self.name
+        logger.debug("%s: %s" % (name, msg))
 
     def warn(self, msg):
         if logger.level() == logging.DEBUG:

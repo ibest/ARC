@@ -86,8 +86,9 @@ class Batch:
             # Kill all dependent jobs
             # update stats
         else:
-            self.error("Unhandled return code %d.  Killing dependent jobs." % (code))
-            # Kill all dependent jobs
+            self.error("Unhandled return code %d from %s.  Killing all jobs." % (code, job.ident))
+            self.bq.killall()
+            self.bq.drain()
             # update stats
 
     def spawn(self, job):
@@ -246,7 +247,9 @@ class BatchQueues(object):
         """
         count = 0
         for completed in self.comp_queue:
+            self.debug("COMPLETE: %s" % (completed.ident))
             if completed.ident in job.deps:
+                self.debug("FOUND: %s" % (completed.ident))
                 count += 1
         completed_deps = len(job.deps) - count
 
@@ -325,6 +328,21 @@ class BatchQueues(object):
         self.create_process(job)
         with self.lock:
             self.exec_queue.append(job)
+
+    def killall(self):
+        with self.lock:
+            for index, job in enumerate(self.exec_queue):
+                if self.process(job).is_alive():
+                    job = self.exec_queue.pop(index)
+                    self.error("Terminating running job")
+                    self.processes[job.ident].terminate()
+
+    def drain(self):
+        with self.lock:
+            for index, job in enumerate(self.idle_queue):
+                job = self.idle_queue.pop(index)
+                self.error("Removed waiting job from the queue")
+
 
     def complete(self, job):
         # self.debug(self.comp_queue)

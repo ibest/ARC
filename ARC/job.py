@@ -46,6 +46,7 @@ class Job:
         self.starttime = 0
         self.endtime = 0
         self.executions = 0
+        self.pid = None
 
     def __repr__(self):
         return self.ident

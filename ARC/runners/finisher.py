@@ -18,10 +18,11 @@ import os
 from copy import deepcopy
 from Bio import SeqIO
 from ARC import logger
+from ARC.runners import BaseRunner
 #from ARC import exceptions
 
 
-class Finisher:
+class Finisher(BaseRunner):
     """
     Iterate through all targets, pull out the assembled contigs, rename
     them to:
@@ -83,8 +84,7 @@ class Finisher:
         targets_written = 0
         #Set up output for both finished and additional mapping outputs
         fin_outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'a')
-        remap_outf = open(os.path.join(self.params['working_dir'], 'I%03d' % (
-            self.params['iteration'] + '_contigs.fasta'), 'w'))
+        remap_outf = open(os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta'), 'w')
         #check whether the sample is globally finished
         if self.params['iteration'] >= self.params['numcycles']:
             sample_finished = True
@@ -158,7 +158,7 @@ class Finisher:
         if targets_written > 0:
             # Build a new mapper and put it on the queue
             from ARC.mapper import MapperRunner
-            params = deepcopy(self.params)
+            params = self.params.copy
             params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
             if 'PE1' in self.params and 'PE2' in self.params:
                 params['PE1'] = self.params['PE1']
@@ -170,8 +170,8 @@ class Finisher:
                 MapperRunner,
                 procs=1,  # This can now be changed in params
                 params=self.params)
-            mapper = MapperRunner(params)
-            self.ref_q.put(mapper.to_dict())
+            # mapper = MapperRunner(params)
+            # self.ref_q.put(mapper.to_dict())
             logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
         else:
             logger.info("Sample: %s MapperRunner not added to queue. Work finished." % self.params['sample'])

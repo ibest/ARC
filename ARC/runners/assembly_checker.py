@@ -16,8 +16,8 @@
 
 import os
 import time
-from ARC.runner import Finisher
-from ARC.runner import BaseRunner
+from ARC.runners import Finisher
+from ARC.runners import BaseRunner
 
 
 class AssemblyChecker(BaseRunner):
