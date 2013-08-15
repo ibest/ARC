@@ -34,11 +34,13 @@ while(TRUE){
     legend("top", col=cols, legend=unique(time_data$PID), pch=20, ncol=25, title="ProcessID", bty='n', cex=.8)
     
     par(mar=c(1,4,2,3))
-    plot(NA, xlim=range(time_data$time), ylim=range(time_data$Mem/1024), ylab="Memory (MB)", xaxt="n", xlab="")
+    plot(NA, xlim=range(time_data$time), ylim=range(time_data$Mem/1024/1024), ylab="Memory (GB)", xaxt="n", xlab="")
     for(p in unique(time_data$PID)){
       col = cols[as.character(p)]
-      lines((Mem/1024)~time, time_data[time_data$PID == p,], col=col, type="o", pch=20)
+      lines((Mem/1024/1024)~time, time_data[time_data$PID == p,], col=col, type="o", pch=20)
     }
+    #points(y=time_data$Mem/1024, x=time_data$time, col=cols[as.character(time_data$PID)], pch=".", cex=2)
+    
     plot(NA, xlim=range(time_data$time), ylim=range(time_data$CPU), ylab="Percent CPU", xlab="Seconds")
     for(p in unique(time_data$PID)){
       col = cols[as.character(p)]

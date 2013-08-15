@@ -8,7 +8,7 @@ NAs introduced by coercion
 > plot(times[!idx], col=dat$V6[!idx], pch=20)
 
 
-### Split running time ####
+### v1  --  Split running time ####
 while(TRUE){
 
 system("grep 'Split' log.txt > splits")
@@ -33,6 +33,61 @@ plot(assemblies_p_s, main="Assemblies per second", xlab="time", ylab="Assemblies
 
 Sys.sleep(20)
 }
+
+
+
+### v2  --  Split running time ####
+while(TRUE){
+
+system("grep 'Split' log.txt > splits")
+splits = read.table("splits", fill=T)
+#splits = na.omit(dat)
+splits = splits[splits$V12 == "Split",]
+splits_p_s = table( sapply(strsplit(splits$V2, ","), '[', 1) )
+m = function(t){
+    t = as.numeric(t)
+    t[1]*60*60 + t[2]*60 + t[3]
+}
+splits_p_s_times = sapply(strsplit(names(splits_p_s), ':'), m)
+zero = splits_p_s_times[1]
+splits_p_s_times = splits_p_s_times - zero
+
+system("grep 'Assembly finished' log.txt > assemblies")
+assemblies = read.table("assemblies", fill=T)
+#assemblies = na.omit(assemblies)
+assemblies = assemblies[assemblies$V12 == "Assembly",]
+assemblies_p_s = table( sapply(strsplit(assemblies$V2, ","), '[', 1) )
+assemblies_p_s_times = sapply(strsplit(names(assemblies_p_s), ':'), m)
+assemblies_p_s_times = assemblies_p_s_times - zero
+
+par(mfrow=c(1,5))
+plot(splits$V16, main="Splitting times", xlab="split", ylab="seconds", col=as.factor(splits$V10), pch=".")
+plot(splits_p_s, main="Splits per second", xlab="time", ylab="Splits/Second", type='p', pch=".")
+
+plot(assemblies$V15, main="Assembly times", xlab="assembly", ylab="seconds", col=as.factor(splits$V10), pch=".")
+plot(assemblies_p_s, main="Assemblies per second", xlab="time", ylab="Assemblies/Second", type='p', pch=".")
+
+plot(x=splits_p_s_times, y=cumsum(splits_p_s), pch=".", col="red", cex=2, xlab="Time (s)", ylab = "Operations performed",
+    xlim=range(c(splits_p_s_times, assemblies_p_s_times)), ylim=c(0, sum(splits_p_s)))
+points(x=assemblies_p_s_times, y=cumsum(assemblies_p_s), pch=".", col="black", cex=2)
+
+
+Sys.sleep(20)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### Assemblies per second ####
