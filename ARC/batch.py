@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import time
+import resource
 import multiprocessing
 from multiprocessing import Manager
 from multiprocessing import Lock
@@ -100,13 +101,18 @@ class Batch:
 
     def run(self):
         self.stats()
-
+        interval = 0
+        sleeptime = 0.1
         while self.idle_notempty() or self.exec_notempty():
             completed = self.complete()
             executed = self.execute()
-            time.sleep(0.1)
+            interval += sleeptime
+            time.sleep(sleeptime)
             if executed or completed:
                 self.stats()
+            #if int(interval) % 2 == 0:
+            #    self.resource_stats()
+            #    interval = 0
 
     def reserve(self, job):
         self.procs_available -= job.procs
@@ -121,6 +127,14 @@ class Batch:
 
     def exec_notempty(self):
         return self.bq.num_execution() > 0
+
+    def resource_stats(self):
+        ru_self = resource.getrusage(resource.RUSAGE_SELF)
+        ru_children = resource.getrusage(resource.RUSAGE_CHILDREN)
+        memuse = (ru_self[2] + ru_children[2]) * resource.getpagesize() / 1024 / 1024
+        self.log(str(ru_self))
+        self.log(str(ru_children))
+        self.log(str(memuse))
 
     def stats(self):
         self.debug("There are %d jobs in the idle queue" % (
@@ -342,7 +356,6 @@ class BatchQueues(object):
             for index, job in enumerate(self.idle_queue):
                 job = self.idle_queue.pop(index)
                 self.error("Removed waiting job from the queue")
-
 
     def complete(self, job):
         # self.debug(self.comp_queue)

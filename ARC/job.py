@@ -63,6 +63,10 @@ class Job:
         self.endtime = 0
         self.executions += 1
 
+    def clean(self):
+        del(self.params)
+        del(self.deps)
+
     def setargs(self, **kwargs):
         self.procs = kwargs.pop('procs', self.procs)
         self.priority = kwargs.pop('priority', self.priority)
@@ -81,3 +85,4 @@ class Job:
         self.exitcode = exitcode
         self.state = self.COMPLETE
         self.endtime = time.time()
+        self.clean()
