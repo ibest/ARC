@@ -51,7 +51,7 @@ mkdir src
 
 pushd src # arc/src
 if [ ! -f ./ARC/README.md ] ; then
-  git clone git@github.com:ibest/ARC.git
+  git clone https://github.com/ibest/ARC.git
 else
   echo "ARC has already been cloned in src."
 fi
