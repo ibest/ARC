@@ -36,12 +36,18 @@ class ProcessBase(Process):
         self.procs = procs
         self.params = params
 
+    def delete(self):
+        del self.id
+        del self.bq
+        del self.procs
+        del self.params
+
     def shell(self, args, **kwargs):
         logfile = kwargs.pop('logfile', 'log.txt')
         description = kwargs.pop('description', 'Shell')
         verbose = kwargs.pop('verbose', False)
         working_dir = kwargs.pop('working_dir', '.')
-        kill_children = kwargs.pop('kill_children', True)
+        kill_children = kwargs.pop('kill_children', False)
         timeout = kwargs.pop('timeout', 0)
 
         # self.log("Running %s in %s" % (" ".join(args), working_dir))
@@ -149,6 +155,7 @@ class ProcessBase(Process):
             self.error(exc)
         finally:
             self.teardown()
+            # self.delete()
 
         self.debug("Exiting with exitcode %d." % (retval))
         sys.exit(retval)

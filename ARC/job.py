@@ -64,6 +64,7 @@ class Job:
         self.executions += 1
 
     def clean(self):
+        del(self.runner)
         del(self.params)
         del(self.deps)
 

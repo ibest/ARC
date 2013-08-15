@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import time
+import sys
 import resource
 import multiprocessing
 from multiprocessing import Manager
@@ -297,7 +298,9 @@ class BatchQueues(object):
 
             :param job: The job that the process is associated with.
         """
+        self.processes[job.ident].delete()
         del self.processes[job.ident]
+        self.debug("processes: %d" % (len(self.processes.keys())))
 
     def process(self, job):
         """
@@ -362,6 +365,12 @@ class BatchQueues(object):
         self.remove_process(job)
         with self.lock:
             self.comp_queue.append(job)
+            self.debug("idle: %d | exec: %d | comp: %d | process %d" % (
+                sys.getsizeof(self.idle_queue),
+                sys.getsizeof(self.exec_queue),
+                sys.getsizeof(self.comp_queue),
+                sys.getsizeof(self.processes)
+            ))
 
     def rerun(self, job):
         self.remove_process(job)
