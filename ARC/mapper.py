@@ -402,5 +402,8 @@ class MapperRunner:
         else:
             logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
         #finally delete reference to ref_q and params
-        #del self.ref_q
-        #del self.params
+        del self.ref_q
+        del self.params
+        import gc
+        print "Mapper garbage:", gc.garbage
+        print "Mapper collect:", gc.collect()

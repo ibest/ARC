@@ -149,8 +149,15 @@ class Finisher:
             mapper = MapperRunner(mapper_params)
             self.ref_q.put(mapper.to_dict())
             logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
+            del self.params
+            del mapper
+            del self.ref_q
+            import gc
+            print "Finisher garbage:", gc.garbage
+            print "Finisher collect:", gc.collect()
         else:
             logger.info("Sample: %s MapperRunner not added to queue. Work finished." % self.params['sample'])
+
 
     def write_target(self, target, target_folder, outf, finished=False, map_against_reads=False, killed=False):
         # either map_against_reads was passed in, or
