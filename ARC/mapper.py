@@ -300,7 +300,11 @@ class MapperRunner:
     def splitreads(self):
         """ Split reads and then kick off assemblies once the reads are split for a target, use safe_targets for names"""
         self.params['iteration'] += 1
-        checker_params = deepcopy(self.params)
+        #checker_params = deepcopy(self.params)
+        checker_params = {}
+        for k in self.params:
+            checker_params[k] = self.params[k]
+        del checker_params['mapping_dict']
         checker_params['targets'] = {}
         iteration = self.params['iteration']
         if 'PE1' in self.params and 'PE2' in self.params:
@@ -330,18 +334,15 @@ class MapperRunner:
             # track how many total reads were added for this cycle
             checker_params['readcounts'][target][iteration] = len(reads)
             statsf = open(os.path.join(self.params['working_dir'], "mapping_stats.tsv"), 'a')
-            statsf.write('\t'.join([self.params['sample'],target,str(iteration),str(len(reads))]) + '\n')
+            statsf.write('\t'.join([self.params['sample'], target, str(iteration), str(len(reads))]) + '\n')
             statsf.close()
 
             SEs = PEs = 0
-            if 'PE1' in self.params and 'PE2' in self.params:
+            if 'PE1' and 'PE2' in self.params:
                 outf_PE1 = open(os.path.join(target_dir, "PE1." + self.params['format']), 'w')
                 outf_PE2 = open(os.path.join(target_dir, "PE2." + self.params['format']), 'w')
-                #idx_PE1 = self.params['indexes'][sample]['PE1']
-                #idx_PE2 = self.params['indexes'][sample]['PE2']
             if 'SE' in self.params:
                 outf_SE = open(os.path.join(target_dir, "SE." + self.params['format']), 'w')
-                #idx_SE = self.params['indexes'][sample]['SE']
             for readID in reads:
                 if 'PE1' in self.params and readID in idx_PE1:
                     read1 = idx_PE1[readID]
@@ -367,19 +368,19 @@ class MapperRunner:
             if PEs > 0:
                 assembly_params['assembly_PE1'] = os.path.join(target_dir, "PE1." + self.params['format'])
                 assembly_params['assembly_PE2'] = os.path.join(target_dir, "PE2." + self.params['format'])
-
             if SEs > 0:
                 assembly_params['assembly_SE'] = os.path.join(target_dir, "SE." + self.params['format'])
 
             #All reads have been written at this point, add an assembly to the queue:
-            #del assembly_params['mapping_dict']
-            ar = AssemblyRunner(assembly_params)
             logger.info("Sample: %s target: %s iteration: %s Split %s reads in %s seconds" % (self.params['sample'], target, self.params['iteration'], len(reads), time.time() - startT))
+
             #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
             if PEs + SEs > 0:
                 checker_params['targets'][target_dir] = False
-                self.ref_q.put(ar.to_dict())
-            del ar
+                #ar =
+                self.ref_q.put(AssemblyRunner(assembly_params).to_dict())
+                #self.ref_q.put(ar.to_dict())
+            #del ar
 
         logger.info("------------------------------------")
         logger.info("| Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
@@ -394,7 +395,6 @@ class MapperRunner:
             del idx_SE
 
         #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
-        del checker_params['mapping_dict']
         if len(checker_params['targets']) > 0:
             checker = AssemblyChecker(checker_params)
             self.ref_q.put(checker.to_dict())
@@ -402,5 +402,5 @@ class MapperRunner:
         else:
             logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
         #finally delete reference to ref_q and params
-        del self.ref_q
-        del self.params
+        #del self.ref_q
+        #del self.params

@@ -19,7 +19,7 @@
 # numcycles=10
 # mapper=bowtie2
 # assembler=newbler
-# nprocs=7
+# nprocs=1
 # format=fasta
 # verbose=True
 # urt=True
