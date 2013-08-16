@@ -134,15 +134,19 @@ class Finisher:
         if targets_written > 0:
             # Build a new mapper and put it on the queue
             from ARC.mapper import MapperRunner
-            params = deepcopy(self.params)
-            params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
+            #params = deepcopy(self.params)
+            mapper_params = {}
+            for k in self.params:
+                mapper_params[k] = self.params[k]
+            del mapper_params['targets']
+            mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
             # if 'PE1' in self.params and 'PE2' in self.params:
             #     params['PE1'] = self.params['PE1']
             #     params['PE2'] = self.params['PE2']
             # if 'SE' in self.params:
-            #     params['SE'] = self.params['SE']
+            #     params['SE'] = self.['SE']
 
-            mapper = MapperRunner(params)
+            mapper = MapperRunner(mapper_params)
             self.ref_q.put(mapper.to_dict())
             logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
         else:

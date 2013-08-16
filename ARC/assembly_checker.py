@@ -56,13 +56,19 @@ class AssemblyChecker:
         #Now check whether all have finished, if not, add a new AssemblyChecker to the queue
         if len(self.params['targets']) > sum(self.params['targets'].values()):
             #some jobs haven't completed yet
-            checker_params = deepcopy(self.params)
+            checker_params = {}
+            for k in self.params:
+                checker_params[k] = self.params[k]
+            #checker_params = deepcopy(self.params)
             checker = AssemblyChecker(checker_params)
             time.sleep(5)  # sleep 4 seconds before putting a checker back on the ref_q
             self.ref_q.put(checker.to_dict())
             logger.info("Sample: %s Assemblies not finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
         else:
-            params = deepcopy(self.params)
+            params = {}
+            for k in self.params:
+                params[k] = self.params[k]
+            #params = deepcopy(self.params)
             finisher = Finisher(params)
             self.ref_q.put(finisher.to_dict())
             logger.info("Sample: %s Assemblies finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))

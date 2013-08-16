@@ -46,7 +46,10 @@ def run(config):
     #'sample' in params and 'reference' in params and 'working_dir' in params and (('PE1' in params and 'PE2' in params) or 'SE' in params))
     for sample in config['Samples']:
         s = config['Samples'][sample]
-        params = deepcopy(config)
+        #params = deepcopy(config)
+        params = {}
+        for k in config:
+            params[k] = config[k]
         params['working_dir'] = s['working_dir']
         params['finished_dir'] = s['finished_dir']
         params['sample'] = sample
