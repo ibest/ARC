@@ -180,7 +180,7 @@ class MapperRunner:
         args.append(os.path.join(working_dir, 'mapping.psl'))
 
         logger.info("Sample: %s Calling blat mapper" % self.params['sample'])
-        logger.info(" ".join(args))
+        logger.debug(" ".join(args))
         try:
             ret = subprocess.call(args, stdout=out, stderr=out)
         except Exception as exc:
@@ -193,7 +193,12 @@ class MapperRunner:
 
         #Extract the PSL to a dict
         self.params['mapping_dict'] = self.PSL_to_dict(os.path.join(working_dir, 'mapping.psl'))
-        #os.remove(os.path.join(working_dir, 'mapping.psl'))
+
+        #Cleanup
+        os.remove(os.path.join(working_dir, 'mapping.psl'))
+        out.close()
+
+
 
     def SAM_to_dict(self, filename):
         """ Read a SAM file to a mapping dict and return it """

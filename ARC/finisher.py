@@ -136,11 +136,11 @@ class Finisher:
             from ARC.mapper import MapperRunner
             params = deepcopy(self.params)
             params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
-            if 'PE1' in self.params and 'PE2' in self.params:
-                params['PE1'] = self.params['PE1']
-                params['PE2'] = self.params['PE2']
-            if 'SE' in self.params:
-                params['SE'] = self.params['SE']
+            # if 'PE1' in self.params and 'PE2' in self.params:
+            #     params['PE1'] = self.params['PE1']
+            #     params['PE2'] = self.params['PE2']
+            # if 'SE' in self.params:
+            #     params['SE'] = self.params['SE']
 
             mapper = MapperRunner(params)
             self.ref_q.put(mapper.to_dict())
