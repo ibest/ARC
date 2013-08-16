@@ -154,13 +154,42 @@ class Finisher(ProcessBase):
         if targets_written > 0:
             # Build a new mapper and put it on the queue
             from ARC.runners import Mapper
-            mapper_params = self.params.copy()
+            mapper_params = {}
             mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
+            mapper_params['mapper'] = self.params['mapper']
+            mapper_params['assembler'] = self.params['assembler']
+            mapper_params['verbose'] = self.params['verbose']
+            mapper_params['format'] = self.params['format']
+            mapper_params['numcycles'] = self.params['numcycles']
+            mapper_params['urt'] = self.params['urt']
+            mapper_params['mapping_procs'] = self.params['mapping_procs']
+            mapper_params['assembly_procs'] = self.params['assembly_procs']
+            mapper_params['map_against_reads'] = self.params['map_against_reads']
+            mapper_params['max_incorporation'] = self.params['max_incorporation']
+            mapper_params['assemblytimeout'] = self.params['assemblytimeout']
+            mapper_params['safe_targets'] = self.params['safe_targets']
+            mapper_params['working_dir'] = self.params['working_dir']
+            mapper_params['finished_dir'] = self.params['finished_dir']
+            mapper_params['sample'] = self.params['sample']
+            mapper_params['iteration'] = self.params['iteration']
+
+            # These are passed through to every submission.
+            # mapper_params['mapping_dict'] = self.params['mapping_dict']
+            mapper_params['readcounts'] = self.params['readcounts']
+
             if 'PE1' and 'PE2' in self.params:
                 mapper_params['PE1'] = self.params['PE1']
                 mapper_params['PE2'] = self.params['PE2']
             if 'SE' in self.params:
                 mapper_params['SE'] = self.params['SE']
+
+            # mapper_params = self.params.copy()
+            # mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
+            # if 'PE1' and 'PE2' in self.params:
+            #     mapper_params['PE1'] = self.params['PE1']
+            #     mapper_params['PE2'] = self.params['PE2']
+            # if 'SE' in self.params:
+            #     mapper_params['SE'] = self.params['SE']
 
             self.submit(
                 Mapper,

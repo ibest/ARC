@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import time
-import sys
 import resource
 import multiprocessing
+import gc
+import logging
+from copy import deepcopy
 from multiprocessing import Manager
 from multiprocessing import Lock
 from ARC import Job
@@ -22,15 +24,18 @@ from ARC import logger
 
 
 class Batch:
-    def __init__(self, bq, procs=multiprocessing.cpu_count()):
-        self.bq = bq
+    def __init__(self, procs=multiprocessing.cpu_count()):
+        self.bq = BatchQueues()
         self.runners = []
         self.procs = procs
         self.procs_available = procs
-        self.processes = []
+        self.processes = {}
+
+    def queue(self):
+        return self.bq
 
     def execute(self):
-        jobs = self.bq.find_backfill(self.procs_available)
+        jobs = self.bq.backfill(self.procs_available)
         for job in jobs:
             job.setstart()
             self.reserve(job)
@@ -43,20 +48,18 @@ class Batch:
             return True
 
     def complete(self):
-        jobs = self.bq.find_completed()
-        for job in jobs:
-            if job.state == Job.RERUN:
-                self.debug("%s - Requeuing" % (job.ident))
-                job.reset()
-                self.bq.rerun(job)
-            else:
-                process = self.bq.process(job)
+        jobs = []
+        for job in self.bq.exec_queue_jobs():
+            process = self.processes[job.ident]
+            if not process.is_alive():
                 job.setcomplete(process.exitcode)
                 self.manage_exitcode(job)
+                self.remove_process(job)
+                # Find something different
                 self.bq.complete(job)
-
-            self.release(job)
-            self.waiting = False
+                self.release(job)
+                self.waiting = False
+                jobs.append(job)
 
         if jobs == []:
             return False
@@ -77,7 +80,9 @@ class Batch:
             # update stats
         elif code == Job.RERUNERROR:
             self.warn("Deprecated. Use the resubmit method.")
-            # Kill all dependent jobs
+            self.debug("%s - Requeuing" % (job.ident))
+            job.reset()
+            self.bq.rerun(job)
             # update stats
         elif code == Job.UNKNOWNERROR:
             self.debug("An unknown error occured.")
@@ -89,28 +94,32 @@ class Batch:
             # self.bq.drain()
         else:
             self.error("Unhandled return code %d from %s.  Killing all jobs." % (code, job.ident))
-            self.bq.killall()
+            self.killall()
             self.bq.drain()
             # update stats
 
     def spawn(self, job):
-        process = self.bq.process(job)
+        process = self.create_process(job)
         process.setup()
         process.daemon = False
         self.debug("Starting runner[%s]" % (job.ident))
         process.start()
 
     def run(self):
-        self.stats()
         interval = 0
-        sleeptime = 0.1
+        sleeptime = 0.05
         while self.idle_notempty() or self.exec_notempty():
-            completed = self.complete()
+            # discard dead processes (active_children has the side effect of
+            # joining finished processes)
+            multiprocessing.active_children()
+            gc.collect()
+
             executed = self.execute()
+            completed = self.complete()
             interval += sleeptime
             time.sleep(sleeptime)
-            if executed or completed:
-                self.stats()
+            #if executed or completed:
+            #    self.stats()
             #if int(interval) % 2 == 0:
             #    self.resource_stats()
             #    interval = 0
@@ -145,6 +154,39 @@ class Batch:
         self.debug("There are %d jobs in the comp queue" % (
             self.bq.num_complete()))
 
+    def create_process(self, job):
+        """
+            Creates the process runner and stores it in the process hash
+            identified by the unique identifier.  Returns the process runner
+            object.
+
+            :param job: The job that the process is associated with.
+        """
+        process = job.runner(
+            job.ident,
+            job.procs,
+            job.params,
+            self.bq)
+        self.processes[job.ident] = process
+        return process
+
+    def remove_process(self, job):
+        """
+            Remove the process runner from the hash.
+
+            :param job: The job that the process is associated with.
+        """
+        self.processes[job.ident].delete()
+        del self.processes[job.ident]
+        self.debug("processes: %d" % (len(self.processes.keys())))
+
+    def killall(self):
+        self.warn("KILLALL RECEIVED!  Terminating running jobs")
+        for ident in self.processes:
+            process = self.processes[ident]
+            if process.is_alive():
+                process.terminate()
+
     def log(self, msg):
         logger.info("Batch: %s" % (msg))
 
@@ -170,56 +212,17 @@ class BatchQueues(object):
         self.idle_queue = self.mgr.list()
         self.exec_queue = self.mgr.list()
         self.comp_queue = self.mgr.list()
+        self.jobs = self.mgr.dict()
+        self.deps = self.mgr.list()
         self.lock = Lock()
-        self.processes = {}
+        self.loglevel = logger.level()
+        # Add globals for things that need to be passed around everywhere
+        self.globals = self.mgr.dict()
 
-    def index(self, ident, queue):
-        """
-            Find the index value of a job in the queue.  Does not perform
-            any locking, so the calling function should lock this.  Returns
-            an integer value representing the index of the job in the array
-            or -1 if it does not exist.  This should probably raise an
-            exception since -1 is a perfectly legal value when accessing
-            an item in an array.
+    def add_global(self.key, value):
+        self.globals[key] = value
 
-            :param ident: the unique identifier of the job (uuid4 format)
-            :param queue: the SyncManager queue to search
-        """
-        for index, job in enumerate(queue):
-            if job.ident == ident:
-                return index
-        return -1
-
-    def pop(self, ident, queue):
-        """
-            Pops a job off of a queue.  Returns the job or None if not found.
-
-            :param ident: the unique identifier of the job (uuid4 format)
-            :param queue: the SyncManager queue to search
-        """
-        with self.lock:
-            index = self.index(ident, queue)
-            if index >= 0:
-                return queue.pop(index)
-            else:
-                return None
-
-    def get(self, ident, queue):
-        """
-            Get a job from the queue.  Returns a reference to the job or
-            None if not found.
-
-            :param ident: the unique identifier of the job (uuid4 format)
-            :param queue: the SyncManager queue to search
-        """
-        with self.lock:
-            index = self.index(ident, queue)
-            if index >= 0:
-                return queue[index]
-            else:
-                return None
-
-    def find_backfill(self, procs):
+    def backfill(self, procs):
         """
             Finds job(s) that will run on the available processors.  This
             is a firstfit backfill method and has shown to favor jobs
@@ -231,28 +234,17 @@ class BatchQueues(object):
             :param procs: the number of processors available.
         """
         available = procs
-        jobs = []
+        runjobs = []
         with self.lock:
-            for index, job in enumerate(self.idle_queue):
+            for index, jobid in enumerate(self.idle_queue):
+                job = self.jobs[jobid]
                 if job.procs <= available and self.runnable(job):
-                    jobs.append(self.idle_queue.pop(index))
+                    self.idle_queue.remove(jobid)
+                    runjobs.append(job)
                     available -= job.procs
                 if available <= 0:
                     break
-        return jobs
-
-    def find_completed(self):
-        """
-            Find jobs that are no longer running.  Removes the jobs from
-            the execution queue and returns an array will all the completed
-            jobs.
-        """
-        completed = []
-        with self.lock:
-            for index, job in enumerate(self.exec_queue):
-                if not self.process(job).is_alive():
-                    completed.append(self.exec_queue.pop(index))
-        return completed
+        return runjobs
 
     def runnable(self, job):
         """
@@ -261,54 +253,17 @@ class BatchQueues(object):
             :param job: the job to be checked
         """
         count = 0
-        for completed in self.comp_queue:
-            # self.debug("COMPLETE: %s" % (completed.ident))
-            if completed.ident in job.deps:
-                # self.debug("FOUND: %s" % (completed.ident))
+        for ident in self.deps:
+            if ident in job.deps:
                 count += 1
-        completed_deps = len(job.deps) - count
 
-        if completed_deps > 0:
+        if count > 0:
             self.debug("%s waiting on %d dependancies" % (
-                job.ident, completed_deps))
-            self.debug(job.deps)
+                job.ident, count))
             return False
         else:
             self.debug("%s dependancies have been satisfied" % (job.ident))
             return True
-
-    def create_process(self, job):
-        """
-            Creates the process runner and stores it in the process hash
-            identified by the unique identifier.  Returns the process runner
-            object.
-
-            :param job: The job that the process is associated with.
-        """
-        self.processes[job.ident] = job.runner(
-            job.ident,
-            job.procs,
-            job.params,
-            self)
-        return self.processes[job.ident]
-
-    def remove_process(self, job):
-        """
-            Remove the process runner from the hash.
-
-            :param job: The job that the process is associated with.
-        """
-        self.processes[job.ident].delete()
-        del self.processes[job.ident]
-        self.debug("processes: %d" % (len(self.processes.keys())))
-
-    def process(self, job):
-        """
-            Return a process runner from the hash.
-
-            :param job: The job that the process is associated with.
-        """
-        return self.processes[job.ident]
 
     def submit(self, runner, **kwargs):
         """
@@ -317,80 +272,57 @@ class BatchQueues(object):
             :param runner: The process runner to be used
             :param kwargs: An argument hash containing the job details
         """
+        # kwargs = deepcopy(kwargs)
         job = Job(runner, **kwargs)
+        self.jobs[job.ident] = job
+        # Take deps and put them in there own list so we don't need to
+        # run through all completed
+        for ident in job.deps:
+            self.deps.append(ident)
+
         self.debug("Adding %s(%s)" % (runner.__name__, job.ident))
-        self.debug("Deps %s %s" % (job.ident, job.deps))
         with self.lock:
-            self.idle_queue.append(job)
+            self.idle_queue.append(job.ident)
         return job
 
-    def resubmit(self, ident, **kwargs):
-        """
-            Resubmit a running job.  Places the job with any modified
-            details back into the rerun state and lets the former job run to
-            completion.  For some reason the job must be popped off the queue,
-            modified and placed back in order for the changes to stick.
-
-            :param runner: The process runner to be used
-            :param kwargs: An argument hash containing the job details
-        """
-        job = self.pop(ident, self.exec_queue)
-        job.setrerun()
-        job.setargs(**kwargs)
-        self.debug("Resubmitting %s, %s" % (job.__class__.__name__, job.ident))
-        with self.lock:
-            self.exec_queue.append(job)
-
     def execute(self, job):
-        self.create_process(job)
         with self.lock:
-            self.exec_queue.append(job)
-
-    def killall(self):
-        with self.lock:
-            for index, job in enumerate(self.exec_queue):
-                if self.process(job).is_alive():
-                    job = self.exec_queue.pop(index)
-                    self.error("Terminating running job")
-                    self.processes[job.ident].terminate()
+            self.exec_queue.append(job.ident)
 
     def drain(self):
         with self.lock:
-            for index, job in enumerate(self.idle_queue):
-                job = self.idle_queue.pop(index)
+            for index, jobid in enumerate(self.idle_queue):
+                self.idle_queue.pop(index)
                 self.error("Removed waiting job from the queue")
 
     def complete(self, job):
-        # self.debug(self.comp_queue)
-        self.remove_process(job)
         with self.lock:
-            self.comp_queue.append(job)
-            self.debug("idle: %d | exec: %d | comp: %d | process %d" % (
-                sys.getsizeof(self.idle_queue),
-                sys.getsizeof(self.exec_queue),
-                sys.getsizeof(self.comp_queue),
-                sys.getsizeof(self.processes)
+            self.exec_queue.remove(job.ident)
+            #self.comp_queue.append(job.ident)
+            # Remove me from deps so my favorite process can run
+            try:
+                self.deps.remove(job.ident)
+            except ValueError:
+                # Do nothing.
+                pass
+            del(self.jobs[job.ident])
+            self.debug("idle: %d | exec: %d | jobs: %d | deps: %d" % (
+                len(self.idle_queue),
+                len(self.exec_queue),
+                len(self.jobs),
+                len(self.deps)
             ))
+
+    def exec_queue_jobs(self):
+        jobs = []
+        for ident in self.exec_queue:
+            jobs.append(self.jobs[ident])
+        return jobs
 
     def rerun(self, job):
         self.remove_process(job)
         with self.lock:
             self.idle_queue.append(job)
-
-    def list_idle(self):
-        with self.lock:
-            for i in self.idle_queue:
-                print " - %s" % (i.ident)
-
-    def list_execution(self):
-        with self.lock:
-            for i in self.exec_queue:
-                print " - %s" % (i.ident)
-
-    def list_complete(self):
-        with self.lock:
-            for i in self.comp_queue:
-                print " - %s" % (i.ident)
 
     def num_idle(self):
         with self.lock:
@@ -408,7 +340,8 @@ class BatchQueues(object):
         logger.info("BatchQueue: %s" % (msg))
 
     def debug(self, msg):
-        logger.debug("BatchQueue: %s" % (msg))
+        if self.loglevel == logging.DEBUG:
+            logger.debug("BatchQueue: %s" % (msg))
 
     def warn(self, msg):
         logger.warn("BatchQueue: %s" % (msg))

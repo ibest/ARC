@@ -14,7 +14,6 @@
 from ARC import Run
 from ARC import logger
 from ARC import Batch
-from ARC import BatchQueues
 from ARC import FatalError
 
 
@@ -30,9 +29,8 @@ class App:
             run.setup()
 
             logger.info("Submitting initial mapping runs.")
-            batchqueue = BatchQueues()
-            batch = Batch(batchqueue, procs=int(run.config['nprocs']))
-            run.submit(batchqueue)
+            batch = Batch(procs=int(run.config['nprocs']))
+            run.submit(batch.queue())
 
             logger.info("Running ARC.")
             batch.run()
@@ -45,8 +43,10 @@ class App:
             logger.error("A fatal error was encountered. \n\t%s" % str(e))
             return 1
         except (KeyboardInterrupt, SystemExit):
-            logger.error("%s unexpectedly terminated" % (__name__))
+            if 'batch' in vars():
+                batch.killall()
             self.clean()
+            logger.error("%s unexpectedly terminated" % (__name__))
             return 1
 
     def clean(self):

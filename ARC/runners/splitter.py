@@ -79,13 +79,28 @@ class Splitter(ProcessBase):
             target_dir = os.path.join(
                 self.params['working_dir'],
                 self.params['safe_targets'][target])
-
             os.mkdir(target_dir)
-            if target not in self.params['readcounts']:
-                self.params['readcounts'][target] = Counter()
-            assembly_params = self.params.copy()
+
+            assembly_params = {}
             assembly_params['target'] = target
             assembly_params['target_dir'] = target_dir
+            assembly_params['iteration'] = iteration
+            assembler_keys = [
+                'assembler',
+                'sample',
+                'verbose',
+                'format',
+                'assemblytimeout',
+                'map_against_reads',
+                'urt',
+                'numcycles',
+                'targets']
+            for key in assembler_keys:
+                assembly_params[key] = self.params[key]
+
+            if target not in self.params['readcounts']:
+                self.params['readcounts'][target] = Counter()
+
             reads = self.params['mapping_dict'][target]
             self.params['readcounts'][target][iteration] = len(reads)
 
@@ -166,11 +181,45 @@ class Splitter(ProcessBase):
             self.params['iteration'],
             self.params['numcycles']))
         self.log("------------------------------------")
-        if 'PE1' in self.params and 'PE2' in self.params:
+
+        finisher_params = {}
+        finisher_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
+        finisher_params['mapper'] = self.params['mapper']
+        finisher_params['assembler'] = self.params['assembler']
+        finisher_params['verbose'] = self.params['verbose']
+        finisher_params['format'] = self.params['format']
+        finisher_params['numcycles'] = self.params['numcycles']
+        finisher_params['urt'] = self.params['urt']
+        finisher_params['mapping_procs'] = self.params['mapping_procs']
+        finisher_params['assembly_procs'] = self.params['assembly_procs']
+        finisher_params['map_against_reads'] = self.params['map_against_reads']
+        finisher_params['max_incorporation'] = self.params['max_incorporation']
+        finisher_params['assemblytimeout'] = self.params['assemblytimeout']
+        finisher_params['safe_targets'] = self.params['safe_targets']
+        finisher_params['working_dir'] = self.params['working_dir']
+        finisher_params['finished_dir'] = self.params['finished_dir']
+        finisher_params['sample'] = self.params['sample']
+        finisher_params['iteration'] = self.params['iteration']
+        finisher_params['targets'] = self.params['targets']
+
+        # These are passed through to every submission.
+        finisher_params['readcounts'] = self.params['readcounts']
+        finisher_params['mapping_dict'] = self.params['mapping_dict']
+
+        if 'PE1' and 'PE2' in self.params:
+            finisher_params['PE1'] = self.params['PE1']
+            finisher_params['PE2'] = self.params['PE2']
             idx_PE1.close()
             idx_PE2.close()
         if 'SE' in self.params:
+            finisher_params['SE'] = self.params['SE']
             idx_SE.close()
+
+        # if 'PE1' in self.params and 'PE2' in self.params:
+        #     idx_PE1.close()
+        #     idx_PE2.close()
+        # if 'SE' in self.params:
+        #     idx_SE.close()
 
         # Kick off the finisher:
         self.submit(

@@ -18,6 +18,7 @@ import os
 import time
 from ARC.runners import ProcessBase
 from ARC import FatalError
+from ARC import Job
 
 
 class Assembler(ProcessBase):
@@ -110,7 +111,7 @@ class Assembler(ProcessBase):
                 working_dir=self.target_dir,
                 verbose=self.params['verbose'])
 
-            self.log("Calling addRun for sample: %s target %s" % (
+            self.debug("Calling addRun for sample: %s target %s" % (
                 sample, target))
 
             args = [
@@ -126,7 +127,7 @@ class Assembler(ProcessBase):
                 verbose=self.params['verbose'])
 
         if 'assembly_SE' in self.params:
-            self.log("Calling addRun for sample: %s target %s" % (
+            self.debug("Calling addRun for sample: %s target %s" % (
                 sample, target))
 
             args = [
@@ -206,9 +207,23 @@ class Assembler(ProcessBase):
             logfile='assembly.log',
             working_dir=self.target_dir,
             verbose=self.params['verbose'],
-            timeout=self.params['assemblytimeout'])
+            timeout=self.params['assemblytimeout'],
+            callback_on_ok=self.output_on_ok,
+            callback_on_error=self.output_on_error)
 
         self.log("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
+
+    def run_on_exit_ok(self):
         outf = open(os.path.join(self.target_dir, "finished"), 'w')
         outf.write("assembly_complete")
         outf.close()
+
+    def run_on_exit_error(self, retval):
+        if retval == Job.TIMEOUTERROR:
+            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
+            outf.write("assembly_killed")
+            outf.close()
+        else:
+            outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
+            outf.write("assembly_failed")
+            outf.close()

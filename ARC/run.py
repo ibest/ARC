@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import subprocess
+from copy import deepcopy
 from subprocess import CalledProcessError
 from ARC import logger
 from ARC import exceptions
@@ -260,6 +261,7 @@ class Run:
     def submit(self, batchqueue):
         for sample in self.config['Samples']:
             s = self.config['Samples'][sample]
+
             params = {}
             params['reference'] = self.config['reference']
             params['mapper'] = self.config['mapper']
@@ -273,7 +275,7 @@ class Run:
             params['map_against_reads'] = self.config['map_against_reads']
             params['max_incorporation'] = self.config['max_incorporation']
             params['assemblytimeout'] = self.config['assemblytimeout']
-            params['safe_targets'] = self.config['safe_targets']
+            # params['safe_targets'] = self.config['safe_targets']
             params['working_dir'] = s['working_dir']
             params['finished_dir'] = s['finished_dir']
             params['sample'] = sample
@@ -285,11 +287,11 @@ class Run:
             if 'SE' in s:
                 params['SE'] = s['SE']
 
-            logger.debug("Params in run submission: %s" % (params))
+            batchqueue.add_global('safe_targets', self.config['safe_targets'])
 
-            job = batchqueue.submit(
+            batchqueue.submit(
                 Mapper,
                 procs=params['mapping_procs'],
                 params=params)
 
-
+        del(self.config)

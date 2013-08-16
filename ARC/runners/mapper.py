@@ -64,10 +64,41 @@ class Mapper(ProcessBase):
             self.run_blat()
 
         #Mapping is done, run splitreads:
+        split_params = {}
+        split_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
+        split_params['mapper'] = self.params['mapper']
+        split_params['assembler'] = self.params['assembler']
+        split_params['verbose'] = self.params['verbose']
+        split_params['format'] = self.params['format']
+        split_params['numcycles'] = self.params['numcycles']
+        split_params['urt'] = self.params['urt']
+        split_params['mapping_procs'] = self.params['mapping_procs']
+        split_params['assembly_procs'] = self.params['assembly_procs']
+        split_params['map_against_reads'] = self.params['map_against_reads']
+        split_params['max_incorporation'] = self.params['max_incorporation']
+        split_params['assemblytimeout'] = self.params['assemblytimeout']
+        split_params['safe_targets'] = self.params['safe_targets']
+        split_params['working_dir'] = self.params['working_dir']
+        split_params['finished_dir'] = self.params['finished_dir']
+        split_params['sample'] = self.params['sample']
+        split_params['iteration'] = self.params['iteration']
+
+        # These are created the first time the splitter is run and passed through to every submission.
+        if 'mapping_dict' in self.params:
+            split_params['mapping_dict'] = self.params['mapping_dict']
+        if 'readcounts' in self.params:
+            split_params['readcounts'] = self.params['readcounts']
+
+        if 'PE1' and 'PE2' in self.params:
+            split_params['PE1'] = self.params['PE1']
+            split_params['PE2'] = self.params['PE2']
+        if 'SE' in self.params:
+            split_params['SE'] = self.params['SE']
+
         self.submit(
             Splitter,
             procs=1,
-            params=self.params.copy())
+            params=split_params)
 
     def run_bowtie2(self):
         """
@@ -245,5 +276,3 @@ class Mapper(ProcessBase):
             self.params['sample'], i, time.time() - startT))
 
         return read_map
-
-

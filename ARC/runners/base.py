@@ -17,7 +17,8 @@ from ARC import TimeoutError
 from ARC import RerunnableError
 from ARC import SubprocessError
 from ARC import Job
-from multiprocessing import Process
+from copy import deepcopy
+import multiprocessing
 import os
 import time
 import subprocess
@@ -26,28 +27,34 @@ import sys
 import logging
 
 
-class ProcessBase(Process):
-    def __init__(self, ident, procs, params, bq):
-        super(ProcessBase, self).__init__(
-            name="%s[%s]" % (self.__class__.__name__, ident)
-        )
-        self.id = ident
+class ProcessBase(multiprocessing.Process):
+    def __init__(self, jobid, procs, params, bq):
+        multiprocessing.Process.__init__(self, name="%s[%s]" % (self.__class__.__name__, jobid))
+        self.jobid = jobid
         self.bq = bq
         self.procs = procs
         self.params = params
+        self.loglevel = logger.level()
+        self.globals = bq.globals
 
     def delete(self):
-        del self.id
+        del self.jobid
         del self.bq
         del self.procs
         del self.params
+
+    def run_on_exit_ok(self):
+        pass
+
+    def run_on_exit_error(self, retval):
+        pass
 
     def shell(self, args, **kwargs):
         logfile = kwargs.pop('logfile', 'log.txt')
         description = kwargs.pop('description', 'Shell')
         verbose = kwargs.pop('verbose', False)
         working_dir = kwargs.pop('working_dir', '.')
-        kill_children = kwargs.pop('kill_children', False)
+        kill_children = kwargs.pop('kill_children', True)
         timeout = kwargs.pop('timeout', 0)
 
         # self.log("Running %s in %s" % (" ".join(args), working_dir))
@@ -88,6 +95,7 @@ class ProcessBase(Process):
                 self.kill_subprocess_children(ret.pid)
 
         if ret.returncode != 0:
+            self.execute_callback('error', Job.PROCESSERROR)
             msg = "%s: " % (description)
             msg += "%s returned an error. " % (args[0])
             msg += "check log file.\n\t $ "
@@ -124,7 +132,7 @@ class ProcessBase(Process):
         return self.bq.submit(runner, **kwargs)
 
     def resubmit(self, **kwargs):
-        self.bq.resubmit(self.id, **kwargs)
+        self.bq.resubmit(self.jobid, **kwargs)
 
     def setup(self):
         pass
@@ -137,25 +145,33 @@ class ProcessBase(Process):
             self.setup()
             self.execute()
             retval = Job.OK
+            self.run_on_exit_ok()
         except TimeoutError as exc:
             retval = Job.TIMEOUTERROR
+            self.run_on_exit_error(retval)
             self.warn(exc.msg)
         except FatalError as exc:
             retval = Job.FATALERROR
+            self.run_on_exit_error(retval)
             self.error(exc.msg)
         except RerunnableError as exc:
             retval = Job.RERUNERROR
+            self.run_on_exit_error(retval)
             self.warn(exc.msg)
         except SubprocessError as exc:
             retval = Job.PROCESSERROR
+            self.run_on_exit_error(retval)
             self.warn(exc.msg)
         except Exception as exc:
             retval = Job.UNKNOWNERROR
+            self.run_on_exit_error(retval)
             self.exception(exc)
             self.error(exc)
+        except (KeyboardInterrupt, SystemExit):
+            retval = Job.UNKNOWNERROR
         finally:
             self.teardown()
-            # self.delete()
+            self.delete()
 
         self.debug("Exiting with exitcode %d." % (retval))
         sys.exit(retval)
@@ -171,15 +187,16 @@ class ProcessBase(Process):
         logger.info("%s: %s" % (name, msg))
 
     def info(self, msg):
-        if logger.level() == logging.DEBUG:
+        if self.loglevel == logging.DEBUG:
             name = self.name
         else:
             name = self.__class__.__name__
         logger.info("%s: %s" % (name, msg))
 
     def debug(self, msg):
-        name = self.name
-        logger.debug("%s: %s" % (name, msg))
+        if self.loglevel == logging.DEBUG:
+            name = self.name
+            logger.debug("%s: %s" % (name, msg))
 
     def warn(self, msg):
         if logger.level() == logging.DEBUG:
