@@ -47,17 +47,15 @@ class Assembler(ProcessBase):
         self.target_dir = self.params['target_dir']
 
     def execute(self):
-        if not('assembler' in self.params):
-            raise FatalError("assembler not defined in params")
-        if self.params['map_against_reads'] and self.params['iteration'] == 1:
+        if self.globals['map_against_reads'] and self.params['iteration'] == 1:
             self.RunMapAgainstReads()
-        elif self.params['assembler'] == 'newbler':
+        elif self.globals['assembler'] == 'newbler':
             self.RunNewbler()
-        elif self.params['assembler'] == 'spades':
+        elif self.globals['assembler'] == 'spades':
             self.RunSpades()
         else:
             raise FatalError(
-                "Assembler %s isn't recognized." % self.params['assembler'])
+                "Assembler %s isn't recognized." % self.globals['assembler'])
 
     def RunMapAgainstReads(self):
         """
@@ -92,7 +90,7 @@ class Assembler(ProcessBase):
                 sample, target),
             logfile='assembly.log',
             working_dir=self.target_dir,
-            verbose=self.params['verbose'])
+            verbose=self.globals['verbose'])
 
         if 'assembly_PE1' and 'assembly_PE2' in self.params:
             self.log("Calling addRun for sample: %s target %s" % (
@@ -109,7 +107,7 @@ class Assembler(ProcessBase):
                     sample, target),
                 logfile='assembly.log',
                 working_dir=self.target_dir,
-                verbose=self.params['verbose'])
+                verbose=self.globals['verbose'])
 
             self.debug("Calling addRun for sample: %s target %s" % (
                 sample, target))
@@ -124,7 +122,7 @@ class Assembler(ProcessBase):
                     sample, target),
                 logfile='assembly.log',
                 working_dir=self.target_dir,
-                verbose=self.params['verbose'])
+                verbose=self.globals['verbose'])
 
         if 'assembly_SE' in self.params:
             self.debug("Calling addRun for sample: %s target %s" % (
@@ -140,7 +138,7 @@ class Assembler(ProcessBase):
                     sample, target),
                 logfile='assembly.log',
                 working_dir=self.target_dir,
-                verbose=self.params['verbose'])
+                verbose=self.globals['verbose'])
 
         #Build args for runProject
         args = [
@@ -149,7 +147,7 @@ class Assembler(ProcessBase):
             '-cpu',
             str(self.procs)]
 
-        if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
+        if self.globals['urt'] and self.params['iteration'] < self.globals['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
         args += [os.path.join(self.target_dir, 'assembly')]
@@ -161,15 +159,15 @@ class Assembler(ProcessBase):
                 sample, target),
             logfile='assembly.log',
             working_dir=self.target_dir,
-            verbose=self.params['verbose'],
-            timeout=self.params['assemblytimeout'])
+            verbose=self.globals['verbose'],
+            timeout=self.globals['assemblytimeout'])
 
         self.params['targets'][self.target_dir] = True
 
         self.log("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
-        outf = open(os.path.join(self.target_dir, "finished"), 'w')
-        outf.write("assembly_complete")
-        outf.close()
+        # outf = open(os.path.join(self.target_dir, "finished"), 'w')
+        # outf.write("assembly_complete")
+        # outf.close()
 
     def RunSpades(self):
         """
@@ -182,7 +180,7 @@ class Assembler(ProcessBase):
         #Build args for assembler call
         args = ['spades.py', '-t', '1']
 
-        if self.params['format'] == 'fasta':
+        if self.globals['format'] == 'fasta':
             # spades errors on read correction if the input isn't fastq
             args.append('--only-assembler')
 
@@ -206,8 +204,8 @@ class Assembler(ProcessBase):
                 sample, target),
             logfile='assembly.log',
             working_dir=self.target_dir,
-            verbose=self.params['verbose'],
-            timeout=self.params['assemblytimeout'],
+            verbose=self.globals['verbose'],
+            timeout=self.globals['assemblytimeout'],
             callback_on_ok=self.output_on_ok,
             callback_on_error=self.output_on_error)
 

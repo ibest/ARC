@@ -219,7 +219,7 @@ class BatchQueues(object):
         # Add globals for things that need to be passed around everywhere
         self.globals = self.mgr.dict()
 
-    def add_global(self.key, value):
+    def add_global(self, key, value):
         self.globals[key] = value
 
     def backfill(self, procs):

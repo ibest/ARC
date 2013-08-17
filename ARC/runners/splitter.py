@@ -78,25 +78,15 @@ class Splitter(ProcessBase):
             startT = time.time()
             target_dir = os.path.join(
                 self.params['working_dir'],
-                self.params['safe_targets'][target])
+                self.globals['safe_targets'][target])
             os.mkdir(target_dir)
 
             assembly_params = {}
             assembly_params['target'] = target
             assembly_params['target_dir'] = target_dir
             assembly_params['iteration'] = iteration
-            assembler_keys = [
-                'assembler',
-                'sample',
-                'verbose',
-                'format',
-                'assemblytimeout',
-                'map_against_reads',
-                'urt',
-                'numcycles',
-                'targets']
-            for key in assembler_keys:
-                assembly_params[key] = self.params[key]
+            assembly_params['sample'] = self.params['sample']
+            assembly_params['targets'] = self.params['targets']
 
             if target not in self.params['readcounts']:
                 self.params['readcounts'][target] = Counter()
@@ -109,15 +99,15 @@ class Splitter(ProcessBase):
             if 'PE1' in self.params and 'PE2' in self.params:
                 outf_PE1 = open(os.path.join(
                     target_dir,
-                    "PE1." + self.params['format']), 'w')
+                    "PE1." + self.globals['format']), 'w')
                 outf_PE2 = open(os.path.join(
                     target_dir,
-                    "PE2." + self.params['format']), 'w')
+                    "PE2." + self.globals['format']), 'w')
 
             if 'SE' in self.params:
                 outf_SE = open(os.path.join(
                     target_dir,
-                    "SE." + self.params['format']), 'w')
+                    "SE." + self.globals['format']), 'w')
 
             for readID in reads:
                 if 'PE1' in self.params and readID in idx_PE1:
@@ -126,13 +116,13 @@ class Splitter(ProcessBase):
                     new_readID = readID.replace(":", "_") + ":0:0:0:0#0/"
                     read1.id = read1.name = new_readID + "1"
                     read2.id = read2.name = new_readID + "2"
-                    SeqIO.write(read1, outf_PE1, self.params['format'])
-                    SeqIO.write(read2, outf_PE2, self.params['format'])
+                    SeqIO.write(read1, outf_PE1, self.globals['format'])
+                    SeqIO.write(read2, outf_PE2, self.globals['format'])
                     PEs += 1
                 elif 'SE' in self.params and readID in idx_SE:
                     read1 = idx_SE[readID]
                     read1.id = read1.name = readID.replace(":", "_") + ":0:0:0:0#0/"
-                    SeqIO.write(read1, outf_SE, self.params['format'])
+                    SeqIO.write(read1, outf_SE, self.globals['format'])
                     SEs += 1
             if 'PE1' in self.params and 'PE2' in self.params:
                 outf_PE1.close()
@@ -145,14 +135,14 @@ class Splitter(ProcessBase):
             if PEs > 0:
                 assembly_params['assembly_PE1'] = os.path.join(
                     target_dir,
-                    "PE1." + self.params['format'])
+                    "PE1." + self.globals['format'])
                 assembly_params['assembly_PE2'] = os.path.join(
                     target_dir,
-                    "PE2." + self.params['format'])
+                    "PE2." + self.globals['format'])
 
             if SEs > 0:
                 assembly_params['assembly_SE'] = os.path.join(
-                    target_dir, "SE." + self.params['format'])
+                    target_dir, "SE." + self.globals['format'])
 
             # All reads have been written at this point, submit the
             # assemblies
@@ -171,7 +161,7 @@ class Splitter(ProcessBase):
                 logger.debug("Submitting new assembly")
                 job = self.submit(
                     Assembler,
-                    procs=self.params['assembly_procs'],
+                    procs=self.globals['assembly_procs'],
                     params=assembly_params)
                 assids.append(job.ident)
 
@@ -179,29 +169,16 @@ class Splitter(ProcessBase):
         self.log("Sample: %s Iteration %s of numcycles %s" % (
             self.params['sample'],
             self.params['iteration'],
-            self.params['numcycles']))
+            self.globals['numcycles']))
         self.log("------------------------------------")
 
         finisher_params = {}
         finisher_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
-        finisher_params['mapper'] = self.params['mapper']
-        finisher_params['assembler'] = self.params['assembler']
-        finisher_params['verbose'] = self.params['verbose']
-        finisher_params['format'] = self.params['format']
-        finisher_params['numcycles'] = self.params['numcycles']
-        finisher_params['urt'] = self.params['urt']
-        finisher_params['mapping_procs'] = self.params['mapping_procs']
-        finisher_params['assembly_procs'] = self.params['assembly_procs']
-        finisher_params['map_against_reads'] = self.params['map_against_reads']
-        finisher_params['max_incorporation'] = self.params['max_incorporation']
-        finisher_params['assemblytimeout'] = self.params['assemblytimeout']
-        finisher_params['safe_targets'] = self.params['safe_targets']
         finisher_params['working_dir'] = self.params['working_dir']
         finisher_params['finished_dir'] = self.params['finished_dir']
         finisher_params['sample'] = self.params['sample']
         finisher_params['iteration'] = self.params['iteration']
         finisher_params['targets'] = self.params['targets']
-
         # These are passed through to every submission.
         finisher_params['readcounts'] = self.params['readcounts']
         finisher_params['mapping_dict'] = self.params['mapping_dict']

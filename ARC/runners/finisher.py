@@ -83,14 +83,14 @@ class Finisher(ProcessBase):
         fin_outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'a')
         remap_outf = open(os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta'), 'w')
         #check whether the sample is globally finished
-        if self.params['iteration'] >= self.params['numcycles']:
+        if self.params['iteration'] >= self.globals['numcycles']:
             sample_finished = True
 
         #loop over the current set of targets_folders
         for target_folder in self.params['targets']:
             target_map_against_reads = False
             safe_target = target_folder.split("/")[-1]
-            target = self.params['safe_targets'][safe_target]
+            target = self.globals['safe_targets'][safe_target]
             self.log("Sample: %s target: %s finishing target.." % (
                 self.params['sample'], target))
             finishedf = open(os.path.join(target_folder, 'finished'), 'r')
@@ -132,7 +132,7 @@ class Finisher(ProcessBase):
                 # Check read counts and retire target, or send it back for
                 # re-mapping depending on mapped reads
                 if iteration > 1 and cur_reads != 0 and previous_reads != 0:
-                    if cur_reads / previous_reads > self.params['max_incorporation']:
+                    if cur_reads / previous_reads > self.globals['max_incorporation']:
                         self.log("Sample %s target %s hit a repeatitive region, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
                     elif cur_reads <= previous_reads and iteration > 3:
@@ -156,27 +156,11 @@ class Finisher(ProcessBase):
             from ARC.runners import Mapper
             mapper_params = {}
             mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
-            mapper_params['mapper'] = self.params['mapper']
-            mapper_params['assembler'] = self.params['assembler']
-            mapper_params['verbose'] = self.params['verbose']
-            mapper_params['format'] = self.params['format']
-            mapper_params['numcycles'] = self.params['numcycles']
-            mapper_params['urt'] = self.params['urt']
-            mapper_params['mapping_procs'] = self.params['mapping_procs']
-            mapper_params['assembly_procs'] = self.params['assembly_procs']
-            mapper_params['map_against_reads'] = self.params['map_against_reads']
-            mapper_params['max_incorporation'] = self.params['max_incorporation']
-            mapper_params['assemblytimeout'] = self.params['assemblytimeout']
-            mapper_params['safe_targets'] = self.params['safe_targets']
             mapper_params['working_dir'] = self.params['working_dir']
             mapper_params['finished_dir'] = self.params['finished_dir']
             mapper_params['sample'] = self.params['sample']
             mapper_params['iteration'] = self.params['iteration']
-
-            # These are passed through to every submission.
-            # mapper_params['mapping_dict'] = self.params['mapping_dict']
             mapper_params['readcounts'] = self.params['readcounts']
-
             if 'PE1' and 'PE2' in self.params:
                 mapper_params['PE1'] = self.params['PE1']
                 mapper_params['PE2'] = self.params['PE2']
@@ -193,7 +177,7 @@ class Finisher(ProcessBase):
 
             self.submit(
                 Mapper,
-                procs=self.params['mapping_procs'],
+                procs=self.globals['mapping_procs'],
                 params=mapper_params)
 
             self.log("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
@@ -206,9 +190,9 @@ class Finisher(ProcessBase):
         # assembler crashed and no contig file was created
         # --> write reads as contigs
         if map_against_reads is False and killed is False:
-            if self.params['assembler'] == 'newbler':
+            if self.globals['assembler'] == 'newbler':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "assembly", "454AllContigs.fna")
-            elif self.params['assembler'] == 'spades':
+            elif self.globals['assembler'] == 'spades':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "contigs.fasta")
             i = 0
             if os.path.exists(contigf):
@@ -226,16 +210,16 @@ class Finisher(ProcessBase):
             i = 0
             self.log("Sample %s target %s: Writing reads as contigs." % (self.params['sample'], target))
             if 'PE1' and 'PE2' in self.params:
-                inf_PE1n = os.path.join(target_folder, "PE1." + self.params['format'])
-                inf_PE2n = os.path.join(target_folder, "PE2." + self.params['format'])
+                inf_PE1n = os.path.join(target_folder, "PE1." + self.globals['format'])
+                inf_PE2n = os.path.join(target_folder, "PE2." + self.globals['format'])
                 if os.path.exists(inf_PE1n) and os.path.exists(inf_PE2n):
                     inf_PE1 = open(inf_PE1n, 'r')
                     inf_PE2 = open(inf_PE2n, 'r')
-                    for r in SeqIO.parse(inf_PE1, self.params['format']):
+                    for r in SeqIO.parse(inf_PE1, self.globals['format']):
                         i += 1
                         r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Read%04d" % i
                         SeqIO.write(r, outf, "fasta")
-                    for r in SeqIO.parse(inf_PE2, self.params['format']):
+                    for r in SeqIO.parse(inf_PE2, self.globals['format']):
                         i += 1
                         r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Read%04d" % i
                         SeqIO.write(r, outf, "fasta")
@@ -243,10 +227,10 @@ class Finisher(ProcessBase):
                     inf_PE2.close()
 
             if 'SE' in self.params:
-                inf_SEn = os.path.join(target_folder, "SE." + self.params['format'])
+                inf_SEn = os.path.join(target_folder, "SE." + self.globals['format'])
                 if os.path.exists(inf_SEn):
                     inf_SE = open(inf_SEn, 'r')
-                for r in SeqIO.parse(inf_SE, self.params['format']):
+                for r in SeqIO.parse(inf_SE, self.globals['format']):
                     i += 1
                     r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Read%04d" % i
                     SeqIO.write(r, outf, "fasta")
@@ -255,8 +239,8 @@ class Finisher(ProcessBase):
         if finished or killed:
             #Write reads:
             if 'PE1' and 'PE2' in self.params:
-                inf_PE1n = os.path.join(target_folder, "PE1." + self.params['format'])
-                inf_PE2n = os.path.join(target_folder, "PE2." + self.params['format'])
+                inf_PE1n = os.path.join(target_folder, "PE1." + self.globals['format'])
+                inf_PE2n = os.path.join(target_folder, "PE2." + self.globals['format'])
                 if os.path.exists(inf_PE1n) and os.path.exists(inf_PE2n):
                     inf_PE1 = open(inf_PE1n, 'r')
                     inf_PE2 = open(inf_PE2n, 'r')
@@ -264,31 +248,31 @@ class Finisher(ProcessBase):
                     outf_PE1 = open(
                         os.path.join(
                             self.params['finished_dir'],
-                            "PE1." + self.params['format']
+                            "PE1." + self.globals['format']
                         ), 'a')
                     outf_PE2 = open(
                         os.path.join(
                             self.params['finished_dir'],
-                            "PE2." + self.params['format']
+                            "PE2." + self.globals['format']
                         ), 'a')
 
-                    for r in SeqIO.parse(inf_PE1, self.params['format']):
+                    for r in SeqIO.parse(inf_PE1, self.globals['format']):
                         r.description = self.params['sample'] + "_:_" + target
-                        SeqIO.write(r, outf_PE1, self.params['format'])
-                    for r in SeqIO.parse(inf_PE2, self.params['format']):
+                        SeqIO.write(r, outf_PE1, self.globals['format'])
+                    for r in SeqIO.parse(inf_PE2, self.globals['format']):
                         r.description = self.params['sample'] + "_:_" + target
-                        SeqIO.write(r, outf_PE2, self.params['format'])
+                        SeqIO.write(r, outf_PE2, self.globals['format'])
                     outf_PE1.close()
                     outf_PE2.close()
 
             if 'SE' in self.params:
-                inf_SEn = os.path.join(target_folder, "SE." + self.params['format'])
+                inf_SEn = os.path.join(target_folder, "SE." + self.globals['format'])
                 if os.path.exists(inf_SEn):
                     inf_SE = open(inf_SEn, 'r')
-                    outf_SE = open(os.path.join(self.params['finished_dir'], "SE." + self.params['format']), 'a')
-                    for r in SeqIO.parse(inf_SE, self.params['format']):
+                    outf_SE = open(os.path.join(self.params['finished_dir'], "SE." + self.globals['format']), 'a')
+                    for r in SeqIO.parse(inf_SE, self.globals['format']):
                         r.description = self.params['sample'] + "_:_" + target
-                        SeqIO.write(r, outf_SE, self.params['format'])
+                        SeqIO.write(r, outf_SE, self.globals['format'])
                     outf_SE.close()
         #Cleanup temporary assembly, and reads:
         os.system("rm -rf %s" % target_folder)

@@ -261,26 +261,12 @@ class Run:
     def submit(self, batchqueue):
         for sample in self.config['Samples']:
             s = self.config['Samples'][sample]
-
             params = {}
             params['reference'] = self.config['reference']
-            params['mapper'] = self.config['mapper']
-            params['assembler'] = self.config['assembler']
-            params['verbose'] = self.config['verbose']
-            params['format'] = self.config['format']
-            params['numcycles'] = self.config['numcycles']
-            params['urt'] = self.config['urt']
-            params['mapping_procs'] = self.config['mapping_procs']
-            params['assembly_procs'] = self.config['assembly_procs']
-            params['map_against_reads'] = self.config['map_against_reads']
-            params['max_incorporation'] = self.config['max_incorporation']
-            params['assemblytimeout'] = self.config['assemblytimeout']
-            # params['safe_targets'] = self.config['safe_targets']
             params['working_dir'] = s['working_dir']
             params['finished_dir'] = s['finished_dir']
             params['sample'] = sample
             params['iteration'] = 0
-
             if 'PE1' in s and 'PE2' in s:
                 params['PE1'] = s['PE1']
                 params['PE2'] = s['PE2']
@@ -288,10 +274,23 @@ class Run:
                 params['SE'] = s['SE']
 
             batchqueue.add_global('safe_targets', self.config['safe_targets'])
+            batchqueue.add_global('format', self.config['format'])
+            batchqueue.add_global('verbose', self.config['verbose'])
+            batchqueue.add_global('assembler', self.config['assembler'])
+            batchqueue.add_global('mapper', self.config['mapper'])
+            batchqueue.add_global('urt', self.config['urt'])
+            batchqueue.add_global('numcycles', self.config['numcycles'])
+            batchqueue.add_global('assembly_procs', self.config['assembly_procs'])
+            batchqueue.add_global('mapping_procs', self.config['mapping_procs'])
+            batchqueue.add_global('max_incorporation', self.config['max_incorporation'])
+            batchqueue.add_global('assemblytimeout', self.config['assemblytimeout'])
+            batchqueue.add_global('map_against_reads', self.config['map_against_reads'])
 
             batchqueue.submit(
                 Mapper,
-                procs=params['mapping_procs'],
+                procs=self.config['mapping_procs'],
                 params=params)
 
+        # See if we can free up additional memory so we don't pass it on to the
+        # forked processes.
         del(self.config)

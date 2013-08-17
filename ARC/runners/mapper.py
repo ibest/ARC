@@ -53,36 +53,20 @@ class Mapper(ProcessBase):
             raise FatalError("Missing reference file for mapping")
 
     def execute(self):
-        if not('mapper' in self.params):
-            raise FatalError("mapper not defined in params")
-
-        if self.params['mapper'] == 'bowtie2':
+        if self.globals['mapper'] == 'bowtie2':
             self.log("Sample: %s Running bowtie2." % self.params['sample'])
             self.run_bowtie2()
-        elif self.params['mapper'] == 'blat':
+        elif self.globals['mapper'] == 'blat':
             self.log("Sample: %s Running blat." % self.params['sample'])
             self.run_blat()
 
         #Mapping is done, run splitreads:
         split_params = {}
         split_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
-        split_params['mapper'] = self.params['mapper']
-        split_params['assembler'] = self.params['assembler']
-        split_params['verbose'] = self.params['verbose']
-        split_params['format'] = self.params['format']
-        split_params['numcycles'] = self.params['numcycles']
-        split_params['urt'] = self.params['urt']
-        split_params['mapping_procs'] = self.params['mapping_procs']
-        split_params['assembly_procs'] = self.params['assembly_procs']
-        split_params['map_against_reads'] = self.params['map_against_reads']
-        split_params['max_incorporation'] = self.params['max_incorporation']
-        split_params['assemblytimeout'] = self.params['assemblytimeout']
-        split_params['safe_targets'] = self.params['safe_targets']
         split_params['working_dir'] = self.params['working_dir']
         split_params['finished_dir'] = self.params['finished_dir']
         split_params['sample'] = self.params['sample']
         split_params['iteration'] = self.params['iteration']
-
         # These are created the first time the splitter is run and passed through to every submission.
         if 'mapping_dict' in self.params:
             split_params['mapping_dict'] = self.params['mapping_dict']
@@ -131,7 +115,7 @@ class Mapper(ProcessBase):
                 self.params['sample']),
             logfile='assembly.log',
             working_dir=working_dir,
-            verbose=self.params['verbose'])
+            verbose=self.globals['verbose'])
 
         #Do bowtie2 mapping:
         args = [
@@ -139,9 +123,9 @@ class Mapper(ProcessBase):
             '-I', '0',
             '-X', '1500',
             '--local',
-            '-p', str(self.params['mapping_procs']),
+            '-p', str(self.globals['mapping_procs']),
             '-x', base]
-        if self.params['format'] == 'fasta':
+        if self.globals['format'] == 'fasta':
             args += ['-f']
         if 'PE1' in self.params and 'PE2' in self.params:
             args += ['-1', self.params['PE1'], '-2', self.params['PE2']]
@@ -155,7 +139,7 @@ class Mapper(ProcessBase):
                 self.params['sample']),
             logfile='assembly.log',
             working_dir=working_dir,
-            verbose=self.params['verbose'])
+            verbose=self.globals['verbose'])
 
         #Extract the SAM to a dict
         self.params['mapping_dict'] = self.SAM_to_dict(
@@ -183,7 +167,7 @@ class Mapper(ProcessBase):
             self.params['reference'],
             os.path.join(working_dir, 'reads.txt')]
 
-        if 'format' in self.params and self.params['format'] == 'fastq':
+        if 'format' in self.params and self.globals['format'] == 'fastq':
             args.append('-fastq')
         if 'fastmap' in self.params:
             args.append('-fastMap')
@@ -195,7 +179,7 @@ class Mapper(ProcessBase):
             description="Blat mapping (Sample %s)" % (self.params['sample']),
             logfile='assembly.log',
             working_dir=working_dir,
-            verbose=self.params['verbose'])
+            verbose=self.globals['verbose'])
 
         #Extract the PSL to a dict
         self.params['mapping_dict'] = self.PSL_to_dict(
