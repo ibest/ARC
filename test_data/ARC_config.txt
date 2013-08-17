@@ -18,8 +18,10 @@
 # reference=./targets.fa
 # numcycles=10
 # mapper=bowtie2
+# mapping_procs=6
 # assembler=newbler
-# nprocs=7
+# assembly_procs=1
+# nprocs=12
 # format=fasta
 # verbose=True
 # urt=True

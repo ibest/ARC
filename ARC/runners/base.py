@@ -17,7 +17,6 @@ from ARC import TimeoutError
 from ARC import RerunnableError
 from ARC import SubprocessError
 from ARC import Job
-from copy import deepcopy
 import multiprocessing
 import os
 import time
@@ -95,7 +94,6 @@ class ProcessBase(multiprocessing.Process):
                 self.kill_subprocess_children(ret.pid)
 
         if ret.returncode != 0:
-            self.execute_callback('error', Job.PROCESSERROR)
             msg = "%s: " % (description)
             msg += "%s returned an error. " % (args[0])
             msg += "check log file.\n\t $ "
@@ -184,33 +182,33 @@ class ProcessBase(multiprocessing.Process):
             name = self.name
         else:
             name = self.__class__.__name__
-        logger.info("%s: %s" % (name, msg))
+        logger.info("%-12s| %s" % (name, msg))
 
     def info(self, msg):
         if self.loglevel == logging.DEBUG:
             name = self.name
         else:
             name = self.__class__.__name__
-        logger.info("%s: %s" % (name, msg))
+        logger.info("%-12s| %s" % (name, msg))
 
     def debug(self, msg):
         if self.loglevel == logging.DEBUG:
             name = self.name
-            logger.debug("%s: %s" % (name, msg))
+            logger.debug("%-12s| %s" % (name, msg))
 
     def warn(self, msg):
         if logger.level() == logging.DEBUG:
             name = self.name
         else:
             name = self.__class__.__name__
-        logger.warn("%s: %s" % (name, msg))
+        logger.warn("%-12s| %s" % (name, msg))
 
     def error(self, msg):
         if logger.level() == logging.DEBUG:
             name = self.name
         else:
             name = self.__class__.__name__
-        logger.error("%s: %s" % (name, msg))
+        logger.error("%-12s| %s" % (name, msg))
 
     def exception(self, exc):
         logger.exception(exc)

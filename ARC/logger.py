@@ -27,7 +27,7 @@ def setup(logfile=None, loglevel=logging.INFO):
     log_handler = logging.StreamHandler(sys.stdout)
     # else:
     #   log_handler = logging.FileHandler(config['logfile'])
-    log_handler.setFormatter(logging.Formatter('[%(asctime)s %(levelname)s %(process)s] %(message)s'))
+    log_handler.setFormatter(logging.Formatter('[%(asctime)s %(levelname)s %(process)5s] %(message)s'))
     log_handler.setLevel(loglevel)  # Here's where
     logger.addHandler(log_handler)
     logger.setLevel(loglevel)  # And here

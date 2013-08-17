@@ -208,7 +208,7 @@ class Finisher(ProcessBase):
 
         if map_against_reads:
             i = 0
-            self.log("Sample %s target %s: Writing reads as contigs." % (self.params['sample'], target))
+            self.log("Sample: %s target %s: Writing reads as contigs." % (self.params['sample'], target))
             if 'PE1' and 'PE2' in self.params:
                 inf_PE1n = os.path.join(target_folder, "PE1." + self.globals['format'])
                 inf_PE2n = os.path.join(target_folder, "PE2." + self.globals['format'])
