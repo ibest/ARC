@@ -117,7 +117,7 @@ class Finisher:
                 #Check read counts and retire target, or send it back for re-mapping depending on mapped reads
                 if iteration > 1 and cur_reads != 0 and previous_reads != 0:
                     if cur_reads / previous_reads > self.params['max_incorporation']:
-                        logger.info("Sample %s target %s hit a repeatitive region, no more mapping will be done" % (self.params['sample'], target))
+                        logger.info("Sample %s target %s hit a repetitive region, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
                     elif cur_reads <= previous_reads and iteration > 3:
                         #Give the mapper a couple extra iterations in case the first mapping got a lot of reads which didn't assemble
@@ -149,12 +149,6 @@ class Finisher:
             mapper = MapperRunner(mapper_params)
             self.ref_q.put(mapper.to_dict())
             logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
-            del self.params
-            del mapper
-            del self.ref_q
-            import gc
-            print "Finisher garbage:", gc.garbage
-            print "Finisher collect:", gc.collect()
         else:
             logger.info("Sample: %s MapperRunner not added to queue. Work finished." % self.params['sample'])
 

@@ -33,7 +33,7 @@ class ProcessRunner(Process):
 
     def run(self):
         """
-        run() will initially sleep for .5 seconds, if an item is then found on the ref_q, it will process items off of the ref_q
+        run() will initially sleep for 0.5 seconds, if an item is then found on the ref_q, it will process items off of the ref_q
         every .1 second until the ref_q is empty, at which point it will get an Empty exception, and set the sleeptime to 5 seconds.
         """
         sleeptime = .5

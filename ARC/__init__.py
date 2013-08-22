@@ -79,7 +79,7 @@ def setup(config):
             os.mkdir(working_dir)
             os.mkdir(finished_dir)
         # Create stats file:
-        statsf = open(os.path.join(working_dir, "mapping_stats.tsv"), 'w')
+        statsf = open(os.path.join(finished_dir, "mapping_stats.tsv"), 'w')
         statsf.write('\t'.join(['Sample','Target','Iteration','Reads']) + '\n')
         statsf.close()
         ## Build a separate index for each read file in the input, put them in working_dir"""
@@ -181,6 +181,8 @@ def read_config():
         config['max_incorporation'] = 5
     else:
         config['max_incorporation'] = int(config['max_incorportaion'])
+    if 'bowtie2_k' not in config:
+        config['bowtie2_k'] = 5
     if 'format' not in config:
         raise exceptions.FatalError("Error, file format not specificed in ARC_config.txt.")
     if config['format'] != 'fastq' and config['format'] != 'fasta':

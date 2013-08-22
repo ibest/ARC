@@ -14,40 +14,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import sys
-import logging
+import logging, multiprocessing
 
 
 def setup(logfile=None, loglevel=logging.DEBUG):
-    #Setup a global logger:
-    # global logger
-    # How should we handle this gracefully for cases where each component is run independently?
-    # How should get get log-level (command line switch), and what level should we default to?
-    logger = logging.getLogger(__name__)
-    # if config['logfile']:
+    # Set up a multiprocessing logger to hopefully log from all N workers in a safe and simultaneous fashion:
+    logger = multiprocessing.get_logger()
+    logger.setLevel(loglevel)
     log_handler = logging.StreamHandler(sys.stdout)
-    # else:
-    #   log_handler = logging.FileHandler(config['logfile'])
     log_handler.setFormatter(logging.Formatter('[%(asctime)s %(levelname)s %(process)s] %(message)s'))
     log_handler.setLevel(loglevel)  # Here's where
     logger.addHandler(log_handler)
-    logger.setLevel(loglevel)  # And here
 
 
 def info(message):
-    logger = logging.getLogger(__name__)
+    logger = multiprocessing.get_logger()
     logger.info("%s" % (message))
 
 
 def error(message):
-    logger = logging.getLogger(__name__)
+    logger = multiprocessing.get_logger()
     logger.error("%s" % (message))
 
 
 def debug(message):
-    logger = logging.getLogger(__name__)
+    logger = multiprocessing.get_logger()
     logger.debug("%s" % (message))
 
 
 def warn(message):
-    logger = logging.getLogger(__name__)
+    logger = multiprocessing.get_logger()
     logger.warn("%s" % (message))

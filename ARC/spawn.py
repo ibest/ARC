@@ -16,10 +16,10 @@
 
 import time
 import multiprocessing
-import os
-from copy import deepcopy
+#import os
+#from copy import deepcopy
 from Queue import Empty
-from process_runner import ProcessRunner
+from ARC.process_runner import ProcessRunner
 from ARC import logger
 from ARC import exceptions
 from ARC.mapper import MapperRunner
@@ -27,26 +27,17 @@ from ARC.mapper import MapperRunner
 
 def run(config):
     logger.info("Starting...")
-
-    # For test
-    #nprocs = 10
     # Get the number of processors to use
     nprocs = int(config['nprocs'])
 
+    #Setup thread-safe shared objects
     ref_q = multiprocessing.Queue()
     result_q = multiprocessing.Queue()
     finished = multiprocessing.Array('i', [0]*nprocs)
 
-    # from test import TestRunner
-    # for i in range(50):
-    #     s = TestRunner({'foo': i})
-    #     ref_q.put(s.to_dict())
-
     # Get the number of samples from the configuration
-    #'sample' in params and 'reference' in params and 'working_dir' in params and (('PE1' in params and 'PE2' in params) or 'SE' in params))
     for sample in config['Samples']:
         s = config['Samples'][sample]
-        #params = deepcopy(config)
         params = {}
         for k in config:
             params[k] = config[k]
@@ -62,17 +53,6 @@ def run(config):
 
         mapper = MapperRunner(params)
         ref_q.put(mapper.to_dict())
-
-    # samples = config['samples'] is dict
-    # Get the target file from the configuration
-    # target = config['target']
-    # Load the queue with the intial mapping jobs
-    #
-    # for sample in samples
-    #   mapper = Mapper(sample,target)
-    #   ref_q.put(mapper.to_dict()) # {'runner': self, 'message': 'Map <Sample name>'}
-
-    # Need signal handling for graceful exit
 
     logger.debug("Setting up workers.")
     workers = []
@@ -117,6 +97,10 @@ def run(config):
         except Empty:
             sleeptime = 5
             #print "Spawn setting sleeptime to", sleeptime
+            # In rare cases, the queue can be empty because a worker just pulled a job, but hasn't yet gotten
+            # to uppdate the finished status. This will cause not_done() to return False, causing the loop to
+            # break. Adding a short sleep here allows workers to update their status.
+            time.sleep(1)
             if not not_done(finished):
                 logger.debug("Results queue is empty and there are no active processes.  Exiting")
                 break

@@ -16,7 +16,7 @@
 ## FileType: PE1, PE2, or SE
 ## FileFormat: fasta or fastq
 # reference=./targets.fa
-# numcycles=10
+# numcycles=20
 # mapper=bowtie2
 # assembler=newbler
 # nprocs=1
@@ -25,6 +25,7 @@
 # urt=True
 # map_against_reads=False
 # assemblytimeout=2
+# bowtie2_k=2
 Sample_ID	FileName	FileType
 Sample1	./reads/Sample1_R1.fasta	PE1
 Sample1	./reads/Sample1_R2.fasta	PE2

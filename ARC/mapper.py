@@ -111,7 +111,9 @@ class MapperRunner:
         #print "Number of bowtie2 procs:", n_bowtieprocs
         #args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', self.params['nprocs'], '-x', base]
         #args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', '1', '-x', base]
+        #args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
         args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
+        args += ['-k', self.params['bowtie2_k']]
         if self.params['format'] == 'fasta':
             args += ['-f']
         if 'PE1' in self.params and 'PE2' in self.params:
@@ -173,7 +175,7 @@ class MapperRunner:
 
         #Do blat mapping
         args = ['blat', self.params['reference'], os.path.join(working_dir, 'reads.txt')]
-        if 'format' in self.params and self.params['format'] == 'fastq':
+        if self.params['format'] == 'fastq':
             args.append('-fastq')
         if 'fastmap' in self.params:
             args.append('-fastMap')
@@ -321,19 +323,11 @@ class MapperRunner:
             if target not in checker_params['readcounts']:
                 checker_params['readcounts'][target] = Counter()
             os.mkdir(target_dir)
-            #assembly_params = deepcopy(self.params)
-            assembly_params = {}
-            assembly_params['target'] = target
-            assembly_params['target_dir'] = target_dir
-            assembly_params['iteration'] = iteration
-            assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles']
-            for k in assembler_keys:
-                assembly_params[k] = self.params[k]
 
             reads = self.params['mapping_dict'][target]
             # track how many total reads were added for this cycle
             checker_params['readcounts'][target][iteration] = len(reads)
-            statsf = open(os.path.join(self.params['working_dir'], "mapping_stats.tsv"), 'a')
+            statsf = open(os.path.join(self.params['finished_dir'], "mapping_stats.tsv"), 'a')
             statsf.write('\t'.join([self.params['sample'], target, str(iteration), str(len(reads))]) + '\n')
             statsf.close()
 
@@ -364,6 +358,22 @@ class MapperRunner:
             if 'SE' in self.params:
                 outf_SE.close()
 
+            #Build assembly job:
+            assembly_params = {}
+            assembly_params['target'] = target
+            assembly_params['target_dir'] = target_dir
+            assembly_params['iteration'] = iteration
+            assembly_params['last_assembly'] = False
+            assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles']
+            for k in assembler_keys:
+                assembly_params[k] = self.params[k]
+            cur_reads = checker_params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
+            previous_reads = checker_params['readcounts'][target][iteration - 1]
+            #Turn off URT in situations where this will be the last iteration due to readcounts:
+            if cur_reads <= previous_reads and iteration > 3:
+                logger.info("Sample: %s target: %s iteration: %s Setting urt false" % (self.params['sample'], target, self.params['iteration']))
+                assembly_params['urt'] = False
+
             #properly handle the case where no reads ended up mapping for the PE or SE inputs:
             if PEs > 0:
                 assembly_params['assembly_PE1'] = os.path.join(target_dir, "PE1." + self.params['format'])
@@ -377,10 +387,7 @@ class MapperRunner:
             #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
             if PEs + SEs > 0:
                 checker_params['targets'][target_dir] = False
-                #ar =
                 self.ref_q.put(AssemblyRunner(assembly_params).to_dict())
-                #self.ref_q.put(ar.to_dict())
-            #del ar
 
         logger.info("------------------------------------")
         logger.info("| Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
@@ -398,12 +405,5 @@ class MapperRunner:
         if len(checker_params['targets']) > 0:
             checker = AssemblyChecker(checker_params)
             self.ref_q.put(checker.to_dict())
-
         else:
             logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
-        #finally delete reference to ref_q and params
-        del self.ref_q
-        del self.params
-        import gc
-        print "Mapper garbage:", gc.garbage
-        print "Mapper collect:", gc.collect()
