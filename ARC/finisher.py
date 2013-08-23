@@ -75,6 +75,7 @@ class Finisher:
                 'params': self.params}
 
     def start(self):
+        sample = self.params['sample']
         logger.info("Sample: %s Starting finisher" % self.params['sample'])
         finished_dir = self.params['finished_dir']
         sample_finished = False
@@ -96,8 +97,10 @@ class Finisher:
             target = self.params['safe_targets'][safe_target]
             logger.info("Sample: %s target: %s finishing target.." % (self.params['sample'], target))
             finishedf = open(os.path.join(target_folder, 'finished'), 'r')
-            l = finishedf.readline().strip()
+            l = finishedf.readline().strip().split()[0]
             finishedf.close()
+            logger.info("Sample: %s target: %s iteration: %s Assembly complete, status: %s." % (sample, target, self.params['iteration'], l))
+
             if l == 'assembly_failed' or l == 'map_against_reads':
                 target_map_against_reads = True
             iteration = self.params['iteration']

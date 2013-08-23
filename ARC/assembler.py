@@ -16,12 +16,14 @@
 
 #import time
 import subprocess
-import errno
+#import errno
 import os
 import time
 import signal
 from ARC import logger
 from ARC import exceptions
+import traceback
+import sys
 
 
 class AssemblyRunner:
@@ -58,8 +60,12 @@ class AssemblyRunner:
         A pseudo-assembler for cases where we don't actually assemble reads and instead just write them out as contigs.
         """
         #print "Creating finished file: " + os.path.join(self.params['target_dir'], 'finished')
+        start = time.time()
         outf = open(os.path.join(self.params['target_dir'], 'finished'), 'w')
         outf.write("map_against_reads")
+        sample = self.params['sample']
+        target = self.params['target']
+        logger.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
         outf.close()
 
     def kill_process_children(self, pid):
@@ -156,8 +162,8 @@ class AssemblyRunner:
                     break
                 time.sleep(.5)
         except Exception as exc:
-            txt = ("Sample: %s, Target: %s: Unhandeled error running Newbler assembly" % (self.params['sample'], self.params['target']))
-            txt += '\n\t' + str(exc)
+            txt = "Sample: %s, Target: %s: Unhandeled error running Newbler assembly" % (self.params['sample'], self.params['target'])
+            txt += '\n\t' + str(exc) + "".join(traceback.format_exception)
             logger.warn(txt)
             failed = True
             pass
@@ -175,18 +181,20 @@ class AssemblyRunner:
             failed = True
 
         if failed:
+            logger.info("Sample: %s target: %s iteration: %s Assembly failed after %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
-            outf.write("assembly_failed")
+            outf.write("assembly_failed\t" + str(time.time() - start))
             outf.close()
         if killed:
+            logger.info("Sample: %s target: %s iteration: %s Assembly killed after %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
-            outf.write("assembly_killed")
+            outf.write("assembly_killed\t" + str(time.time() - start))
             outf.close()
         else:
             #Run finished without error
             logger.info("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
-            outf.write("assembly_complete")
+            outf.write("assembly_complete\t" + str(time.time() - start))
             outf.close()
 
     def RunSpades(self):
@@ -251,10 +259,12 @@ class AssemblyRunner:
         if not killed and ret.poll() != 0:
             failed = True
         if failed:
+            logger.info("Sample: %s target: %s iteration: %s Assembly failed after %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
             outf.write("assembly_failed")
             outf.close()
         if killed:
+            logger.info("Sample: %s target: %s iteration: %s Assembly killed after %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
             outf.write("assembly_killed")
             outf.close()

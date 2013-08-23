@@ -1,7 +1,8 @@
 library(ShortRead)
+library(Biostrings)
 
 for(f in dir(pattern="finished_*")){
-  cat(f)
+  cat(paste(f, "total completed"))
   cat("\n")
   if(file.exists(paste(f,"/contigs.fasta", sep=""))){
       fna = readDNAStringSet(paste(f,"/contigs.fasta", sep=""), "fasta")

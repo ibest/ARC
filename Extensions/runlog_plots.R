@@ -1,22 +1,12 @@
-grep "Split" ARC_100_genes.log > ~/split.txt
-
-> dat = read.table("split.txt", sep=" ", fill=T)
-> times = as.numeric(dat$V13)
-Warning message:
-NAs introduced by coercion
-> idx = is.na(times)
-> plot(times[!idx], col=dat$V6[!idx], pch=20)
-
-
 ### v1  --  Split running time ####
 m = function(t){
     t = as.numeric(t)
     t[1]*60*60 + t[2]*60 + t[3]
 }
 
-while(TRUE){
+#while(TRUE){
 
-## Splits 
+## Splits
 system("grep 'Split' log.txt > splits")
 splits = read.table("splits", fill=T, as.is=T)
 splits = splits[splits$V16 == "seconds" & splits$V5 == "Sample:",]
@@ -54,7 +44,8 @@ assembly_times = assembly_times - zero
 assemblies_p_s = table( paste(assemblies$V1, sapply(strsplit(assemblies$V2, ","), '[', 1), sep="_") )
 ts = sapply(strsplit(sapply(strsplit(names(assemblies_p_s), "_"), '[', 2), ":" ),m)
 days = as.numeric(sapply(strsplit(sapply(strsplit(names(assemblies_p_s), "_"), '[', 1), "-" ), '[', 3))
-days = days - min(days)
+mdays = min(days)
+days = days - mdays
 assemblies_p_s_times = ts + days*24*60*60
 assemblies_p_s_times  = assemblies_p_s_times - zero
 
@@ -66,7 +57,7 @@ finished = finished[finished$V20  == "done" & finished$V5 == "Sample", ]
 #Figure out finished per second:
 ts = sapply(strsplit( sapply(strsplit(finished$V2, ","), '[', 1), ':'), m)
 days = as.numeric(sapply(strsplit(finished$V1, "-"), '[', 3))
-days = days - min(days)
+days = days - mdays
 finished_times = ts + days*24*60*60
 finished_times = assembly_times - zero
 
@@ -74,7 +65,7 @@ finished_times = assembly_times - zero
 finished_p_s = table( paste(finished$V1, sapply(strsplit(finished$V2, ","), '[', 1), sep="_") )
 ts = sapply(strsplit(sapply(strsplit(names(finished_p_s), "_"), '[', 2), ":" ),m)
 days = as.numeric(sapply(strsplit(sapply(strsplit(names(finished_p_s), "_"), '[', 1), "-" ), '[', 3))
-days = days - 16
+days = days - mdays
 finished_p_s_times = ts + days*24*60*60
 finished_p_s_times  = finished_p_s_times - zero
 
@@ -87,12 +78,12 @@ killed = killed[killed$V5  == "Sample:" & killed$V15 == "seconds", ]
 killed_p_s = table( paste(killed$V1, sapply(strsplit(killed$V2, ","), '[', 1), sep="_") )
 ts = sapply(strsplit(sapply(strsplit(names(killed_p_s), "_"), '[', 2), ":" ),m)
 days = as.numeric(sapply(strsplit(sapply(strsplit(names(killed_p_s), "_"), '[', 1), "-" ), '[', 3))
-days = days - 16
+days = days - mdays
 killed_p_s_times = ts + days*24*60*60
 kiled_p_s_times  = killed_p_s_times - zero
 
 ## repetitive:
-system('grep -E  "repeatitive" log.txt > repeat')
+system('grep -E  "repetitive" log.txt > repeat')
 repeats = read.table("repeat", fill=T)
 repeats = repeats[repeats$V5  == "Sample" & repeats$V18 == "done", ]
 
@@ -100,7 +91,7 @@ repeats = repeats[repeats$V5  == "Sample" & repeats$V18 == "done", ]
 repeats_p_s = table( paste(repeats$V1, sapply(strsplit(repeats$V2, ","), '[', 1), sep="_") )
 ts = sapply(strsplit(sapply(strsplit(names(repeats_p_s), "_"), '[', 2), ":" ),m)
 days = as.numeric(sapply(strsplit(sapply(strsplit(names(repeats_p_s), "_"), '[', 1), "-" ), '[', 3))
-days = days - 16
+days = days - mdays
 repeats_p_s_times = ts + days*24*60*60
 repeats_p_s_times  = repeats_p_s_times - zero
 
@@ -134,6 +125,7 @@ text(x=1, y=300000, labels=paste("Total completed:", sum(finished_p_s), sep=" ")
 text(x=1, y=290000, labels=paste("Total repeats:", sum(repeats_p_s), sep=" "), adj=c(0,0))
 
 
+dim(splits)[1] - dim(assemblies)[1] - dim(killed)[1]
 
 Sys.sleep(20)
 }
@@ -141,11 +133,14 @@ Sys.sleep(20)
 
 
 
-########################### ------------------- ################## 
+########################### ------------------- ##################
 # Check splits vs finished
 sp_uniq = paste(splits$V6, splits$V8, splits$V10, sep="_")
 as_uniq = paste(assemblies$V6, assemblies$V8, assemblies$V10, sep="_")
+ki_uniq = paste(killed$V6, killed$V8, killed$V10, sep="_")
 
+(sp_uniq %in% as_uniq | sp_uniq %in% ki_uniq)
+sp_uniq[!(sp_uniq %in% as_uniq | sp_uniq %in% ki_uniq))]
 
 
 

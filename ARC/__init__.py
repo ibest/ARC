@@ -14,16 +14,14 @@
 
 import logging
 import os
-import sys
+#import sys
 import subprocess
 from Bio import SeqIO
 from subprocess import CalledProcessError
 from ARC import logger
-#from ARC import mapper
 from ARC import spawn
 from ARC import exceptions
 import time
-#from ARC import config
 
 
 def main():
@@ -122,7 +120,7 @@ def read_config():
     for line in inf:
         if len(line) > 2 and line[0:2] != '##':
             if line[0] == '#':
-                """ Handle global parameters """
+                ### Handle global parameters """
                 line = line.strip().strip("# ")
                 line2 = line.strip().split("=")
                 if len(line2) != 2:
@@ -130,7 +128,7 @@ def read_config():
                                                 "please use # name=value. Offending entry: \n\t%s" % line)
                 config[line2[0].strip()] = line2[1].strip()
             elif header is False:
-                """ Handle Sample information """
+                ### Handle Sample information """
                 line2 = line.strip().split()
                 # Check that fields are formatted correctly:
                 if len(line2) != 3:
@@ -182,7 +180,7 @@ def read_config():
     else:
         config['max_incorporation'] = int(config['max_incorportaion'])
     if 'bowtie2_k' not in config:
-        config['bowtie2_k'] = 5
+        config['bowtie2_k'] = '5'
     if 'format' not in config:
         raise exceptions.FatalError("Error, file format not specificed in ARC_config.txt.")
     if config['format'] != 'fastq' and config['format'] != 'fasta':
