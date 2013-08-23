@@ -99,7 +99,7 @@ class Finisher:
             finishedf = open(os.path.join(target_folder, 'finished'), 'r')
             l = finishedf.readline().strip().split()[0]
             finishedf.close()
-            logger.info("Sample: %s target: %s iteration: %s Assembly complete, status: %s." % (sample, target, self.params['iteration'], l))
+            logger.info("Sample: %s target: %s iteration: %s Assembly reports status: %s." % (sample, target, self.params['iteration'], l))
 
             if l == 'assembly_failed' or l == 'map_against_reads':
                 target_map_against_reads = True

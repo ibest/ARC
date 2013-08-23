@@ -70,7 +70,7 @@ finished_p_s_times = ts + days*24*60*60
 finished_p_s_times  = finished_p_s_times - zero
 
 ## killed:
-system('grep "Killing" log.txt > killed')
+system('grep "Assembly killed" log.txt > killed')
 killed = read.table("killed", fill=T)
 killed = killed[killed$V5  == "Sample:" & killed$V15 == "seconds", ]
 
