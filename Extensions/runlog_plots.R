@@ -120,9 +120,9 @@ plot(x=finished_p_s_times/d, y=cumsum(finished_p_s), pch=".", col="black", cex=2
 points(x=killed_p_s_times/d, y=cumsum(killed_p_s), pch=".", col="red", cex=2)
 points(x=repeats_p_s_times/d, y=cumsum(repeats_p_s), pch=".", col="green", cex=2)
 legend("topleft", col=c("black","red", "green"), pch=20, legend=c("Completed", "Killed", "Repeatitive"))
-text(x=1, y=310000, labels=paste("Total killed:", sum(killed_p_s), sep=" "), adj=c(0,0))
-text(x=1, y=300000, labels=paste("Total completed:", sum(finished_p_s), sep=" "), adj=c(0,0))
-text(x=1, y=290000, labels=paste("Total repeats:", sum(repeats_p_s), sep=" "), adj=c(0,0))
+text(x=1, y=sum(finished_p_s) * .8, labels=paste("Total killed:", sum(killed_p_s), sep=" "), adj=c(0,0))
+text(x=1, y=sum(finished_p_s) * .75, labels=paste("Total completed:", sum(finished_p_s), sep=" "), adj=c(0,0))
+text(x=1, y=sum(finished_p_s) * .7, labels=paste("Total repeats:", sum(repeats_p_s), sep=" "), adj=c(0,0))
 
 
 dim(splits)[1] - dim(assemblies)[1] - dim(killed)[1]

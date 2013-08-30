@@ -45,3 +45,70 @@ def debug(message):
 def warn(message):
     logger = multiprocessing.get_logger()
     logger.warn("%s" % (message))
+
+
+
+# From:
+# http://stackoverflow.com/questions/641420/how-should-i-log-while-using-multiprocessing-in-python/894284#894284
+# Modified for StreamHandler (instead of RotatingFileHandler)
+#from logging.handlers import RotatingFileHandler
+#from logging.handlers import StreamHandler
+# import multiprocessing, threading, logging, sys, traceback
+
+# class MultiProcessingLog(logging.Handler):
+#     def __init__(self, name, mode, maxsize, rotate):
+#         logging.Handler.__init__(self)
+
+#         #self._handler = RotatingFileHandler(name, mode, maxsize, rotate)
+#         self._handler = logging.StreamHandler(sys.stdout)
+#         self.queue = multiprocessing.Queue(-1)
+
+#         t = threading.Thread(target=self.receive)
+#         t.daemon = True
+#         t.start()
+
+#     def setFormatter(self, fmt='[%(asctime)s %(levelname)s %(process)s] %(message)s'):
+#         logging.Handler.setFormatter(self, fmt)
+#         self._handler.setFormatter(fmt)
+
+#     def receive(self):
+#         while True:
+#             try:
+#                 record = self.queue.get()
+#                 self._handler.emit(record)
+#             except (KeyboardInterrupt, SystemExit):
+#                 raise
+#             except EOFError:
+#                 break
+#             except:
+#                 traceback.print_exc(file=sys.stderr)
+
+#     def send(self, s):
+#         self.queue.put_nowait(s)
+
+#     def _format_record(self, record):
+#         # ensure that exc_info and args
+#         # have been stringified.  Removes any chance of
+#         # unpickleable things inside and possibly reduces
+#         # message size sent over the pipe
+#         if record.args:
+#             record.msg = record.msg % record.args
+#             record.args = None
+#         if record.exc_info:
+#             dummy = self.format(record)
+#             record.exc_info = None
+
+#         return record
+
+#     def emit(self, record):
+#         try:
+#             s = self._format_record(record)
+#             self.send(s)
+#         except (KeyboardInterrupt, SystemExit):
+#             raise
+#         except:
+#             self.handleError(record)
+
+#     def close(self):
+#         self._handler.close()
+#         logging.Handler.close(self)
