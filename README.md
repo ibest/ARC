@@ -1,4 +1,17 @@
 ## News
+## News
+2013-08-30:
+
+Updates on ARC progress:
+ * ARC just finished 1.3 million assemblies in ~80hrs on a 60 core server! This was accomplished using a dataset containing 52 samples and ~6500 targets.
+ * Tackling this big dataset with ARC exposed some issues with memory usage and speed which have now been addressed. ARC should be faster than ever.
+    * These improvements to memory as well as some improvements to logging etc have been added to the Stable (default) branch.
+ * ARC now outputs mapping statistics on each iteration with details per-target. See "mapping_stats.tsv" in the finished_* folders.
+ * Some preliminary R scripts for profiling and plotting memory usage have been added in the Extensions folder.
+    * Run profilemem.R during your ARC run to collect data (this collections information on ALL processes for a user, so it can be misleading if you use your server for something else while running ARC).
+    * After profilemem.R has collected some data, run plot_memprofile.R (or source it from within R) to see some plots.
+ * Work is currently underway to add preliminary RNA-seq support to ARC, stay tuned.
+
 2013-08-05:
 
 ARC has gone a month since the last reported bug and has performed well on numerous projects. At this point we'd like to release a stable version 1.0 and start implementing enhancements in a development branch.
