@@ -1,5 +1,4 @@
 ## News
-## News
 2013-08-30:
 
 Updates on ARC progress:
