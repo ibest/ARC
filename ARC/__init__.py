@@ -214,6 +214,14 @@ def read_config():
         logger.warn("Defaulting to 10 minute timeout for assemblies")
     else:
         config['assemblytimeout'] = float(config['assemblytimeout']) * 60
+    if 'cdna' in config and config['cdna'].lower() == 'true':
+        config['cdna'] = True
+    else:
+        config['cdna'] = False
+    if 'rip' in config and config['rip'].lower() == 'true':
+        config['rip'] = True
+    else:
+        config['rip'] = False
 
     #Check that the mapper exists:
     if config['mapper'] == 'blat':

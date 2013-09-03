@@ -239,4 +239,4 @@ class Finisher:
                         SeqIO.write(r, outf_SE, self.params['format'])
                     outf_SE.close()
         #Cleanup temporary assembly, and reads:
-        os.system("rm -rf %s" % target_folder)
+        #os.system("rm -rf %s" % target_folder)

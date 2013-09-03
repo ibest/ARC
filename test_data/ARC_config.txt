@@ -25,7 +25,9 @@
 # urt=True
 # map_against_reads=False
 # assemblytimeout=2
-# bowtie2_k=2
+# bowtie2_k=1
+# rip=True
+# cdna=True
 Sample_ID	FileName	FileType
 Sample1	./reads/Sample1_R1.fasta	PE1
 Sample1	./reads/Sample1_R2.fasta	PE2

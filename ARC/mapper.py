@@ -113,7 +113,8 @@ class MapperRunner:
         #args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', '1', '-x', base]
         #args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
         args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
-        args += ['-k', self.params['bowtie2_k']]
+        if self.params['bowtie2_k'] > 1:
+            args += ['-k', self.params['bowtie2_k']]
         if self.params['format'] == 'fasta':
             args += ['-f']
         if 'PE1' in self.params and 'PE2' in self.params:
@@ -322,6 +323,8 @@ class MapperRunner:
             target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
             if target not in checker_params['readcounts']:
                 checker_params['readcounts'][target] = Counter()
+            if os.path.exists(target_dir):
+                os.system("rm -rf %s" % target_dir)
             os.mkdir(target_dir)
 
             reads = self.params['mapping_dict'][target]
@@ -364,15 +367,16 @@ class MapperRunner:
             assembly_params['target_dir'] = target_dir
             assembly_params['iteration'] = iteration
             assembly_params['last_assembly'] = False
-            assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles']
+            assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles', 'cdna', 'rip']
             for k in assembler_keys:
                 assembly_params[k] = self.params[k]
             cur_reads = checker_params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
             previous_reads = checker_params['readcounts'][target][iteration - 1]
+
             #Turn off URT in situations where this will be the last iteration due to readcounts:
             if cur_reads <= previous_reads and iteration > 3:
-                logger.info("Sample: %s target: %s iteration: %s Setting urt false" % (self.params['sample'], target, self.params['iteration']))
-                assembly_params['urt'] = False
+                logger.info("Sample: %s target: %s iteration: %s Setting last_assembly to True" % (self.params['sample'], target, self.params['iteration']))
+                assembly_params['last_assembly'] = True
 
             #properly handle the case where no reads ended up mapping for the PE or SE inputs:
             if PEs > 0:

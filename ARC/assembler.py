@@ -117,7 +117,11 @@ class AssemblyRunner:
             out = open(os.devnull, 'w')
 
         #Build args for newAssembly:
-        args = ['newAssembly', '-force', os.path.join(self.params['target_dir'], 'assembly')]
+        args = ['newAssembly', '-force']
+        if self.params['last_assembly'] and self.params['cdna']:
+            #only run with the -urt switch when it isn't the final assembly
+            args += ['-cdna']
+        args += [os.path.join(self.params['target_dir'], 'assembly')]
         logger.debug("Calling newAssembly for sample: %s target %s" % (sample, target))
         logger.debug(" ".join(args))
         ret = subprocess.call(args, stdout=out, stderr=out)
@@ -147,6 +151,8 @@ class AssemblyRunner:
         if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
+        if self.params['rip']:
+            args += ['-rip']
         args += [os.path.join(self.params['target_dir'], 'assembly')]
         try:
             start = time.time()
