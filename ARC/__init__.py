@@ -180,7 +180,9 @@ def read_config():
     else:
         config['max_incorporation'] = int(config['max_incorportaion'])
     if 'bowtie2_k' not in config:
-        config['bowtie2_k'] = '5'
+        config['bowtie2_k'] = 5
+    else:
+        config['bowtie2_k'] = int(config['bowtie2_k'])
     if 'format' not in config:
         raise exceptions.FatalError("Error, file format not specificed in ARC_config.txt.")
     if config['format'] != 'fastq' and config['format'] != 'fasta':
