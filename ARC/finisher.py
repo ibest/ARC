@@ -281,7 +281,7 @@ class Finisher:
         contig_idx = SeqIO.index(contigf, "fasta")
         # Parse isotigsf:
         igroup = ""
-        print self.params['sample'], target, "Parsing isotigsf: %s" % isotigsf
+        #print self.params['sample'], target, "Parsing isotigsf: %s" % isotigsf
         for l in open(isotigsf, 'r'):
             #Handle lines with only a '\n'
             if l == '\n':
@@ -309,7 +309,7 @@ class Finisher:
                         # contig is in reverse orientation
                         contig = isogroups[igroup][i]
                         contig_orientation[contig] = '-'
-        print self.params['sample'], target, "Parsed isotigsf, contigs:", len(isogroups), "contig_to_isogroup", len(contig_to_isogroup), "contig_orientation", len(contig_orientation)
+        #print self.params['sample'], target, "Parsed isotigsf, contigs:", len(isogroups), "contig_to_isogroup", len(contig_to_isogroup), "contig_orientation", len(contig_orientation)
         #Now parse readstatus:
         inf = open(readstatusf, 'r')
         inf.readline()  # discard first line
@@ -322,7 +322,7 @@ class Finisher:
                 # http://contig.wordpress.com/2010/08/31/running-newbler-de-novo-transcriptome-assembly-i/
                 # These won't appear in the IsotigsLayout.txt, but ARE in the ReadStatus.txt file.
                 readcounts[contig_to_isogroup[contig]] += 1
-        print self.params['sample'], target, "Parse read status"
+        #print self.params['sample'], target, "Parse read status"
 
         #Finally, output all of this information appropriately:
         countsf = open(os.path.join(self.params['finished_dir'], "isogroup_read_counts.tsv"), 'a')
@@ -331,7 +331,7 @@ class Finisher:
         for isogroup in readcounts:
             countsf.write('\t'.join([sample, target, isogroup, str(readcounts[isogroup])]) + '\n')
         countsf.close()
-        print self.params['sample'], target, "Wrote readcounts"
+        #print self.params['sample'], target, "Wrote readcounts"
 
         #Next write the contigs in proper order and orientation:
         ncontigs = 0
@@ -341,12 +341,12 @@ class Finisher:
             for contig in isogroups[isogroup]:
                 ncontigs += 1
                 seqrec = contig_idx[contig]
-                print self.params['sample'], target, seqrec
+                #print self.params['sample'], target, seqrec
                 if contig_orientation[contig] == '-':
                     seqrec.seq = seqrec.seq.reverse_complement()
-                print self.params['sample'], target, seqrec
+                #print self.params['sample'], target, seqrec
                 seqrec.name = seqrec.id = sample + "_:_" + target + "_:_" + isogroup + "|" + contig
-                print self.params['sample'], target, seqrec
+                #print self.params['sample'], target, seqrec
                 SeqIO.write(seqrec, outf, "fasta")
         logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs, %s isogroups " % (self.params['sample'], target, self.params['iteration'], ncontigs, nisogroups))
 
