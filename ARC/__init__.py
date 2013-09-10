@@ -84,12 +84,15 @@ def setup(config):
         start = time.time()
         if 'PE1' in s:
             if not os.path.exists(os.path.join(working_dir, "PE1.idx")):
+                print s['PE1']
                 SeqIO.index_db(os.path.join(working_dir, "PE1.idx"), s['PE1'], format, key_function=lambda x: x.split("/")[0])
         if 'PE2' in s:
             if not os.path.exists(os.path.join(working_dir, "PE2.idx")):
+                print s['PE2']
                 SeqIO.index_db(os.path.join(working_dir, "PE2.idx"), s['PE2'], format, key_function=lambda x: x.split("/")[0])
         if 'SE' in s:
             if not os.path.exists(os.path.join(working_dir, "SE.idx")):
+                print s['SE']
                 SeqIO.index_db(os.path.join(working_dir, "SE.idx"), s['SE'], format, key_function=lambda x: x.split("/")[0])
         logger.info("Sample: %s, indexed reads in %s seconds." % (sample, time.time()-start))
 
@@ -180,7 +183,9 @@ def read_config():
     else:
         config['max_incorporation'] = int(config['max_incorportaion'])
     if 'bowtie2_k' not in config:
-        config['bowtie2_k'] = '5'
+        config['bowtie2_k'] = 5
+    else:
+        config['bowtie2_k'] = int(config['bowtie2_k'])
     if 'format' not in config:
         raise exceptions.FatalError("Error, file format not specificed in ARC_config.txt.")
     if config['format'] != 'fastq' and config['format'] != 'fasta':
@@ -214,6 +219,14 @@ def read_config():
         logger.warn("Defaulting to 10 minute timeout for assemblies")
     else:
         config['assemblytimeout'] = float(config['assemblytimeout']) * 60
+    if 'cdna' in config and config['cdna'].lower() == 'true':
+        config['cdna'] = True
+    else:
+        config['cdna'] = False
+    if 'rip' in config and config['rip'].lower() == 'true':
+        config['rip'] = True
+    else:
+        config['rip'] = False
 
     #Check that the mapper exists:
     if config['mapper'] == 'blat':
