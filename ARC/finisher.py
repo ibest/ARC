@@ -358,5 +358,6 @@ class Finisher:
                 seqrec.name = seqrec.id = sample + "_:_" + target + "_:_" + isogroup + "|" + contig
                 #print self.params['sample'], target, seqrec
                 SeqIO.write(seqrec, outf, "fasta")
+        ## TODO: add support for the ExceedsThreshold contigs
         logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs, %s isogroups " % (self.params['sample'], target, self.params['iteration'], ncontigs, nisogroups))
 
