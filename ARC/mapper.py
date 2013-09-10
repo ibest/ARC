@@ -374,7 +374,7 @@ class MapperRunner:
             previous_reads = checker_params['readcounts'][target][iteration - 1]
 
             #Turn off URT in situations where this will be the last iteration due to readcounts:
-            if cur_reads <= previous_reads and iteration > 3:
+            if cur_reads <= previous_reads and iteration > 2:
                 logger.info("Sample: %s target: %s iteration: %s Setting last_assembly to True" % (self.params['sample'], target, self.params['iteration']))
                 assembly_params['last_assembly'] = True
 

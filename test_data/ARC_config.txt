@@ -19,8 +19,8 @@
 # numcycles=20
 # mapper=bowtie2
 # assembler=newbler
-# nprocs=4
-# format=fasta
+# nprocs=6
+# format=fastq
 # verbose=True
 # urt=True
 # map_against_reads=False
@@ -29,9 +29,10 @@
 # rip=True
 # cdna=True
 Sample_ID	FileName	FileType
-Sample1	./reads/Sample1_R1.fasta	PE1
-Sample1	./reads/Sample1_R2.fasta	PE2
-Sample1	./reads/Sample1_SE.fasta	SE
-Sample2	./reads/Sample2_R1.fasta	PE1
-Sample2	./reads/Sample2_R2.fasta	PE2
-Sample2	./reads/Sample2_SE.fasta	SE
+Sample1	./reads/Sample1_R1.fastq	PE1
+Sample1	./reads/Sample1_R2.fastq	PE2
+Sample1	./reads/Sample1_SE.fastq	SE
+Sample2	./reads/Sample2_R1.fastq	PE1
+Sample2	./reads/Sample2_R2.fastq	PE2
+Sample2	./reads/Sample2_SE.fastq	SE
+cDNASample ./reads/Sample3_SE.fastq	SE

@@ -15,10 +15,11 @@
 # limitations under the License.
 
 import os
-from copy import deepcopy
+#from copy import deepcopy
 from Bio import SeqIO
 from ARC import logger
-#from ARC import exceptions
+from ARC import exceptions
+from collections import Counter
 
 
 class Finisher:
@@ -90,6 +91,7 @@ class Finisher:
         #     logger.info("Sample %s: map_against_reads is set, writing all reads to contigs" % self.params['sample'])
         #     map_against_reads = True
 
+        ##TODO: figure out how to call a different handle to deal with finished cDNA targets
         #loop over the current set of targets_folders
         for target_folder in self.params['targets']:
             target_map_against_reads = False
@@ -122,7 +124,7 @@ class Finisher:
                     if cur_reads / previous_reads > self.params['max_incorporation']:
                         logger.info("Sample %s target %s hit a repetitive region, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
-                    elif cur_reads <= previous_reads and iteration > 3:
+                    elif cur_reads <= previous_reads and iteration > 2:
                         #Give the mapper a couple extra iterations in case the first mapping got a lot of reads which didn't assemble
                         logger.info("Sample %s target %s did not incorporate any more reads, no more mapping will be done" % (self.params['sample'], target))
                         self.write_target(target, target_folder, outf=fin_outf, finished=True)
@@ -166,8 +168,11 @@ class Finisher:
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "assembly", "454AllContigs.fna")
             elif self.params['assembler'] == 'spades':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "contigs.fasta")
-            i = 0
-            if os.path.exists(contigf):
+            #add support for a special output if this is the final assembly and newbler -cdna was used:
+            if finished and self.params['cdna'] and self.params['assembler'] == 'newbler':
+                self.writeCDNAresults(target, target_folder, outf, contigf)
+            elif os.path.exists(contigf):
+                i = 0
                 contig_inf = open(contigf, 'r')
                 for contig in SeqIO.parse(contig_inf, 'fasta'):
                     i += 1
@@ -175,8 +180,8 @@ class Finisher:
                     SeqIO.write(contig, outf, "fasta")
                 contig_inf.close()
                 logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs " % (self.params['sample'], target, self.params['iteration'], i))
-            if i == 0 and finished is False:
-                map_against_reads = True
+                if i == 0 and finished is False:
+                    map_against_reads = True
 
         if map_against_reads:
             i = 0
@@ -240,3 +245,108 @@ class Finisher:
                     outf_SE.close()
         #Cleanup temporary assembly, and reads:
         #os.system("rm -rf %s" % target_folder)
+
+    def writeCDNAresults(self, target, target_folder, outf, contigf):
+        """
+        This is ONLY called when a cDNA target is finished.
+
+        When doing a cDNA type run, it is very useful to have both the following:
+        1) All contigs that belong to a gene (isogroup)
+            - It would be particularly good to re-orient these if they are in RC.
+        2) Total number of reads assembled in each gene (isogroup)
+
+        Additionally it would be excellent to some day also get the following:
+        3) Transcript (isotig) structure
+        4) Estimate of isotig specific reads.
+
+        """
+        if self.params['assembler'] == 'newbler':
+            contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "assembly", "454AllContigs.fna")
+            isotigsf = os.path.join(self.params['working_dir'], target_folder, "assembly", "assembly", "454IsotigsLayout.txt")
+            readstatusf = os.path.join(self.params['working_dir'], target_folder, "assembly", "assembly", "454ReadStatus.txt")
+        else:
+            print "WARNING writeCDNAresults called when assembler was not Newbler"
+            return None
+        #print contigf, os.path.exists(contigf)
+        #print isotigsf, os.path.exists(isotigsf)
+        #print readstatusf, os.path.exists(readstatusf)
+        if not (os.path.exists(contigf) and os.path.exists(isotigsf) and os.path.exists(readstatusf)):
+            print "WARNING MISSING FILE!! %s %s" % (target, self.params['sample'])
+            return None
+        #Storage data structures:
+        isogroups = {}  # A dict of isogroups which each contain an in-order list of contigs
+        readcounts = Counter() # A dict of all contigs, these contain read counts (from ReadStatus)
+        contig_orientation = {}
+        contig_to_isogroup = {}
+        contig_idx = SeqIO.index(contigf, "fasta")
+        # Parse isotigsf:
+        igroup = ""
+        print self.params['sample'], target, "Parsing isotigsf: %s" % isotigsf
+        for l in open(isotigsf, 'r'):
+            #Handle lines with only a '\n'
+            if l == '\n':
+                pass
+            #Handle lines for isogroup:
+            elif l[0:9] == '>isogroup':
+                igroup = l.strip().split()[0].strip(">")
+            #Handle lines containing all contigs:
+            elif l.strip().split()[0] == 'Contig':
+                l2 = l.strip().split()
+                contigs = map(lambda x: "contig" + x, l2[2:-1])
+                isogroups[igroup] = contigs
+                for contig in contigs:
+                    if contig not in contig_orientation:
+                        contig_orientation[contig] = '+'
+                        contig_to_isogroup[contig] = igroup
+                    else:
+                        raise exceptions.FatalError('Contig %s in %s more than once' % (contig, contigf))
+            #Handle lines containing contig orientation info:
+            elif l[0:6] == 'isotig':
+                l2 = l[l.find(" ") + 1: l.rfind(" ") -1]
+                l3 = [l2[i:i+6] for i in range(0, len(l2), 6)]
+                for i in range(len(l3)):
+                    if l3[i][0] == '<':
+                        # contig is in reverse orientation
+                        contig = isogroups[igroup][i]
+                        contig_orientation[contig] = '-'
+        print self.params['sample'], target, "Parsed isotigsf, contigs:", len(isogroups), "contig_to_isogroup", len(contig_to_isogroup), "contig_orientation", len(contig_orientation)
+        #Now parse readstatus:
+        inf = open(readstatusf, 'r')
+        inf.readline()  # discard first line
+        for l in inf:
+            l2 = l.strip().split('\t')
+            #Determine if this read was assembled
+            if len(l2) == 8:
+                contig = l2[2]
+                # Note that there are some built in limits to the number of contigs that can be in an isogroup:
+                # http://contig.wordpress.com/2010/08/31/running-newbler-de-novo-transcriptome-assembly-i/
+                # These won't appear in the IsotigsLayout.txt, but ARE in the ReadStatus.txt file.
+                readcounts[contig_to_isogroup[contig]] += 1
+        print self.params['sample'], target, "Parse read status"
+
+        #Finally, output all of this information appropriately:
+        countsf = open(os.path.join(self.params['finished_dir'], "isogroup_read_counts.tsv"), 'a')
+        sample = self.params['sample']
+        #First write out readcounts: sample \t target \t isogroup \t readcount
+        for isogroup in readcounts:
+            countsf.write('\t'.join([sample, target, isogroup, str(readcounts[isogroup])]) + '\n')
+        countsf.close()
+        print self.params['sample'], target, "Wrote readcounts"
+
+        #Next write the contigs in proper order and orientation:
+        ncontigs = 0
+        nisogroups = 0
+        for isogroup in isogroups:
+            nisogroups += 1
+            for contig in isogroups[isogroup]:
+                ncontigs += 1
+                seqrec = contig_idx[contig]
+                print self.params['sample'], target, seqrec
+                if contig_orientation[contig] == '-':
+                    seqrec.seq = seqrec.seq.reverse_complement()
+                print self.params['sample'], target, seqrec
+                seqrec.name = seqrec.id = sample + "_:_" + target + "_:_" + isogroup + "|" + contig
+                print self.params['sample'], target, seqrec
+                SeqIO.write(seqrec, outf, "fasta")
+        logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs, %s isogroups " % (self.params['sample'], target, self.params['iteration'], ncontigs, nisogroups))
+

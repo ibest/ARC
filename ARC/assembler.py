@@ -147,7 +147,11 @@ class AssemblyRunner:
 
         #Build args for runProject
         args = ['runProject']
-        args += ['-nobig', '-cpu', '1']
+        args += ['-cpu', '1']
+        if self.params['last_assembly'] and self.params['cdna']:
+            args += ['-noace']
+        else:
+            args += ['-nobig']
         if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
