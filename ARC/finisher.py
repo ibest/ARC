@@ -328,7 +328,10 @@ class Finisher:
                 # Note that there are some built in limits to the number of contigs that can be in an isogroup:
                 # http://contig.wordpress.com/2010/08/31/running-newbler-de-novo-transcriptome-assembly-i/
                 # These won't appear in the IsotigsLayout.txt, but ARE in the ReadStatus.txt file.
-                readcounts[contig_to_isogroup[contig]] += 1
+                if contig in contig_to_isogroup:
+                    readcounts[contig_to_isogroup[contig]] += 1
+                else:
+                    readcounts['ExceedsThreshold'] += 1
         #print self.params['sample'], target, "Parse read status"
 
         #Finally, output all of this information appropriately:

@@ -47,17 +47,21 @@ class MapperRunner:
         return {'runner': self, 'message': 'Sample: %s Starting mapper.' % self.params['sample'], 'params': self.params}
 
     def start(self):
-        if not('mapper' in self.params):
-            raise exceptions.FatalError("mapper not defined in params")
-        if self.params['mapper'] == 'bowtie2':
-            logger.info("Sample: %s Running bowtie2." % self.params['sample'])
-            self.run_bowtie2()
-        if self.params['mapper'] == 'blat':
-            logger.info("Sample: %s Running blat." % self.params['sample'])
-            self.run_blat()
-        #Mapping is done, run splitreads:
-        logger.info("Sample: %s Running splitreads." % self.params['sample'])
-        self.splitreads()
+        try:
+            if not('mapper' in self.params):
+                raise exceptions.FatalError("mapper not defined in params")
+            if self.params['mapper'] == 'bowtie2':
+                logger.info("Sample: %s Running bowtie2." % self.params['sample'])
+                self.run_bowtie2()
+            if self.params['mapper'] == 'blat':
+                logger.info("Sample: %s Running blat." % self.params['sample'])
+                self.run_blat()
+            #Mapping is done, run splitreads:
+            logger.info("Sample: %s Running splitreads." % self.params['sample'])
+            self.splitreads()
+        except:
+            print "".join(traceback.format_exception(*sys.exc_info()))
+            raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
 
     def run_bowtie2(self):
         """
