@@ -96,7 +96,7 @@ def setup(config):
             if not os.path.exists(os.path.join(working_dir, "PE2.idx")):
                 print s['PE2']
                 p2 = SeqIO.index_db(os.path.join(working_dir, "PE2.idx"), s['PE2'], format, key_function=lambda x: x.split("/")[0])
-                if p1 != p2:
+                if len(p1) != len(p2):
                     logger.error("The number of reads in %s and %s do not match, check the config for errors" %(s['PE1'], s['PE2']))
         if 'SE' in s:
             if not os.path.exists(os.path.join(working_dir, "SE.idx")):
