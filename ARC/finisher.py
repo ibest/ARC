@@ -274,11 +274,11 @@ class Finisher:
         else:
             print "WARNING writeCDNAresults called when assembler was not Newbler"
             return None
-        #print contigf, os.path.exists(contigf)
-        #print isotigsf, os.path.exists(isotigsf)
-        #print readstatusf, os.path.exists(readstatusf)
         if not (os.path.exists(contigf) and os.path.exists(isotigsf) and os.path.exists(readstatusf)):
             print "WARNING MISSING FILE!! %s %s" % (target, self.params['sample'])
+            print contigf, os.path.exists(contigf)
+            print isotigsf, os.path.exists(isotigsf)
+            print readstatusf, os.path.exists(readstatusf)
             return None
         #Storage data structures:
         isogroups = {}  # A dict of isogroups which each contain an in-order list of contigs
