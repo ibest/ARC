@@ -44,16 +44,21 @@ class AssemblyRunner:
                 'params': self.params}
 
     def start(self):
-        if not('assembler' in self.params):
-            raise exceptions.FatalError("assembler not defined in params")
-        if self.params['map_against_reads'] and self.params['iteration'] == 1:
-            self.RunMapAgainstReads()
-        elif self.params['assembler'] == 'newbler':
-            self.RunNewbler()
-        elif self.params['assembler'] == 'spades':
-            self.RunSpades()
-        else:
-            raise exceptions.FatalError("Assembler %s isn't recognized." % self.params['assembler'])
+        try:
+            if not('assembler' in self.params):
+                raise exceptions.FatalError("assembler not defined in params")
+            if self.params['map_against_reads'] and self.params['iteration'] == 1:
+                self.RunMapAgainstReads()
+            elif self.params['assembler'] == 'newbler':
+                self.RunNewbler()
+            elif self.params['assembler'] == 'spades':
+                self.RunSpades()
+            else:
+                raise exceptions.FatalError("Assembler %s isn't recognized." % self.params['assembler'])
+        except:
+            print "".join(traceback.format_exception(*sys.exc_info()))
+            raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
+
 
     def RunMapAgainstReads(self):
         """
@@ -123,7 +128,7 @@ class AssemblyRunner:
             args += ['-cdna']
         args += [os.path.join(self.params['target_dir'], 'assembly')]
         logger.debug("Calling newAssembly for sample: %s target %s" % (sample, target))
-        logger.debug(" ".join(args))
+        logger.info(" ".join(args))
         ret = subprocess.call(args, stdout=out, stderr=out)
         #Build args for addRun:
         if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
@@ -239,7 +244,7 @@ class AssemblyRunner:
             out = open(os.devnull, 'w')
 
         logger.debug("Sample: %s target: %s Running spades assembler." % (sample, target))
-        logger.debug(" ".join(args))
+        logger.info(" ".join(args))
         killed = False
         failed = False
         start = time.time()
