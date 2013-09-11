@@ -28,7 +28,7 @@ class Finisher:
     """
     Iterate through all targets, pull out the assembled contigs, rename
     them to:
-    
+
     Sample_:_Target_:_ContigN
     Output to: finished_SAMPLE/contigs.fasta
                               /PE1.fast(a/q)
@@ -153,7 +153,7 @@ class Finisher:
                         targets_written += 1
             if targets_written > 0:
                 # Build a new mapper and put it on the queue
-                from ARC.runner import Mapper
+                from ARC.runners import Mapper
                 #params = deepcopy(self.params)
                 mapper_params = {}
                 for k in self.params:

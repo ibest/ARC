@@ -19,10 +19,10 @@ import multiprocessing
 #import os
 #from copy import deepcopy
 from Queue import Empty
-from ARC.process_runner import ProcessRunner
+from ARC import ProcessRunner
 from ARC import logger
 from ARC import exceptions
-from ARC.runner import Mapper
+from ARC.runners import Mapper
 
 
 class Spawn:

@@ -21,7 +21,7 @@ import traceback
 # from copy import deepcopy
 from ARC import exceptions
 from ARC import logger
-from ARC.runner import Finisher
+from ARC.runners import Finisher
 # from ARC.runner import AssemblyChecker
 
 
