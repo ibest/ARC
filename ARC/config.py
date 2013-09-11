@@ -115,7 +115,6 @@ class Config:
                     self.config[key] = False
                 else:
                     self.config[key] = value
-                print "k: %s | v: %s" % (key,value)
 
             elif arr[0] == "##":
                 pass
@@ -156,8 +155,6 @@ class Config:
             else:
                 self.config['Samples'][sample_id][filetype] = os.path.realpath(
                     filename)
-
-        print self.config
 
     def check(self):
         # Check that the reference file exists
