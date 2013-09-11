@@ -64,7 +64,7 @@ class Config:
         self.check()
 
     def set_defaults(self):
-        for key, value in self.OPTIONS:
+        for key, value in self.OPTIONS.iteritems():
             if not key in self.config:
                 if value is None:
                     raise exceptions.FatalError(
