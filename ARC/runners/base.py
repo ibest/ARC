@@ -16,7 +16,7 @@ from ARC import FatalError
 from ARC import TimeoutError
 from ARC import RerunnableError
 from ARC import SubprocessError
-from ARC import Job
+# from ARC import Job
 import os
 import time
 import subprocess
