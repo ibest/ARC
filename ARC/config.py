@@ -33,9 +33,9 @@ class Config:
         'urt': False,
         'verbose': False,
         'map_against_reads': False,
-        'assemblytimeout': 600,
+        'assemblytimeout': 10,
         'cdna': False,
-        'rip': False,
+        'rip': False
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {
@@ -62,10 +62,11 @@ class Config:
         self.read()
         self.set_defaults()
         self.check()
+        self.convert()
 
     def set_defaults(self):
         for key, value in self.OPTIONS.iteritems():
-            if not key in self.config:
+            if key not in self.config:
                 if value is None:
                     raise exceptions.FatalError(
                         "Error, %s required but not specificed in "
@@ -74,7 +75,7 @@ class Config:
                     logger.info(
                         "%s not specified in ARC_config.txt, defaulting to "
                         "%s" % (key, value))
-                    self.config = value
+                    self.config[key] = value
 
     def check_bins(self, bins):
         for bin in bins:
@@ -82,7 +83,7 @@ class Config:
                 subprocess.check_output(['which', bin])
             except CalledProcessError:
                 raise exceptions.FatalError(
-                    "Cannot find %s in path, or Linux 'which' "
+                    "Cannot find %s in path, or the 'which' "
                     "command is missing" % (bin))
 
     def read(self):
@@ -108,8 +109,13 @@ class Config:
                 value = cfg[1].strip()
                 if re.match(r"[0-9]+", value):
                     self.config[key] = int(value)
+                elif value == 'True':
+                    self.config[key] = True
+                elif value == 'False':
+                    self.config[key] = False
                 else:
                     self.config[key] = value
+                print "k: %s | v: %s" % (key,value)
 
             elif arr[0] == "##":
                 pass
@@ -151,6 +157,8 @@ class Config:
                 self.config['Samples'][sample_id][filetype] = os.path.realpath(
                     filename)
 
+        print self.config
+
     def check(self):
         # Check that the reference file exists
         if 'reference' in self.config:
@@ -181,23 +189,27 @@ class Config:
             raise exceptions.FatalError(
                 "Could not find samples in ARC_self.txt")
 
-        if not self.config['format'] in self.OPTIONS:
+        if self.config['format'] not in self.FORMATS:
             raise exceptions.FatalError(
                 "Error, file format not specificed in ARC_self.txt.")
 
-        if not self.config['mapper'] in self.MAPPERS:
+        if self.config['mapper'] not in self.MAPPERS:
             raise exceptions.FatalError(
                 "Error mapper must be either %s" % (
                 self.MAPPERS.keys().join(',')))
         else:
-            self.check_bins(self.config['mapper'])
+            self.check_bins(self.MAPPERS[self.config['mapper']])
 
-        if not self.config['assembler'] in self.ASSEMBLERS:
+        if self.config['assembler'] not in self.ASSEMBLERS:
             raise exceptions.FatalError(
                 "Error assembler must be either %s" % (
                 self.ASSEMBLERS.keys().join(',')))
         else:
-            self.check_bins(self.config['assembler'])
+            self.check_bins(self.ASSEMBLERS[self.config['assembler']])
+
+    def convert(self):
+        # Convert minutes to seconds for assembly timeouts
+        self.config['assemblytimeout'] *= 10
 
     def get(self):
         return self.config

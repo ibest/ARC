@@ -287,7 +287,7 @@ class Finisher:
             print "WARNING writeCDNAresults called when assembler was not Newbler"
             return None
         if not (os.path.exists(contigf) and os.path.exists(isotigsf) and os.path.exists(readstatusf)):
-            print "WARNING MISSING FILE!! %s %s" % (target, self.params['sample'])
+            print "HERE!!! WARNING MISSING FILE!! %s %s" % (target, self.params['sample'])
             print contigf, os.path.exists(contigf)
             print isotigsf, os.path.exists(isotigsf)
             print readstatusf, os.path.exists(readstatusf)

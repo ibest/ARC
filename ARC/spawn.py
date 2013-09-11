@@ -55,7 +55,7 @@ class Spawn:
             mapper = Mapper(params)
             self.ref_q.put(mapper.to_dict())
 
-    def run(self, config):
+    def run(self):
         logger.info("Starting...")
         logger.debug("Setting up workers.")
         workers = []
