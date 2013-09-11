@@ -39,6 +39,10 @@ def main():
         "-p", "--profile",
         action="store_true", dest="profile", default=False,
         help="Turn on profiling")
+    parser.add_option(
+        "-c", "--config",
+        type="string", dest="config", default='ARC_config.txt',
+        help="Turn on profiling")
 
     (options, args) = parser.parse_args()
 
@@ -56,10 +60,10 @@ def main():
 
     if options.profile:
         import cProfile
-        cProfile.runctx('app.start(loglevel)', globals(), locals())
+        cProfile.runctx('app.start(loglevel, configfile=options.config)', globals(), locals())
         return 255
     else:
-        return app.start(loglevel)
+        return app.start(loglevel, configfile=options.config)
 
 if __name__ == "__main__":
     main()

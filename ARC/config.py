@@ -25,7 +25,7 @@ from ARC import exceptions
 class Config:
     OPTIONS = {
         'numcycles': 1,
-        'max_incorportaion': 5,
+        'max_incorporation': 5,
         'bowtie2_k': 5,
         'format': None,
         'mapper': None,
@@ -96,7 +96,13 @@ class Config:
             if not line:
                 break
 
-            arr = line.strip().split(' ')
+            line = line.strip()
+            # Blank line
+            if line == "":
+                continue
+
+            arr = line.split()
+            
             if arr[0] == "#":
                 cfg = arr[1].split('=')
                 if len(cfg) != 2 or cfg[1] == "":
@@ -129,7 +135,12 @@ class Config:
             if not line:
                 break
 
-            arr = line.strip().split()
+            line = line.strip()
+            # Blank line
+            if line == "":
+                continue
+
+            arr = line.split()
             if len(arr) != 3:
                 raise exceptions.FatalError(
                     "Error, sample description entry is not properly "
