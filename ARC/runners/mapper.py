@@ -21,8 +21,8 @@ from collections import Counter
 from Bio import SeqIO
 from ARC import exceptions
 from ARC import logger
-#from ARC import AssemblyRunner
-from ARC.runners import AssemblyRunner
+#from ARC import Assembler
+from ARC.runners import Assembler
 from ARC.runners import AssemblyChecker
 import traceback
 import sys
@@ -398,7 +398,7 @@ class Mapper:
                 #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
                 if PEs + SEs > 0:
                     checker_params['targets'][target_dir] = False
-                    self.ref_q.put(AssemblyRunner(assembly_params).to_dict())
+                    self.ref_q.put(Assembler(assembly_params).to_dict())
 
             logger.info("------------------------------------")
             logger.info("| Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
