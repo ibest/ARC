@@ -26,7 +26,7 @@ import traceback
 import sys
 
 
-class AssemblyRunner:
+class Assembler:
     """
     This class represents assembly jobs and handles running assemblies.
     required params:

@@ -13,12 +13,16 @@
 # limitations under the License.
 
 import sys
+import time
 from Queue import Empty
 from multiprocessing import Process
-import time
-#import os
 from ARC import logger
 from ARC import exceptions
+# from ARC.runners import Assembler
+# from ARC.runners import AssemblyChecker
+# from ARC.runners import Mapper
+# from ARC.runners import Finisher
+# from ARC.runners import Mapper
 
 
 class ProcessRunner(Process):
@@ -33,8 +37,10 @@ class ProcessRunner(Process):
 
     def run(self):
         """
-        run() will initially sleep for 0.5 seconds, if an item is then found on the ref_q, it will process items off of the ref_q
-        every .1 second until the ref_q is empty, at which point it will get an Empty exception, and set the sleeptime to 5 seconds.
+        run() will initially sleep for 0.5 seconds, if an item is then found
+        on the ref_q, it will process items off of the ref_q every .1 second
+        until the ref_q is empty, at which point it will get an Empty
+        exception, and set the sleeptime to 5 seconds.
         """
         sleeptime = .5
         while True:
@@ -57,8 +63,8 @@ class ProcessRunner(Process):
                     job.start()
                     #print "%s finished a job, total jobs %s" % (self.name, self.numjobs)
                     self.result_q.put({"status": 0, "process": self.name})
-                # if str(job.__class__) == 'ARC.mapper.MapperRunner':
-                #     logger.info(self.name + " got a MapperRunner job, asking to be retired.")
+                # if str(job.__class__) == 'ARC.mapper.Mapper':
+                #     logger.info(self.name + " got a Mapper job, asking to be retired.")
                 #     self.result_q.put({"status": 4, "process": self.name})
                 #     sleeptime = 20
                 #     self.retired = True

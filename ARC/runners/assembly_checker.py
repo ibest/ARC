@@ -16,13 +16,13 @@
 
 import os
 import time
-#from copy import deepcopy
-from ARC import exceptions
-from ARC import logger
-from ARC.finisher import Finisher
 import sys
 import traceback
-#from ARC import AssemblyChecker
+# from copy import deepcopy
+from ARC import exceptions
+from ARC import logger
+from ARC.runner import Finisher
+# from ARC.runner import AssemblyChecker
 
 
 class AssemblyChecker:

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2013, Institute for Bioninformatics and Evolutionary Studies
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import time
-from random import randint
-
-class SampleRunner:
-  def __init__(self):
-    self.file = None
-    self.name = ""
-
+from base import Base
+# from test import Test
+from finisher import Finisher
+from assembler import Assembler
+from assembly_checker import AssemblyChecker
+from splitter import Splitter
+from mapper import Mapper

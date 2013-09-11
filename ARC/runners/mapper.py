@@ -18,18 +18,17 @@ import time
 import subprocess
 import os
 from collections import Counter
-from copy import deepcopy
 from Bio import SeqIO
 from ARC import exceptions
 from ARC import logger
 #from ARC import AssemblyRunner
-from ARC.assembler import AssemblyRunner
-from ARC.assembly_checker import AssemblyChecker
+from ARC.runner import AssemblyRunner
+from ARC.runner import AssemblyChecker
 import traceback
 import sys
 
 
-class MapperRunner:
+class Mapper:
     """
     This calss handles mapping jobs, as well as converting map results into a text version of a dict.
     required params:

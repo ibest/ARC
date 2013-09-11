@@ -26,7 +26,9 @@ import sys
 
 class Finisher:
     """
-    Iterate through all targets, pull out the assembled contigs, rename them to:
+    Iterate through all targets, pull out the assembled contigs, rename
+    them to:
+    
     Sample_:_Target_:_ContigN
     Output to: finished_SAMPLE/contigs.fasta
                               /PE1.fast(a/q)
@@ -35,32 +37,42 @@ class Finisher:
         OR
                working_SAMPLE/IN_contigs.fasta
 
-    Finisher knows that an assembly is finished because it finds a "finished" file inside of the assemblies temporary folder.
-    The finished file will contain a status which can be one of the following:
-        assembly_complete : a normal assembly which completed without error
-        assembly_failed   : The assembly failed.
-                            Don't copy contigs.
-                            Copy reads as contigs with name: Sample_:_Target_:_ReadN
-                            (note that if no new reads are mapped, this should auto-terminate, so there should be no need
-                                for a minreads type of control, however this may generate spurious assemblies which will need
-                                to be accounted for in the cleanup module.)
-        map_against_reads : No assembly was attempted.
-                            Copy reads as contigs with name: Sample_:_Target_:_ReadN
-                            (the logic for when to do this will be handled by the AssemblyRunner)
+    Finisher knows that an assembly is finished because it finds a "finished"
+    file inside of the assemblies temporary folder. The finished file will
+    contain a status which can be one of the following:
+
+    assembly_complete : a normal assembly which completed without error
+    assembly_failed   : The assembly failed.
+                        Don't copy contigs.
+                        Copy reads as contigs with name: Sample_:_Target_:_ReadN
+                        (note that if no new reads are mapped, this should
+                            auto-terminate, so there should be no need for a
+                            minreads type of control, however this may generate
+                            spurious assemblies which will need to be accounted
+                            for in the cleanup module.)
+    map_against_reads : No assembly was attempted.
+                        Copy reads as contigs with name: Sample_:_Target_:_ReadN
+                        (the logic for when to do this will be handled by the
+                            Assembler)
 
     Output to finished contigs depends on:
-    1) if params['iteration'] >= params['numcycles'] all output goes to the final contigs file
-        In the case where no contigs were assembled (finished:assembly_failed or finished:map_against_reads) reads go to contigs file.
-        Reads have the naming convention: Sample_:_Target_:_ReadN
-    2) if params['readcounts'][iteration] <= params['readcount'][iteration - 1] meaning no more reads were incorporated
-        reads + contigs go to final output, remove from further mapping/assembly
-        In the case where no contigs were assembled (finished:assembly_failed or finished:map_against_reads) reads go to contigs file.
-        Reads have the naming convention: Sample_:_Target_:_ReadN
+    1) If params['iteration'] >= params['numcycles'] all output goes to the
+        final contigs file.  In the case where no contigs were assembled
+        (finished:assembly_failed or finished:map_against_reads) reads go to
+        contigs file.  Reads have the naming convention:
+        Sample_:_Target_:_ReadN
+    2) If params['readcounts'][iteration] <= params['readcount'][iteration - 1]
+        meaning no more reads were incorporated reads + contigs go to final
+        output, remove from further mapping/assembly.  In the case where no
+        contigs were assembled (finished:assembly_failed or
+        finished:map_against_reads) reads go to contigs file. Reads have the
+        naming convention: Sample_:_Target_:_ReadN
 
-    3) if reads were mapped but no contigs were generated, write the reads out as new targets for the next mapping cycle
-    4) if params['readcounts'][iteration] / params['readcount'][iteration - 1] > max_incorportaion:
-        This is probably repetitive sequence,
-    5) if 'map_against_reads' in params and params['iteration'] == 1:
+    3) If reads were mapped but no contigs were generated, write the reads out
+        as new targets for the next mapping cycle.
+    4) If params['readcounts'][iteration] / params['readcount'][iteration - 1]
+        > max_incorportaion: This is probably repetitive sequence,
+    5) If 'map_against_reads' in params and params['iteration'] == 1:
         On the first iteration, write all reads out as contigs
         (there is no expectation of an assembly having been done in this case)
 
@@ -141,7 +153,7 @@ class Finisher:
                         targets_written += 1
             if targets_written > 0:
                 # Build a new mapper and put it on the queue
-                from ARC.mapper import MapperRunner
+                from ARC.runner import Mapper
                 #params = deepcopy(self.params)
                 mapper_params = {}
                 for k in self.params:
@@ -154,11 +166,11 @@ class Finisher:
                 # if 'SE' in self.params:
                 #     params['SE'] = self.['SE']
 
-                mapper = MapperRunner(mapper_params)
+                mapper = Mapper(mapper_params)
                 self.ref_q.put(mapper.to_dict())
                 logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
             else:
-                logger.info("Sample: %s MapperRunner not added to queue. Work finished." % self.params['sample'])
+                logger.info("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])
         except:
             print "".join(traceback.format_exception(*sys.exc_info()))
             raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
