@@ -119,7 +119,7 @@ class Mapper:
         #args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
         args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
         if self.params['bowtie2_k'] > 1:
-            args += ['-k', self.params['bowtie2_k']]
+            args += ['-k', str(self.params['bowtie2_k'])]
         if self.params['format'] == 'fasta':
             args += ['-f']
         if 'PE1' in self.params and 'PE2' in self.params:
