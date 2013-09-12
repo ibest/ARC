@@ -81,8 +81,8 @@ class Finisher:
     def __init__(self, params):
         self.params = params
 
-    def queue(self, ref_q):
-        self.ref_q = ref_q
+    def queue(self, job_q):
+        self.job_q = job_q
 
     def to_dict(self):
         return {'runner': self,
@@ -167,7 +167,7 @@ class Finisher:
                 #     params['SE'] = self.['SE']
 
                 mapper = Mapper(mapper_params)
-                self.ref_q.put(mapper.to_dict())
+                self.job_q.put(mapper.to_dict())
                 logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
             else:
                 logger.info("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])

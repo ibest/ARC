@@ -26,54 +26,49 @@ from ARC import exceptions
 
 
 class ProcessRunner(Process):
-    def __init__(self, ref_q, result_q, finished, proc):
+    def __init__(self, job_q, result_q, finished, proc):
         super(ProcessRunner, self).__init__()
-        self.ref_q = ref_q
+        self.job_q = job_q
         self.result_q = result_q
         self.finished = finished
         self.proc = proc
         #self.numjobs = 0
         self.retired = False
 
+    def launch(self):
+        # Moving this up into launch to see if running outside the scope of the
+        # run function will release any reverence to the object and help the
+        # garbage collecter clean up.
+        item = self.job_q.get_nowait()
+        # If we made it this far, we have found something on the
+        # queue so we need to make sure we let the spawner know we
+        # are not done prior to starting so spawner doesn't kill the
+        # process
+        self.not_done()
+        # Begin the run
+        job = item['runner']
+        logger.debug("[%s] Processing: %s" % (self.name, item['message']))
+        job.queue(self.job_q)
+        #self.numjobs += 1
+        job.start()
+        # return job.run()
+
     def run(self):
         """
         run() will initially sleep for 0.5 seconds, if an item is then found
-        on the ref_q, it will process items off of the ref_q every .1 second
-        until the ref_q is empty, at which point it will get an Empty
+        on the job_q, it will process items off of the job_q every .1 second
+        until the job_q is empty, at which point it will get an Empty
         exception, and set the sleeptime to 5 seconds.
         """
-        sleeptime = .5
+        sleeptime = 0.5
         while True:
             try:
                 time.sleep(sleeptime)
                 if not self.retired:
-                    item = self.ref_q.get_nowait()
-                    sleeptime = 0
-                    #print "got Item", item['runner'], "sleep time", sleeptime
-                    # If we made it this far, we have found something on the
-                    # queue so we need to make sure we let the spawner know we
-                    # are not done prior to starting so spawner doesn't kill the
-                    # process
-                    self.not_done()
-                    # Begin the run
-                    job = item['runner']
-                    logger.debug("[%s] Processing: %s" % (self.name, item['message']))
-                    job.queue(self.ref_q)
-                    #self.numjobs += 1
-                    job.start()
-                    #print "%s finished a job, total jobs %s" % (self.name, self.numjobs)
+                    self.launch()
                     self.result_q.put({"status": 0, "process": self.name})
-                # if str(job.__class__) == 'ARC.mapper.Mapper':
-                #     logger.info(self.name + " got a Mapper job, asking to be retired.")
-                #     self.result_q.put({"status": 4, "process": self.name})
-                #     sleeptime = 20
-                #     self.retired = True
-                # if self.numjobs > 10 and not self.retired:
-                #     #Ask for retirement
-                #     logger.debug(self.name + " Asking to be retired after %s jobs" % self.numjobs)
-                #     self.result_q.put({"status": 4, "process": self.name})
-                #     sleeptime = 5
-                #     self.retired = True
+                    sleeptime = 0
+
             except exceptions.RerunnableError as e:
                 logger.warn("[%s] A job needs to be rerun: %s" % (self.name, e))
                 self.result_q.put({"status": 1, "process": self.name})
@@ -96,8 +91,6 @@ class ProcessRunner(Process):
                 logger.error("An unhandled exception occured")
                 self.result_q.put({"status": 2, "process": self.name})
                 raise e
-            # else:
-                # self.not_done()
 
     def done(self):
         self.finished[self.proc] = 1

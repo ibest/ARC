@@ -39,8 +39,8 @@ class Mapper:
     def __init__(self, params):
         self.params = params
 
-    def queue(self, ref_q):
-        self.ref_q = ref_q
+    def queue(self, job_q):
+        self.job_q = job_q
 
     def to_dict(self):
         return {'runner': self, 'message': 'Sample: %s Starting mapper.' % self.params['sample'], 'params': self.params}
@@ -398,7 +398,7 @@ class Mapper:
                 #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
                 if PEs + SEs > 0:
                     checker_params['targets'][target_dir] = False
-                    self.ref_q.put(Assembler(assembly_params).to_dict())
+                    self.job_q.put(Assembler(assembly_params).to_dict())
 
             logger.info("------------------------------------")
             logger.info("| Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
@@ -415,7 +415,7 @@ class Mapper:
             #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
             if len(checker_params['targets']) > 0:
                 checker = AssemblyChecker(checker_params)
-                self.ref_q.put(checker.to_dict())
+                self.job_q.put(checker.to_dict())
             else:
                 logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
         except:

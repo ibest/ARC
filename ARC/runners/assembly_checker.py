@@ -36,8 +36,8 @@ class AssemblyChecker:
     def __init__(self, params):
         self.params = params
 
-    def queue(self, ref_q):
-        self.ref_q = ref_q
+    def queue(self, job_q):
+        self.job_q = job_q
 
     def to_dict(self):
         return {'runner': self, 'message': 'Starting AssemblyChecker for sample %s' % self.params['sample'], 'params': self.params}
@@ -64,8 +64,8 @@ class AssemblyChecker:
                     checker_params[k] = self.params[k]
                 #checker_params = deepcopy(self.params)
                 checker = AssemblyChecker(checker_params)
-                time.sleep(5)  # sleep 4 seconds before putting a checker back on the ref_q
-                self.ref_q.put(checker.to_dict())
+                time.sleep(5)  # sleep 4 seconds before putting a checker back on the job_q
+                self.job_q.put(checker.to_dict())
                 logger.info("Sample: %s Assemblies not finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
             else:
                 params = {}
@@ -73,7 +73,7 @@ class AssemblyChecker:
                     params[k] = self.params[k]
                 #params = deepcopy(self.params)
                 finisher = Finisher(params)
-                self.ref_q.put(finisher.to_dict())
+                self.job_q.put(finisher.to_dict())
                 logger.info("Sample: %s Assemblies finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
         except:
             print "".join(traceback.format_exception(*sys.exc_info()))

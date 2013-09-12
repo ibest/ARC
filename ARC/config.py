@@ -56,7 +56,6 @@ class Config:
 
         # Initialize config
         self.config = {}
-        self.config['iteration'] = 0
 
         # Read config file, set the defaults, and check
         self.read()
@@ -76,6 +75,9 @@ class Config:
                         "%s not specified in ARC_config.txt, defaulting to "
                         "%s" % (key, value))
                     self.config[key] = value
+        # Anything listed below here is not expected to be in the config but 
+        # needs initialized
+        self.config['iteration'] = 0
 
     def check_bins(self, bins):
         for bin in bins:

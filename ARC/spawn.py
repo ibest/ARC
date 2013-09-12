@@ -30,7 +30,7 @@ class Spawn:
         self.nprocs = int(config['nprocs'])
 
         #Setup thread-safe shared objects
-        self.ref_q = multiprocessing.Queue()
+        self.job_q = multiprocessing.Queue()
         self.result_q = multiprocessing.Queue()
         self.finished = multiprocessing.Array('i', [0] * self.nprocs)
 
@@ -53,7 +53,7 @@ class Spawn:
                 params['SE'] = s['SE']
 
             mapper = Mapper(params)
-            self.ref_q.put(mapper.to_dict())
+            self.job_q.put(mapper.to_dict())
 
     def run(self):
         logger.info("Starting...")
@@ -61,7 +61,7 @@ class Spawn:
         workers = []
         for i in range(self.nprocs):
             worker = ProcessRunner(
-                self.ref_q,
+                self.job_q,
                 self.result_q,
                 self.finished,
                 i)
@@ -101,7 +101,7 @@ class Spawn:
                     self.retire_worker(
                         workers,
                         result['process'],
-                        self.ref_q,
+                        self.job_q,
                         self.result_q,
                         self.finished)
                 else:
@@ -140,13 +140,13 @@ class Spawn:
             logger.debug("Shutting down %s" % (worker.name))
             worker.terminate()
 
-    def retire_worker(self, workers, process, ref_q, result_q, finished):
+    def retire_worker(self, workers, process, job_q, result_q, finished):
         for i in range(len(workers)):
             worker = workers[i]
             if worker.name == process:
                 logger.info("Terminating working %s" % worker.name)
                 worker.terminate()
-                worker = ProcessRunner(ref_q, result_q, finished, i)
+                worker = ProcessRunner(job_q, result_q, finished, i)
                 worker.daemon = False
                 workers[i] = worker
                 worker.start()
