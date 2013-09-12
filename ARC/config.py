@@ -39,7 +39,7 @@ class Config:
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {
-        'newbler': ['runAssembly', 'newbler'],
+        'newbler': ['runAssembly', 'newbler', 'addRun'],
         'spades': ['spades.py']
     }
     MAPPERS = {
@@ -75,7 +75,7 @@ class Config:
                         "%s not specified in ARC_config.txt, defaulting to "
                         "%s" % (key, value))
                     self.config[key] = value
-        # Anything listed below here is not expected to be in the config but 
+        # Anything listed below here is not expected to be in the config but
         # needs initialized
         self.config['iteration'] = 0
 
@@ -104,7 +104,7 @@ class Config:
                 continue
 
             arr = line.split()
-            
+
             if arr[0] == "#":
                 cfg = arr[1].split('=')
                 if len(cfg) != 2 or cfg[1] == "":
@@ -139,7 +139,7 @@ class Config:
 
             line = line.strip()
             # Blank line
-            if line == "":
+            if line == "" or line[0] == '#' :
                 continue
 
             arr = line.split()
