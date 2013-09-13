@@ -1,0 +1,455 @@
+diff -rupN ./blat/blatSrc/blat/blat.c ./blatSrc/blat/blat.c
+--- ./blat/blatSrc/blat/blat.c	2012-08-13 17:00:06.000000000 -0700
++++ ./blatSrc/blat/blat.c	2013-06-04 10:12:01.000000000 -0700
+@@ -54,6 +54,8 @@ double minRepDivergence = 15;
+ double minIdentity = 90;
+ char *outputFormat = "psl";
+ 
++bool fasta_flag = TRUE;
++bool fastq_flag = FALSE;
+ 
+ void usage()
+ /* Explain usage and exit. */
+@@ -185,6 +187,7 @@ struct optionSpec options[] = {
+    {"fine", OPTION_BOOLEAN},
+    {"maxIntron", OPTION_INT},
+    {"extendThroughN", OPTION_BOOLEAN},
++   {"fastq", OPTION_BOOLEAN},
+    {NULL, 0},
+ };
+ 
+@@ -327,7 +330,7 @@ int i;
+ char *fileName;
+ int count = 0; 
+ long long totalSize = 0;
+-
++//printf("???\n");
+ gfOutputHead(gvo, outFile);
+ for (i=0; i<fileCount; ++i)
+     {
+@@ -378,17 +381,30 @@ for (i=0; i<fileCount; ++i)
+ 	twoBitClose(&tbf);
+ 	}
+     else
+-        {
++    {
+ 	static struct dnaSeq seq;
+ 	struct lineFile *lf = lineFileOpen(fileName, TRUE);
+-	while (faMixedSpeedReadNext(lf, &seq.dna, &seq.size, &seq.name))
+-	    {
+-	    searchOneMaskTrim(&seq, isProt, gf, outFile,
++        if(fasta_flag)
++        {
++            while (faMixedSpeedReadNext(lf, &seq.dna, &seq.size, &seq.name))
++            {
++                searchOneMaskTrim(&seq, isProt, gf, outFile,
+ 			      maskHash, &totalSize, &count);
+-	    }
++            }
++        }
++        if(fastq_flag) 
++        {
++            while (fqMixedSpeedReadNext(lf, &seq.dna, &seq.size, &seq.name))
++            {
++                //break;
++                searchOneMaskTrim(&seq, isProt, gf, outFile,
++			      maskHash, &totalSize, &count);
++            }
++        }
++        
+ 	lineFileClose(&lf);
+-	}
+     }
++}
+ carefulClose(&outFile);
+ if (showStatus)
+     printf("Searched %lld bases in %d sequences\n", totalSize, count);
+@@ -500,38 +516,78 @@ for (isRc = FALSE; isRc <= 1; ++isRc)
+ 	}
+ 
+     for (i=0; i<queryCount; ++i)
+-        {
++    {
+ 	aaSeq qSeq;
+-
++        
+ 	lf = lineFileOpen(queryFiles[i], TRUE);
+-	while (faMixedSpeedReadNext(lf, &qSeq.dna, &qSeq.size, &qSeq.name))
+-	    {
+-	    dotOut();
+-	    /* Put it into right case and optionally mask on case. */
+-	    if (forceLower)
+-	        toLowerN(qSeq.dna, qSeq.size);
+-	    else if (forceUpper)
+-	        toUpperN(qSeq.dna, qSeq.size);
+-	    else if (maskUpper)
++        
++        if(fasta_flag)
++        {
++            while (faMixedSpeedReadNext(lf, &qSeq.dna, &qSeq.size, &qSeq.name))
++            {
++	    
++                dotOut();
++            
++                /* Put it into right case and optionally mask on case. */
++                if (forceLower)
++                        toLowerN(qSeq.dna, qSeq.size);
++                else if (forceUpper)
++                        toUpperN(qSeq.dna, qSeq.size);
++                else if (maskUpper)
+ 	        {
+-		if (toggle)
+-		    toggleCase(qSeq.dna, qSeq.size);
+-		upperToN(qSeq.dna, qSeq.size);
++                        if (toggle)
++                                toggleCase(qSeq.dna, qSeq.size);
++                        upperToN(qSeq.dna, qSeq.size);
+ 		}
+-	    if (qSeq.size > qWarnSize)
++                if (qSeq.size > qWarnSize)
+ 	        {
+-		warn("Query sequence %s has size %d, it might take a while.",
+-		     qSeq.name, qSeq.size);
++                        warn("Query sequence %s has size %d, it might take a while.",
++                        qSeq.name, qSeq.size);
+ 		}
+-	    trimSeq(&qSeq, &trimmedSeq);
+-	    if (transQuery)
+-	        transTripleSearch(&trimmedSeq, gfs, t3Hash, isRc, qIsDna, out);
+-	    else
+-		tripleSearch(&trimmedSeq, gfs, t3Hash, isRc, out);
+-	    gfOutputQuery(gvo, out);
+-	    }
++                trimSeq(&qSeq, &trimmedSeq);
++                if (transQuery)
++                        transTripleSearch(&trimmedSeq, gfs, t3Hash, isRc, qIsDna, out);
++                else
++                        tripleSearch(&trimmedSeq, gfs, t3Hash, isRc, out);
++                gfOutputQuery(gvo, out);
++            }
++        }
++        
++	//while (faMixedSpeedReadNext(lf, &qSeq.dna, &qSeq.size, &qSeq.name))
++        if(fastq_flag) 
++        {
++            while (fqMixedSpeedReadNext(lf, &qSeq.dna, &qSeq.size, &qSeq.name))
++            {
++	    
++                dotOut();
++            
++                /* Put it into right case and optionally mask on case. */
++                if (forceLower)
++                        toLowerN(qSeq.dna, qSeq.size);
++                else if (forceUpper)
++                        toUpperN(qSeq.dna, qSeq.size);
++                else if (maskUpper)
++	        {
++                        if (toggle)
++                                toggleCase(qSeq.dna, qSeq.size);
++                        upperToN(qSeq.dna, qSeq.size);
++		}
++                if (qSeq.size > qWarnSize)
++	        {
++                        warn("Query sequence %s has size %d, it might take a while.",
++                        qSeq.name, qSeq.size);
++		}
++                trimSeq(&qSeq, &trimmedSeq);
++                if (transQuery)
++                        transTripleSearch(&trimmedSeq, gfs, t3Hash, isRc, qIsDna, out);
++                else
++                        tripleSearch(&trimmedSeq, gfs, t3Hash, isRc, out);
++                gfOutputQuery(gvo, out);
++            }
++        }
++        
+ 	lineFileClose(&lf);
+-	}
++    }
+ 
+     /* Clean up time. */
+     trans3FreeList(&t3List);
+@@ -574,6 +630,7 @@ if (makeOoc != NULL)
+     exit(0);
+     }
+ gfClientFileArray(queryFile, &queryFiles, &queryCount);
++
+ dbSeqList = gfClientSeqList(dbCount, dbFiles, tIsProt, tType == gftDnaX, repeats, 
+ 	minRepDivergence, showStatus);
+ databaseSeqCount = slCount(dbSeqList);
+@@ -618,6 +675,7 @@ else if (tType == gftDnaX && qType == gf
+     }
+ else if (tType == gftDnaX && (qType == gftDnaX || qType == gftRnaX))
+     {
++    
+     bigBlat(dbSeqList, queryCount, queryFiles, outName, TRUE, qType == gftDnaX, f, showStatus);
+     }
+ else
+@@ -659,6 +717,14 @@ if (optionExists("t"))
+ trimA = optionExists("trimA") || optionExists("trima");
+ trimT = optionExists("trimT") || optionExists("trimt");
+ trimHardA = optionExists("trimHardA");
++
++if (optionExists("fastq"))
++{
++    fastq_flag = TRUE;
++    fasta_flag = FALSE;
++}
++    
++
+ switch (tType)
+     {
+     case gftProt:
+diff -rupN ./blat/blatSrc/inc/fa.h ./blatSrc/inc/fa.h
+--- ./blat/blatSrc/inc/fa.h	2010-06-12 18:34:13.000000000 -0700
++++ ./blatSrc/inc/fa.h	2013-06-04 10:12:01.000000000 -0700
+@@ -126,4 +126,8 @@ void faWriteNext(FILE *f, char *startLin
+ void faWriteAll(char *fileName, bioSeq *seqList);
+ /* Write out all sequences in list to file. */
+ 
++boolean fqMixedSpeedReadNext(struct lineFile *lf, DNA **retDna, int *retSize, char **retName);
++/* Read in DNA FASTQ record in mixed case.   Allow any upper or lower case
++ * letter, or the dash character in. */
++
+ #endif /* FA_H */
+diff -rupN ./blat/blatSrc/lib/fa.c ./blatSrc/lib/fa.c
+--- ./blat/blatSrc/lib/fa.c	2012-02-07 11:19:03.000000000 -0800
++++ ./blatSrc/lib/fa.c	2013-06-04 10:12:02.000000000 -0700
+@@ -430,67 +430,70 @@ if (fclose(f) != 0)
+ boolean faMixedSpeedReadNext(struct lineFile *lf, DNA **retDna, int *retSize, char **retName)
+ /* Read in DNA or Peptide FA record in mixed case.   Allow any upper or lower case
+  * letter, or the dash character in. */
+-{
+-char c;
+-int bufIx = 0;
+-static char name[512];
+-int lineSize, i;
+-char *line;
+-
+-dnaUtilOpen();
+-
+-/* Read first line, make sure it starts with '>', and read first word
+- * as name of sequence. */
+-name[0] = 0;
+-if (!lineFileNext(lf, &line, &lineSize))
+-    {
+-    *retDna = NULL;
+-    *retSize = 0;
+-    return FALSE;
+-    }
+-if (line[0] == '>')
+-    {
+-    line = firstWordInLine(skipLeadingSpaces(line+1));
+-    if (line == NULL)
+-        errAbort("Expecting sequence name after '>' line %d of %s", lf->lineIx, lf->fileName);
+-    strncpy(name, line, sizeof(name));
+-    name[sizeof(name)-1] = '\0'; /* Just to make sure name is NULL terminated. */
+-    }
+-else
+-    {
+-    errAbort("Expecting '>' line %d of %s", lf->lineIx, lf->fileName);
+-    }
+-/* Read until next '>' */
+-for (;;)
+-    {
+-    if (!lineFileNext(lf, &line, &lineSize))
+-        break;
+-    if (line[0] == '>')
++{       //printf("!!!\n");
++        char c;
++        int bufIx = 0;
++        static char name[512];
++        int lineSize, i;
++        char *line;
++
++        dnaUtilOpen();
++
++        /* Read first line, make sure it starts with '>', and read first word
++        * as name of sequence. */
++        name[0] = 0;
++        if (!lineFileNext(lf, &line, &lineSize))
+         {
+-	lineFileReuse(lf);
+-	break;
+-	}
+-    if (bufIx + lineSize >= faFastBufSize)
+-	expandFaFastBuf(bufIx, lineSize);
+-    for (i=0; i<lineSize; ++i)
+-        {
+-	c = line[i];
+-	if (isalpha(c) || c == '-')
+-	    faFastBuf[bufIx++] = c;
+-	}
+-    }
+-if (bufIx >= faFastBufSize)
+-    expandFaFastBuf(bufIx, 0);
+-faFastBuf[bufIx] = 0;
+-*retDna = faFastBuf;
+-*retSize = bufIx;
+-*retName = name;
+-if (bufIx == 0)
+-    {
+-    warn("Invalid fasta format: sequence size == 0 for element %s",name);
+-    }
++                *retDna = NULL;
++                *retSize = 0;
++                return FALSE;
++        }
++        if (line[0] == '>')
++        {
++                line = firstWordInLine(skipLeadingSpaces(line+1));
++    
++                if (line == NULL)
++                        errAbort("Expecting sequence name after '>' line %d of %s", lf->lineIx, lf->fileName);
++                strncpy(name, line, sizeof(name));
++    
++                name[sizeof(name)-1] = '\0'; /* Just to make sure name is NULL terminated. */
++        }
++        else
++        {
++                errAbort("Expecting '>' line %d of %s", lf->lineIx, lf->fileName);
++        }
++        /* Read until next '>' */
++        for (;;)
++        {
++                if (!lineFileNext(lf, &line, &lineSize))
++                break;
++                if (line[0] == '>')
++                {
++                        lineFileReuse(lf);
++                        break;
++                }
++                if (bufIx + lineSize >= faFastBufSize)
++                        expandFaFastBuf(bufIx, lineSize);
++                for (i=0; i<lineSize; ++i)
++                {
++                        c = line[i];
++                        if (isalpha(c) || c == '-')
++                                faFastBuf[bufIx++] = c;
++                }
++        }
++        //printf("%d\n",strlen(faFastBuf));
++        if (bufIx >= faFastBufSize)
++                expandFaFastBuf(bufIx, 0);
++        faFastBuf[bufIx] = 0;
++        *retDna = faFastBuf;
++        *retSize = bufIx;
++        *retName = name;
++        if (bufIx == 0)
++        {
++                warn("Invalid fasta format: sequence size == 0 for element %s",name);
++        }
+ 
+-return TRUE;
++        return TRUE;
+ }
+ 
+ void faToProtein(char *poly, int size)
+@@ -646,3 +649,97 @@ struct dnaSeq *faReadAllMixedInLf(struct
+ {
+ return faReadAllMixableInLf(lf, FALSE, TRUE);
+ }
++
++boolean fqMixedSpeedReadNext(struct lineFile *lf, DNA **retDna, int *retSize, char **retName)
++/* Read in DNA FASTQ record in mixed case.   Allow any upper or lower case
++ * letter, or the dash character in. */
++{       //printf("%s\n",lf->buf);
++    //printf("!!!");    
++    char c;
++        int bufIx = 0;
++        static char name[512];
++        int lineSize, i;
++        char *line;
++        
++        dnaUtilOpen();
++
++        /* Read first line, make sure it starts with '@', and read first word
++        * as name of sequence. */
++        name[0] = 0;
++        if (!lineFileNext(lf, &line, &lineSize))
++        {
++                *retDna = NULL;
++                *retSize = 0;
++                return FALSE;
++        }
++        
++        if (line[0] == '@')
++        {
++                line = firstWordInLine(skipLeadingSpaces(line+1));
++    
++                if (line == NULL)
++                        errAbort("Expecting sequence name after '@' line %d of %s", lf->lineIx, lf->fileName);
++                strncpy(name, line, sizeof(name));
++    
++                name[sizeof(name)-1] = '\0'; /* Just to make sure name is NULL terminated. */
++        }
++        else
++        {
++                errAbort("Expecting '@' line %d of %s", lf->lineIx, lf->fileName);
++        }
++        /* Read until next '>' */
++        int ii=0;
++        for (;;)
++        {
++            
++                if (!lineFileNext(lf, &line, &lineSize))
++                        break;
++                
++                if (line[0] == '@')
++                {
++                        lineFileReuse(lf);
++                        break;
++                }
++                
++                
++                //printf("line: %s\n",line);
++                if(ii==0) 
++                {
++                    if (bufIx + lineSize >= faFastBufSize)
++                        expandFaFastBuf(bufIx, lineSize);
++                
++                    //printf("%s\n",line);
++                        for (i=0; i<lineSize; ++i)
++                        {
++                                c = line[i];
++                                //if (c == '+') {printf("!!!\n"); break;}
++                                if ( isalpha(c) || c == '-')
++                                        faFastBuf[bufIx++] = c;
++                        
++                        }
++                    //printf("buf: %s\n",faFastBuf);
++                    //printf("%d\n",ii);
++                }
++                
++                ii++;
++                
++                if(ii==3) ii=0;
++        }
++        
++        //printf("%d\n",strlen(faFastBuf));
++        if (bufIx >= faFastBufSize)
++                expandFaFastBuf(bufIx, 0);
++        faFastBuf[bufIx] = 0;
++        //printf("buf after %s\n",faFastBuf);
++        *retDna = faFastBuf;
++        
++        *retSize = bufIx;
++        *retName = name;
++        /*if (bufIx == 0)
++        {
++                warn("Invalid fasta format: sequence size == 0 for element %s",name);
++                printf("%s\n",faFastBuf);
++        }*/
++
++        return TRUE;
++}
+\ No newline at end of file
+diff -rupN ./blat/blatSrc/README2.md ./blatSrc/README2.md
+--- ./blat/blatSrc/README2.md	1969-12-31 16:00:00.000000000 -0800
++++ ./blatSrc/README2.md	2013-06-04 10:12:01.000000000 -0700
+@@ -0,0 +1,5 @@
++To use FastQ file as a input:
++
++blat -fastq database query [-ooc=11.ooc] output.psl 
++
++By default input format file is set to FastA.
+

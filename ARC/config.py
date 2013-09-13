@@ -206,14 +206,16 @@ class Config:
         if self.config['mapper'] not in self.MAPPERS:
             raise exceptions.FatalError(
                 "Error mapper must be either %s" % (
-                self.MAPPERS.keys().join(',')))
+                ', '.join(self.MAPPERS.keys())))
         else:
             self.check_bins(self.MAPPERS[self.config['mapper']])
 
         if self.config['assembler'] not in self.ASSEMBLERS:
             raise exceptions.FatalError(
-                "Error assembler must be either %s" % (
-                self.ASSEMBLERS.keys().join(',')))
+                #"Error assembler must be either %s" % (
+                #self.ASSEMBLERS.keys().join(',')))
+                "Error assembler must be either: %s" % (
+                    ', '.join(self.ASSEMBLERS.keys())))
         else:
             self.check_bins(self.ASSEMBLERS[self.config['assembler']])
 
