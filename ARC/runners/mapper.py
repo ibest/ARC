@@ -40,9 +40,9 @@ class Mapper(Base):
     def to_dict(self):
         return {'runner': self, 'message': 'Sample: %s Starting mapper.' % self.params['sample'], 'params': self.params}
 
-    def start(self):
+    def execute(self):
         try:
-            if not('mapper' in self.params):
+            if not('mapper' in self.universals):
                 raise exceptions.FatalError("mapper not defined in params")
             if self.universals['mapper'] == 'bowtie2':
                 logger.info("Sample: %s Running bowtie2." % self.params['sample'])
@@ -86,25 +86,42 @@ class Mapper(Base):
             raise exceptions.FatalError(txt)
 
         #Check whether to log to temporary file, or default to os.devnull
-        if 'verbose' in self.params:
-            out = open(os.path.join(working_dir, "mapping_log.txt"), 'w')
-        else:
-            out = open(os.devnull, 'w')
+        # if 'verbose' in self.params:
+        #     out = open(os.path.join(working_dir, "mapping_log.txt"), 'w')
+        # else:
+        #     out = open(os.devnull, 'w')
 
         #Build index
         base = os.path.join(idx_dir, 'idx')
-        logger.info("Sample: %s Calling bowtie2-build." % self.params['sample'])
-        logger.info(" ".join(['bowtie2-build', '-f', self.params['reference'], base]))
-        try:
-            ret = subprocess.call(['bowtie2-build', '-f', self.params['reference'], base], stdout=out, stderr=out)
-        except Exception as exc:
-            txt = ("Sample %s: Unhandeled error running bowtie2-build" % self.params['sample']) + '\n\t' + str(exc)
-            out.close()  # make sure that out is closed before throwing exception
-            raise exceptions.FatalError(txt)
 
-        if ret != 0:
-            out.close()
-            raise exceptions.FatalError("Sample: %s Error creating bowtie2 index, check log file." % self.params['sample'])
+        args = [
+            'bowtie2-build',
+            '-f',
+            self.params['reference'],
+            base]
+
+        self.shell(
+            args,
+            description="Bowtie2 build (Sample %s)" % (
+                self.params['sample']),
+            logfile='mapper.log',
+            working_dir=working_dir,
+            verbose=self.universals['verbose'])
+
+        # logger.info("Sample: %s Calling bowtie2-build." % self.params['sample'])
+        # logger.info(" ".join(['bowtie2-build', '-f', self.params['reference'], base]))
+
+
+        # try:
+        #     ret = subprocess.call(['bowtie2-build', '-f', self.params['reference'], base], stdout=out, stderr=out)
+        # except Exception as exc:
+        #     txt = ("Sample %s: Unhandeled error running bowtie2-build" % self.params['sample']) + '\n\t' + str(exc)
+        #     out.close()  # make sure that out is closed before throwing exception
+        #     raise exceptions.FatalError(txt)
+
+        # if ret != 0:
+        #     out.close()
+        #     raise exceptions.FatalError("Sample: %s Error creating bowtie2 index, check log file." % self.params['sample'])
 
         #Do bowtie2 mapping:
         n_bowtieprocs = int(round(max(float(self.params['nprocs'])/len(self.params['Samples']), 1)))
@@ -112,9 +129,15 @@ class Mapper(Base):
         #args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', self.params['nprocs'], '-x', base]
         #args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', '1', '-x', base]
         #args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
-        args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
-        if self.params['bowtie2_k'] > 1:
-            args += ['-k', str(self.params['bowtie2_k'])]
+        args = [
+            'bowtie2',
+            '-I', '0',
+            '-X', '1500',
+            '--local',
+            '-p', str(n_bowtieprocs),
+            '-x', base]
+        if self.universals['bowtie2_k'] > 1:
+            args += ['-k', str(self.universals['bowtie2_k'])]
         if self.universals['format'] == 'fasta':
             args += ['-f']
         if 'PE1' in self.params and 'PE2' in self.params:
@@ -122,19 +145,16 @@ class Mapper(Base):
         if 'SE' in self.params:
             args += ['-U', self.params['SE']]
         args += ['-S', os.path.join(working_dir, 'mapping.sam')]
-        logger.info("Sample: %s Calling bowtie2 mapper" % self.params['sample'])
-        logger.info(" ".join(args))
+        # logger.info("Sample: %s Calling bowtie2 mapper" % self.params['sample'])
+        # logger.info(" ".join(args))
 
-        try:
-            ret = subprocess.call(args, stdout=out, stderr=out)
-            out.close()
-        except Exception as exc:
-            txt = ("Sample %s: Unhandeled error running bowtie2 mapping" % self.params['sample']) + '\n\t' + str(exc)
-            raise exceptions.FatalError(txt)
-
-        out.close()
-        if ret != 0:
-            raise exceptions.FatalError("Sample %s: Bowtie2 mapping returned an error, check log file." % self.params['sample'])
+        self.shell(
+            args,
+            description="Bowtie2 mapping (Sample %s)" % (
+                self.params['sample']),
+            logfile='mapper.log',
+            working_dir=working_dir,
+            verbose=self.universals['verbose'])
 
         #Extract the SAM to a dict
         self.params['mapping_dict'] = self.SAM_to_dict(os.path.join(working_dir, 'mapping.sam'))
@@ -175,24 +195,28 @@ class Mapper(Base):
         allreads_outf.close()
 
         #Do blat mapping
-        args = ['blat', self.params['reference'], os.path.join(working_dir, 'reads.txt')]
+        args = [
+            'blat',
+            self.params['reference'],
+            os.path.join(working_dir, 'reads.txt')]
+
         if self.universals['format'] == 'fastq':
             args.append('-fastq')
+
         if 'fastmap' in self.params:
             args.append('-fastMap')
+
         args.append(os.path.join(working_dir, 'mapping.psl'))
 
-        logger.info("Sample: %s Calling blat mapper" % self.params['sample'])
-        logger.debug(" ".join(args))
-        try:
-            ret = subprocess.call(args, stdout=out, stderr=out)
-        except Exception as exc:
-            txt = ("Sample %s: Unhandeled error running blat mapping, check log file." % self.params['sample']) + '\n\t' + str(exc)
-            raise exceptions.FatalError(txt)
-        finally:
-            out.close()
-        if ret != 0:
-            raise exceptions.FatalError('Sample: %s Error running blat mapping, check log file. \n\t %s' % (self.params['sample'], " ".join(args)))
+        # logger.info("Sample: %s Calling blat mapper" % self.params['sample'])
+        # logger.debug(" ".join(args))
+
+        self.shell(
+            args,
+            description="Blat mapping (Sample %s)" % (self.params['sample']),
+            logfile='assembly.log',
+            working_dir=working_dir,
+            verbose=self.universals['verbose'])
 
         #Extract the PSL to a dict
         self.params['mapping_dict'] = self.PSL_to_dict(os.path.join(working_dir, 'mapping.psl'))
@@ -303,14 +327,14 @@ class Mapper(Base):
     def splitreads(self):
         """ Split reads and then kick off assemblies once the reads are split for a target, use safe_targets for names"""
         try:
-            self.params['iteration'] += 1
             #checker_params = deepcopy(self.params)
             checker_params = {}
             for k in self.params:
                 checker_params[k] = self.params[k]
             del checker_params['mapping_dict']
             checker_params['targets'] = {}
-            iteration = self.params['iteration']
+            checker_params['iteration'] += 1
+            iteration = self.params['iteration'] + 1
             if 'PE1' in self.params and 'PE2' in self.params:
                 idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=lambda x: x.split("/")[0])
                 idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=lambda x: x.split("/")[0])
@@ -368,7 +392,7 @@ class Mapper(Base):
                 assembly_params['target_dir'] = target_dir
                 assembly_params['iteration'] = iteration
                 assembly_params['last_assembly'] = False
-                assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles', 'cdna', 'rip']
+                assembler_keys = ['sample', 'numcycles']
                 for k in assembler_keys:
                     assembly_params[k] = self.params[k]
                 cur_reads = checker_params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
@@ -376,7 +400,7 @@ class Mapper(Base):
 
                 #Turn off URT in situations where this will be the last iteration due to readcounts:
 
-                if cur_reads <= previous_reads and iteration > 2 or iteration >= self.universals['numcycles']:
+                if cur_reads <= previous_reads and iteration > 2 or iteration >= self.params['numcycles']:
                     logger.info("Sample: %s target: %s iteration: %s Setting last_assembly to True" % (self.params['sample'], target, self.params['iteration']))
                     assembly_params['last_assembly'] = True
 
@@ -396,7 +420,7 @@ class Mapper(Base):
                     self.job_q.put(Assembler(assembly_params).to_dict())
 
             logger.info("------------------------------------")
-            logger.info("| Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
+            logger.info("| Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], self.params['numcycles']))
             logger.info("------------------------------------")
             if 'PE1' in self.params and 'PE2' in self.params:
                 idx_PE1.close()

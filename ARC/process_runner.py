@@ -18,6 +18,8 @@ from Queue import Empty
 from multiprocessing import Process
 from ARC import logger
 from ARC import exceptions
+from ARC import Runner
+import traceback
 # from ARC.runners import Assembler
 # from ARC.runners import AssemblyChecker
 # from ARC.runners import Mapper
@@ -26,13 +28,13 @@ from ARC import exceptions
 
 
 class ProcessRunner(Process):
-    def __init__(self, ident, pq):
+    def __init__(self, proc, pq):
         super(ProcessRunner, self).__init__()
         self.pq = pq
         self.job_q = pq.job_q
         self.result_q = pq.result_q
         self.finished = pq.finished
-        self.ident = ident
+        self.proc = proc
         self.universals = pq.universals
         #self.numjobs = 0
         self.retired = False
@@ -50,11 +52,11 @@ class ProcessRunner(Process):
         # Begin the run
         job = item['runner']
         logger.debug("[%s] Processing: %s" % (self.name, item['message']))
+
         # Temporary hack
         job.set(self.pq)
-        #self.numjobs += 1
-        job.start()
-        # return job.run()
+
+        return job.run()
 
     def run(self):
         """
@@ -68,16 +70,26 @@ class ProcessRunner(Process):
             try:
                 time.sleep(sleeptime)
                 if not self.retired:
-                    self.launch()
-                    self.result_q.put({"status": 0, "process": self.name})
+                    retval = self.launch()
                     sleeptime = 0
 
-            except exceptions.RerunnableError as e:
-                logger.warn("[%s] A job needs to be rerun: %s" % (self.name, e))
-                self.result_q.put({"status": 1, "process": self.name})
-            except exceptions.FatalError as e:
-                logger.error("[%s] A fatal error occured: %s" % (self.name, e))
-                self.result_q.put({"status": 2, "process": self.name})
+                    if retval == Runner.FATALERROR:
+                        logger.error("[%s] A fatal error occured" % (self.name))
+                        self.result_q.put({"status": 2, "process": self.name})
+                    elif retval == Runner.RERUNERROR:
+                        logger.warn("[%s] A job needs to be rerun" % (self.name))
+                        self.result_q.put({"status": 1, "process": self.name})
+                    elif retval == Runner.TIMEOUTERROR:
+                        self.result_q.put({"status": 5, "process": self.name})
+                    else:
+                        self.result_q.put({"status": 0, "process": self.name})
+
+            # except exceptions.RerunnableError as e:
+            #     logger.warn("[%s] A job needs to be rerun: %s" % (self.name, e))
+            #     self.result_q.put({"status": 1, "process": self.name})
+            # except exceptions.FatalError as e:
+            #     logger.error("[%s] A fatal error occured: %s" % (self.name, e))
+            #     self.result_q.put({"status": 2, "process": self.name})
             except Empty:
                 # Since we aren't allowing the process to exit until the spawner
                 # don't report the status if we are already done
@@ -92,17 +104,17 @@ class ProcessRunner(Process):
                 sys.exit()
             except Exception as e:
                 logger.error("An unhandled exception occured")
-                self.result_q.put({"status": 2, "process": self.name})
+                print "".join(traceback.format_exception(*sys.exc_info()))
                 raise e
 
     def done(self):
-        self.finished[self.ident] = 1
+        self.finished[self.proc] = 1
 
     def not_done(self):
-        self.finished[self.ident] = 0
+        self.finished[self.proc] = 0
 
     def is_done(self):
-        if self.finished[self.ident] == 1:
+        if self.finished[self.proc] == 1:
             return True
         else:
             return False

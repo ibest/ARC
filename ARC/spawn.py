@@ -33,7 +33,7 @@ class Spawn:
         # self.job_q = multiprocessing.Queue()
         # self.result_q = multiprocessing.Queue()
         # self.finished = multiprocessing.Array('i', [0] * self.nprocs)
-        self.pq = ProcessQueue()
+        self.pq = ProcessQueue(self.nprocs)
 
         # Add the universals to the process queue
         self.pq.add_universals(universals)
@@ -56,7 +56,7 @@ class Spawn:
             if 'SE' in s:
                 mapper_params['SE'] = s['SE']
 
-            mapper = Mapper(params)
+            mapper = Mapper(mapper_params)
             self.pq.job_q.put(mapper.to_dict())
 
     def run(self):
@@ -71,6 +71,7 @@ class Spawn:
 
         status_ok = 0
         status_rerun = 0
+        status_timeout = 0
         sleeptime = 0.1
         while True:
             try:
@@ -98,10 +99,10 @@ class Spawn:
                 elif result['status'] == 4:
                     logger.debug("%s worker needs to be retired" % (
                         result['process']))
-                    self.retire_worker(
-                        workers,
-                        result['process'],
-                        self.pq)
+                elif result['status'] == 5:
+                    logger.debug("A subprocess timed out on %s" % (
+                        result['process']))
+                    status_timeout += 1
                 else:
                     logger.error("Unknown state returned from %s" % (
                         result['process']))
@@ -131,6 +132,7 @@ class Spawn:
 
         logger.info("%d processes returned ok" % (status_ok))
         logger.info("%d processes had to be rerun" % (status_rerun))
+        logger.info("%d processes timed out" % (status_timeout))
         self.kill_workers(workers)
 
     def kill_workers(self, workers):

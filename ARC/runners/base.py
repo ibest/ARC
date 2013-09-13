@@ -16,18 +16,23 @@ from ARC import FatalError
 from ARC import TimeoutError
 from ARC import RerunnableError
 from ARC import SubprocessError
-# from ARC import Job
+from ARC import Runner
 import os
 import time
 import subprocess
 import signal
 import sys
 import logging
+import traceback
 
 
 class Base:
     def __init__(self, params):
         self.params = params
+        self.loglevel = logger.level()
+
+    def delete(self):
+        del self.params
 
     # def queue(self, job_q):
     #     self.job_q = job_q
@@ -38,42 +43,11 @@ class Base:
         self.universals = pq.universals
         self.job_q = pq.job_q
 
-    # def run(self):
-    #     try:
-    #         self.setup()
-    #         self.execute()
-    #         retval = Job.OK
-    #         self.run_on_exit_ok()
-    #     except TimeoutError as exc:
-    #         retval = Job.TIMEOUTERROR
-    #         self.run_on_exit_error(retval)
-    #         self.warn(exc.msg)
-    #     except FatalError as exc:
-    #         retval = Job.FATALERROR
-    #         self.run_on_exit_error(retval)
-    #         self.error(exc.msg)
-    #     except RerunnableError as exc:
-    #         retval = Job.RERUNERROR
-    #         self.run_on_exit_error(retval)
-    #         self.warn(exc.msg)
-    #     except SubprocessError as exc:
-    #         retval = Job.PROCESSERROR
-    #         self.run_on_exit_error(retval)
-    #         self.warn(exc.msg)
-    #     except Exception as exc:
-    #         retval = Job.UNKNOWNERROR
-    #         self.run_on_exit_error(retval)
-    #         self.exception(exc)
-    #         self.error(exc)
-    #     except (KeyboardInterrupt, SystemExit):
-    #         retval = Job.UNKNOWNERROR
-    #     finally:
-    #         self.teardown()
-    #         self.delete()
+    def run_on_exit_ok(self):
+        pass
 
-    #     self.debug("Exiting with exitcode %d." % (retval))
-    #     sys.exit(retval)
-    #### Return job if there has been a submission?
+    def run_on_exit_error(self, retval):
+        pass
 
     def setup(self):
         pass
@@ -84,38 +58,78 @@ class Base:
     def execute(self):
         pass
 
+    def run(self):
+        try:
+            self.setup()
+            self.execute()
+            retval = Runner.OK
+            self.run_on_exit_ok()
+        except TimeoutError as exc:
+            retval = Runner.TIMEOUTERROR
+            self.run_on_exit_error(retval)
+            self.warn(exc.msg)
+        except FatalError as exc:
+            retval = Runner.FATALERROR
+            self.run_on_exit_error(retval)
+            self.error(exc.msg)
+        except RerunnableError as exc:
+            retval = Runner.RERUNERROR
+            self.run_on_exit_error(retval)
+            self.warn(exc.msg)
+        except SubprocessError as exc:
+            retval = Runner.PROCESSERROR
+            self.run_on_exit_error(retval)
+            self.warn(exc.msg)
+        except Exception as exc:
+            retval = Runner.UNKNOWNERROR
+            self.run_on_exit_error(retval)
+            print "".join(traceback.format_exception(*sys.exc_info()))
+            self.error(exc)
+            raise
+        except (KeyboardInterrupt, SystemExit):
+            retval = Runner.UNKNOWNERROR
+            raise
+        finally:
+            self.teardown()
+            self.delete()
+
+        self.debug("Exiting with exitcode %d." % (retval))
+        return retval
+
+    #### Return job if there has been a submission?
+
     def log(self, msg):
         if logger.level() == logging.DEBUG:
             name = self.name
         else:
             name = self.__class__.__name__
-        logger.info("%-12s| %s" % (name, msg))
+        logger.info("%s: %s" % (name, msg))
 
     def info(self, msg):
         if self.loglevel == logging.DEBUG:
             name = self.name
         else:
             name = self.__class__.__name__
-        logger.info("%-12s| %s" % (name, msg))
+        logger.info("%s: %s" % (name, msg))
 
     def debug(self, msg):
         if self.loglevel == logging.DEBUG:
             name = self.name
-            logger.debug("%-12s| %s" % (name, msg))
+            logger.debug("%s: %s" % (name, msg))
 
     def warn(self, msg):
         if logger.level() == logging.DEBUG:
             name = self.name
         else:
             name = self.__class__.__name__
-        logger.warn("%-12s| %s" % (name, msg))
+        logger.warn("%s: %s" % (name, msg))
 
     def error(self, msg):
         if logger.level() == logging.DEBUG:
             name = self.name
         else:
             name = self.__class__.__name__
-        logger.error("%-12s| %s" % (name, msg))
+        logger.error("%s: %s" % (name, msg))
 
     def exception(self, exc):
         logger.exception(exc)
@@ -130,95 +144,83 @@ class Base:
     #     self.loglevel = logger.level()
     #     self.globals = bq.globals
 
-    # def delete(self):
-    #     del self.jobid
-    #     del self.bq
-    #     del self.procs
-    #     del self.params
 
-    # def run_on_exit_ok(self):
-    #     pass
+    def shell(self, args, **kwargs):
+        logfile = kwargs.pop('logfile', 'log.txt')
+        description = kwargs.pop('description', 'Shell')
+        verbose = kwargs.pop('verbose', False)
+        working_dir = kwargs.pop('working_dir', '.')
+        kill_children = kwargs.pop('kill_children', False)
+        timeout = kwargs.pop('timeout', -1)
 
-    # def run_on_exit_error(self, retval):
-    #     pass
+        if verbose:
+            path = os.path.join(working_dir, logfile)
+            self.debug("Logging to %s" % (path))
+            out = open(path, 'w')
+        else:
+            out = open(os.devnull, 'w')
 
-    # def shell(self, args, **kwargs):
-    #     logfile = kwargs.pop('logfile', 'log.txt')
-    #     description = kwargs.pop('description', 'Shell')
-    #     verbose = kwargs.pop('verbose', False)
-    #     working_dir = kwargs.pop('working_dir', '.')
-    #     kill_children = kwargs.pop('kill_children', True)
-    #     timeout = kwargs.pop('timeout', 0)
+        try:
+            start = time.time()
+            self.log("%s running: %s" % (description, " ".join(args)))
+            ret = subprocess.Popen(args, stdout=out, stderr=out)
+            while ret.poll() is None:
+                now = time.time()
+                runtime = now - start
+                if timeout >= 0 and runtime >= timeout:
+                    ret.kill()
+                    msg = "%s: " % (description)
+                    msg += "Exceeded timeout. "
+                    msg += "%s killed after %d seconds" % (args[0], timeout)
+                    raise TimeoutError(msg)
+                time.sleep(0.1)
+        except OSError as exc:
+            msg = "Failed to run. \n\t$ %s\n\t! " % (" ".join(args))
+            msg += str(exc)
+            raise SubprocessError(msg)
+        except Exception as exc:
+            msg = "%s: " % (description)
+            msg += "Unhandled python error running %s " % (" ".join(args))
+            msg += "check log file.\n\t $ "
+            msg += str(exc)
+            raise Exception(msg)
+        finally:
+            out.close()
+            if 'ret' in vars() and kill_children:
+                self.kill_subprocess_children(ret.pid)
 
-    #     # self.log("Running %s in %s" % (" ".join(args), working_dir))
+        if ret.returncode != 0:
+            msg = "%s: " % (description)
+            msg += "%s returned an error. " % (args[0])
+            msg += "check log file.\n\t $ "
+            msg += " ".join(args)
+            raise SubprocessError(msg)
 
-    #     if verbose:
-    #         path = os.path.join(working_dir, logfile)
-    #         self.debug("Logging to %s" % (path))
-    #         out = open(path, 'w')
-    #     else:
-    #         out = open(os.devnull, 'w')
+    def kill_subprocess_children(self, pid):
+        """
+            Kill any remaining child processes that are left over from a shell
+            command.
 
-    #     try:
-    #         start = time.time()
-    #         ret = subprocess.Popen(args, stdout=out, stderr=out)
-    #         while ret.poll() is None:
-    #             now = time.time()
-    #             runtime = now - start
-    #             if timeout > 0 and runtime >= timeout:
-    #                 ret.kill()
-    #                 msg = "%s: " % (description)
-    #                 msg += "Exceeded timeout. "
-    #                 msg += "%s killed after %d seconds" % (args[0], timeout)
-    #                 raise TimeoutError(msg)
-    #             time.sleep(0.1)
-    #     except OSError as exc:
-    #         msg = "Failed to run. \n\t$ %s\n\t! " % (" ".join(args))
-    #         msg += str(exc)
-    #         raise SubprocessError(msg)
-    #     except Exception as exc:
-    #         msg = "%s: " % (description)
-    #         msg += "Unhandled python error running %s " % (" ".join(args))
-    #         msg += "check log file.\n\t $ "
-    #         msg += str(exc)
-    #         raise Exception(msg)
-    #     finally:
-    #         out.close()
-    #         if 'ret' in vars() and kill_children:
-    #             self.kill_subprocess_children(ret.pid)
+            Based on code from:
+            http://stackoverflow.com/questions/1191374/subprocess-with-timeout
+            http://stackoverflow.com/questions/6553423/multiple-subprocesses-with-timeouts
 
-    #     if ret.returncode != 0:
-    #         msg = "%s: " % (description)
-    #         msg += "%s returned an error. " % (args[0])
-    #         msg += "check log file.\n\t $ "
-    #         msg += " ".join(args)
-    #         raise SubprocessError(msg)
-
-    # def kill_subprocess_children(self, pid):
-    #     """
-    #         Kill any remaining child processes that are left over from a shell
-    #         command.
-
-    #         Based on code from:
-    #         http://stackoverflow.com/questions/1191374/subprocess-with-timeout
-    #         http://stackoverflow.com/questions/6553423/multiple-subprocesses-with-timeouts
-
-    #         :param pid: the pid of the parent process
-    #     """
-    #     p = subprocess.Popen(
-    #         "ps --no-headers -o pid --ppid %d" % (pid),
-    #         shell=True,
-    #         stdout=subprocess.PIPE,
-    #         stderr=subprocess.PIPE)
-    #     stdout, stderr = p.communicate()
-    #     pids = [pid]
-    #     pids.extend([int(q) for q in stdout.split()])
-    #     try:
-    #         for pid in pids:
-    #             os.kill(pid, signal.SIGKILL)
-    #     except OSError:
-    #         #print "--->OSERROR"
-    #         pass
+            :param pid: the pid of the parent process
+        """
+        p = subprocess.Popen(
+            "ps --no-headers -o pid --ppid %d" % (pid),
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        pids = [pid]
+        pids.extend([int(q) for q in stdout.split()])
+        try:
+            for pid in pids:
+                os.kill(pid, signal.SIGKILL)
+        except OSError:
+            #print "--->OSERROR"
+            pass
 
     # def submit(self, runner, **kwargs):
     #     return self.bq.submit(runner, **kwargs)

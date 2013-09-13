@@ -32,7 +32,6 @@ class App:
             params = config.params()
             # I really would like to name this 'globals' but...
             universals = config.universals()
-
             spawn = Spawn(params, universals)
 
             logger.info("Running ARC.")

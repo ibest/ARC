@@ -1,0 +1,38 @@
+## Name=value pairs:
+## reference: contains reference sequences in fasta format
+## numcycles: maximum number of times to try remapping
+## mapper: the mapper to use (blat/bowtie2)
+## assembler: the assembler to use (newbler/spades)
+## nprocs: number of cores to use
+## format: fastq or fastq, all must be the same
+## verbose: control mapping/assembly log generation (True/False)
+## urt: For Newbler, enable use read tips mode (True/False)
+## map_against_reads: On iteration 1, skip assembly, map against mapped reads (True/False)
+## assemblytimeout: kill assemblies and discard targets if they take longer than N minutes
+##
+## Columns:
+## Sample_ID:Sample_ID
+## FileName: path for fasta/fastq file
+## FileType: PE1, PE2, or SE
+## FileFormat: fasta or fastq
+# reference=./targets.fa
+# numcycles=1
+# mapper=bowtie2
+# assembler=newbler
+# nprocs=7
+# format=fastq
+# verbose=True
+# urt=True
+# map_against_reads=False
+# assemblytimeout=0
+# bowtie2_k=1
+# rip=True
+# cdna=True
+Sample_ID	FileName	FileType
+Sample1	./reads/Sample1_R1.fastq	PE1
+Sample1	./reads/Sample1_R2.fastq	PE2
+Sample1	./reads/Sample1_SE.fastq	SE
+Sample2	./reads/Sample2_R1.fastq	PE1
+Sample2	./reads/Sample2_R2.fastq	PE2
+Sample2	./reads/Sample2_SE.fastq	SE
+cDNASample ./reads/Sample3_SE.fastq	SE

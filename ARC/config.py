@@ -40,16 +40,18 @@ class Config:
     }
 
     UNIVERSALS = [
-        'safe_targets'
-        'format'
-        'verbose'
-        'assembler'
-        'mapper'
-        'urt'
-        'numcycles'
-        'max_incorporation'
-        'assemblytimeout'
-        'map_against_reads'
+        'safe_targets',
+        'format',
+        'verbose',
+        'assembler',
+        'mapper',
+        'urt',
+        'max_incorporation',
+        'assemblytimeout',
+        'map_against_reads',
+        'cdna',
+        'rip',
+        'bowtie2_k'
     ]
 
     FORMATS = ['fastq', 'fasta']
@@ -341,7 +343,15 @@ class Config:
         return self.config
 
     def params(self):
-        return {k: self.config[k] for k in self.config if k not in self.UNIVERSALS}
+        p = {}
+        for k in self.config.keys():
+            if k not in self.UNIVERSALS:
+                p[k] = self.config[k]
+        return p
 
     def universals(self):
-        return {k: self.config[k] for k in self.config if k in self.UNIVERSALS}
+        u = {}
+        for k in self.config.keys():
+            if k in self.UNIVERSALS:
+                u[k] = self.config[k]
+        return u

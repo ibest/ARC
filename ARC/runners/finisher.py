@@ -83,7 +83,7 @@ class Finisher(Base):
                 'message': 'Finisher for Sample: %s' % self.params['sample'],
                 'params': self.params}
 
-    def start(self):
+    def execute(self):
         try:
             sample = self.params['sample']
             logger.info("Sample: %s Starting finisher" % self.params['sample'])
@@ -94,7 +94,7 @@ class Finisher(Base):
             fin_outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'a')
             remap_outf = open(os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta'), 'w')
             #check whether the sample is globally finished
-            if self.params['iteration'] >= self.universals['numcycles']:
+            if self.params['iteration'] >= self.params['numcycles']:
                 sample_finished = True
             # if self.universals['map_against_reads'] and self.params['iteration'] == 1:
             #     logger.info("Sample %s: map_against_reads is set, writing all reads to contigs" % self.params['sample'])
@@ -182,7 +182,7 @@ class Finisher(Base):
             elif self.universals['assembler'] == 'spades':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "contigs.fasta")
             #add support for a special output if this is the final assembly and newbler -cdna was used:
-            if finished and self.params['cdna'] and self.universals['assembler'] == 'newbler':
+            if finished and self.universals['cdna'] and self.universals['assembler'] == 'newbler':
                 self.writeCDNAresults(target, target_folder, outf, contigf)
             elif os.path.exists(contigf):
                 i = 0

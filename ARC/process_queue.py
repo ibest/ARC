@@ -15,13 +15,14 @@ from multiprocessing import Manager
 
 
 class ProcessQueue(object):
-    def __init__(self):
+    def __init__(self, nprocs):
         """
             Initialize the queue management system.  Creates multiprocessing
             SyncManager queues for storing idle, executing and completed
             processes.  Adds locking mechanisms and a hash to store the
             running process information.
         """
+        self.nprocs = nprocs
         self.mgr = Manager()
         #Setup thread-safe shared objects
         self.job_q = self.mgr.Queue()

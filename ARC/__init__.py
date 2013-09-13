@@ -16,6 +16,7 @@ from exceptions import FatalError
 from exceptions import RerunnableError
 from exceptions import TimeoutError
 from exceptions import SubprocessError
+from runner import Runner
 from config import Config
 from process_queue import ProcessQueue
 from process_runner import ProcessRunner

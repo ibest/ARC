@@ -29,6 +29,9 @@ def setup(logfile=None, loglevel=logging.INFO):
     log_handler.setLevel(loglevel)  # Here's where
     logger.addHandler(log_handler)
 
+def level():
+    logger = multiprocessing.get_logger()
+    return logger.getEffectiveLevel()
 
 def info(message):
     logger = multiprocessing.get_logger()
@@ -48,8 +51,6 @@ def debug(message):
 def warn(message):
     logger = multiprocessing.get_logger()
     logger.warn("%s" % (message))
-
-
 
 # From:
 # http://stackoverflow.com/questions/641420/how-should-i-log-while-using-

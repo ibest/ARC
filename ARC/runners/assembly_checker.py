@@ -36,7 +36,7 @@ class AssemblyChecker(Base):
     def to_dict(self):
         return {'runner': self, 'message': 'Starting AssemblyChecker for sample %s' % self.params['sample'], 'params': self.params}
 
-    def start(self):
+    def execute(self):
         """ run through list of targets, check any that haven't finished already """
         try:
             sample = self.params['sample']

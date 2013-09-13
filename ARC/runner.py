@@ -1,0 +1,12 @@
+class Runner:
+    IDLE = 0
+    RUNNING = 1
+    RERUN = 2
+    COMPLETE = 3
+
+    OK = 0
+    FATALERROR = 255
+    TIMEOUTERROR = 249
+    RERUNERROR = 248
+    UNKNOWNERROR = 247
+    PROCESSERROR = 246
