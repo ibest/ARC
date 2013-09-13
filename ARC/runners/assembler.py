@@ -22,6 +22,7 @@ import time
 import signal
 from ARC import logger
 from ARC import FatalError
+from ARC import SubprocessError
 from ARC import Runner
 from ARC.runners import Base
 import sys
@@ -196,7 +197,7 @@ class Assembler(Base):
                 verbose=self.universals['verbose'])
 
         #Build args for runProject
-        args = ['runProject']
+        args = ['newbler']
         args += ['-cpu', '1']
         if self.params['last_assembly'] and self.universals['cdna']:
             args += ['-noace']
@@ -217,7 +218,9 @@ class Assembler(Base):
             logfile='assembly.log',
             working_dir=self.target_dir,
             verbose=self.universals['verbose'],
-            timeout=self.universals['assemblytimeout'])
+            timeout=self.universals['assemblytimeout'],
+            kill_children=True,
+            expected_exitcode=255)
 
         self.log("Sample: %s target: %s iteration: %s Assembly finished in %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
 
@@ -362,6 +365,15 @@ class Assembler(Base):
         #     outf.close()
 
     def run_on_exit_ok(self):
+        if self.universals['assembler'] == "newbler":
+            # Newbler developers in their infinite wisdom decided to have
+            # it return the exitcode 255 for everything... So we need to check
+            # to see if the fna file actually exists and then raise an exception
+            # if it does not. POS
+            fna = os.path.join(self.target_dir, 'assembly', 'assembly', '454AllContigs.fna')
+            if not os.path.exists(fna):
+                raise SubprocessError("Newbler did not create the fna file.")
+
         outf = open(os.path.join(self.target_dir, "finished"), 'w')
         outf.write("assembly_complete")
         outf.close()

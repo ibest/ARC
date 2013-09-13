@@ -238,7 +238,7 @@ class Config:
 
     def convert(self):
         # Convert minutes to seconds for assembly timeouts
-        self.config['assemblytimeout'] *= 10
+        self.config['assemblytimeout'] *= 60
 
     def setup(self):
         """

@@ -152,6 +152,7 @@ class Base:
         working_dir = kwargs.pop('working_dir', '.')
         kill_children = kwargs.pop('kill_children', False)
         timeout = kwargs.pop('timeout', -1)
+        expected_exitcode = kwargs.pop('expected_exitcode', 0)
 
         if verbose:
             path = os.path.join(working_dir, logfile)
@@ -163,7 +164,7 @@ class Base:
         try:
             start = time.time()
             self.log("%s running: %s" % (description, " ".join(args)))
-            ret = subprocess.Popen(args, stdout=out, stderr=out)
+            ret = subprocess.Popen(args, stdout=out, stderr=out, close_fds=False, shell=False)
             while ret.poll() is None:
                 now = time.time()
                 runtime = now - start
@@ -189,7 +190,7 @@ class Base:
             if 'ret' in vars() and kill_children:
                 self.kill_subprocess_children(ret.pid)
 
-        if ret.returncode != 0:
+        if ret.returncode != expected_exitcode:
             msg = "%s: " % (description)
             msg += "%s returned an error. " % (args[0])
             msg += "check log file.\n\t $ "
@@ -219,7 +220,7 @@ class Base:
             for pid in pids:
                 os.kill(pid, signal.SIGKILL)
         except OSError:
-            #print "--->OSERROR"
+            # print "--->OSERROR"
             pass
 
     # def submit(self, runner, **kwargs):

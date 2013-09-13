@@ -327,14 +327,16 @@ class Mapper(Base):
     def splitreads(self):
         """ Split reads and then kick off assemblies once the reads are split for a target, use safe_targets for names"""
         try:
+            iteration = self.params['iteration'] + 1
+
             #checker_params = deepcopy(self.params)
             checker_params = {}
             for k in self.params:
                 checker_params[k] = self.params[k]
             del checker_params['mapping_dict']
             checker_params['targets'] = {}
-            checker_params['iteration'] += 1
-            iteration = self.params['iteration'] + 1
+            checker_params['iteration'] = iteration
+            
             if 'PE1' in self.params and 'PE2' in self.params:
                 idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=lambda x: x.split("/")[0])
                 idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=lambda x: x.split("/")[0])
@@ -401,7 +403,7 @@ class Mapper(Base):
                 #Turn off URT in situations where this will be the last iteration due to readcounts:
 
                 if cur_reads <= previous_reads and iteration > 2 or iteration >= self.params['numcycles']:
-                    logger.info("Sample: %s target: %s iteration: %s Setting last_assembly to True" % (self.params['sample'], target, self.params['iteration']))
+                    logger.info("Sample: %s target: %s iteration: %s Setting last_assembly to True" % (self.params['sample'], target, iteration))
                     assembly_params['last_assembly'] = True
 
                 #properly handle the case where no reads ended up mapping for the PE or SE inputs:
@@ -412,7 +414,7 @@ class Mapper(Base):
                     assembly_params['assembly_SE'] = os.path.join(target_dir, "SE." + self.universals['format'])
 
                 #All reads have been written at this point, add an assembly to the queue:
-                logger.info("Sample: %s target: %s iteration: %s Split %s reads in %s seconds" % (self.params['sample'], target, self.params['iteration'], len(reads), time.time() - startT))
+                logger.info("Sample: %s target: %s iteration: %s Split %s reads in %s seconds" % (self.params['sample'], target, iteration, len(reads), time.time() - startT))
 
                 #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
                 if PEs + SEs > 0:
