@@ -37,8 +37,8 @@ pp.pprint(config)
 
 
 ######### Blat Mapper tests ##########
-print "\n\n-------------Testing ARC.mapper MapperRunner()-------------"
-from ARC.mapper import MapperRunner
+print "\n\n-------------Testing ARC.mapper Mapper()-------------"
+from ARC.mapper import Mapper
 
 #Set up params for calling the mapper:
 blat_params = []
@@ -63,18 +63,18 @@ for sample in config['Samples']:
         params['SE'] = s['SE']
     blat_params.append(params)
 
-#Instantiate MapperRunner class objects:
-blat_mapper1 = MapperRunner(blat_params[0])
-blat_mapper2 = MapperRunner(blat_params[1])
+#Instantiate Mapper class objects:
+blat_mapper1 = Mapper(blat_params[0])
+blat_mapper2 = Mapper(blat_params[1])
 
 #Test to_dict()
-print "\n\n-------------Testing MapperRunner class objects: to_dict()-------------"
+print "\n\n-------------Testing Mapper class objects: to_dict()-------------"
 pp.pprint(blat_mapper1.to_dict())
 pp.pprint(blat_mapper2.to_dict())
 
 #Test start() which runs:
 # start() --> run_blat() --> PSL_to_dict() --> splitreads()
-print "\n\n-------------Testing MapperRunner: start()-------------"
+print "\n\n-------------Testing Mapper: start()-------------"
 
 assemblyrunners1 = blat_mapper1.start()
 assemblerunners2 = blat_mapper2.start()

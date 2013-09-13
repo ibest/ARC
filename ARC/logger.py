@@ -14,15 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import sys
-import logging, multiprocessing
+import logging
+import multiprocessing
 
 
-def setup(logfile=None, loglevel=logging.DEBUG):
-    # Set up a multiprocessing logger to hopefully log from all N workers in a safe and simultaneous fashion:
+def setup(logfile=None, loglevel=logging.INFO):
+    # Set up a multiprocessing logger to hopefully log from all N workers in a
+    # safe and simultaneous fashion:
     logger = multiprocessing.get_logger()
     logger.setLevel(loglevel)
     log_handler = logging.StreamHandler(sys.stdout)
-    log_handler.setFormatter(logging.Formatter('[%(asctime)s %(levelname)s %(process)s] %(message)s'))
+    log_handler.setFormatter(logging.Formatter(
+        '[%(asctime)s %(levelname)s %(process)s] %(message)s'))
     log_handler.setLevel(loglevel)  # Here's where
     logger.addHandler(log_handler)
 
@@ -49,7 +52,8 @@ def warn(message):
 
 
 # From:
-# http://stackoverflow.com/questions/641420/how-should-i-log-while-using-multiprocessing-in-python/894284#894284
+# http://stackoverflow.com/questions/641420/how-should-i-log-while-using-
+# multiprocessing-in-python/894284#894284
 # Modified for StreamHandler (instead of RotatingFileHandler)
 #from logging.handlers import RotatingFileHandler
 #from logging.handlers import StreamHandler

@@ -26,7 +26,7 @@ import traceback
 import sys
 
 
-class AssemblyRunner:
+class Assembler:
     """
     This class represents assembly jobs and handles running assemblies.
     required params:
@@ -35,8 +35,8 @@ class AssemblyRunner:
     def __init__(self, params):
         self.params = params
 
-    def queue(self, ref_q):
-        self.ref_q = ref_q
+    def queue(self, job_q):
+        self.job_q = job_q
 
     def to_dict(self):
         return {'runner': self,
