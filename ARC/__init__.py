@@ -17,7 +17,7 @@ from exceptions import RerunnableError
 from exceptions import TimeoutError
 from exceptions import SubprocessError
 from config import Config
+from process_queue import ProcessQueue
 from process_runner import ProcessRunner
 from spawn import Spawn
 from app import App
-

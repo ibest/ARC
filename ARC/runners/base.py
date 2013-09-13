@@ -26,10 +26,17 @@ import logging
 
 
 class Base:
-    def __init__(self, params, gvars, jobq):
+    def __init__(self, params):
         self.params = params
-        self.gvars = gvars
-        self.jobq = jobq
+
+    # def queue(self, job_q):
+    #     self.job_q = job_q
+
+    # Temporary hack while I test out the globals.  This will change once
+    # I set up the new mgr dict.
+    def set(self, pq):
+        self.universals = pq.universals
+        self.job_q = pq.job_q
 
     # def run(self):
     #     try:

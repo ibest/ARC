@@ -26,18 +26,20 @@ from ARC import exceptions
 
 
 class ProcessRunner(Process):
-    def __init__(self, job_q, result_q, finished, proc):
+    def __init__(self, ident, pq):
         super(ProcessRunner, self).__init__()
-        self.job_q = job_q
-        self.result_q = result_q
-        self.finished = finished
-        self.proc = proc
+        self.pq = pq
+        self.job_q = pq.job_q
+        self.result_q = pq.result_q
+        self.finished = pq.finished
+        self.ident = ident
+        self.universals = pq.universals
         #self.numjobs = 0
         self.retired = False
 
     def launch(self):
         # Moving this up into launch to see if running outside the scope of the
-        # run function will release any reverence to the object and help the
+        # run function will release any reference to the object and help the
         # garbage collecter clean up.
         item = self.job_q.get_nowait()
         # If we made it this far, we have found something on the
@@ -48,7 +50,8 @@ class ProcessRunner(Process):
         # Begin the run
         job = item['runner']
         logger.debug("[%s] Processing: %s" % (self.name, item['message']))
-        job.queue(self.job_q)
+        # Temporary hack
+        job.set(self.pq)
         #self.numjobs += 1
         job.start()
         # return job.run()
@@ -93,13 +96,13 @@ class ProcessRunner(Process):
                 raise e
 
     def done(self):
-        self.finished[self.proc] = 1
+        self.finished[self.ident] = 1
 
     def not_done(self):
-        self.finished[self.proc] = 0
+        self.finished[self.ident] = 0
 
     def is_done(self):
-        if self.finished[self.proc] == 1:
+        if self.finished[self.ident] == 1:
             return True
         else:
             return False

@@ -22,22 +22,17 @@ import time
 import signal
 from ARC import logger
 from ARC import exceptions
+from ARC.runners import Base
 import traceback
 import sys
 
 
-class Assembler:
+class Assembler(Base):
     """
     This class represents assembly jobs and handles running assemblies.
     required params:
         assembler, sample, target, PE1 and PE2 and/or SE, target_dir
     """
-    def __init__(self, params):
-        self.params = params
-
-    def queue(self, job_q):
-        self.job_q = job_q
-
     def to_dict(self):
         return {'runner': self,
                 'message': 'Assembler for Sample: %s Target: %s' % (self.params['sample'], self.params['target']),
@@ -47,14 +42,14 @@ class Assembler:
         try:
             if not('assembler' in self.params):
                 raise exceptions.FatalError("assembler not defined in params")
-            if self.params['map_against_reads'] and self.params['iteration'] == 1:
+            if self.universals['map_against_reads'] and self.params['iteration'] == 1:
                 self.RunMapAgainstReads()
-            elif self.params['assembler'] == 'newbler':
+            elif self.universals['assembler'] == 'newbler':
                 self.RunNewbler()
-            elif self.params['assembler'] == 'spades':
+            elif self.universals['assembler'] == 'spades':
                 self.RunSpades()
             else:
-                raise exceptions.FatalError("Assembler %s isn't recognized." % self.params['assembler'])
+                raise exceptions.FatalError("Assembler %s isn't recognized." % self.universals['assembler'])
         except:
             print "".join(traceback.format_exception(*sys.exc_info()))
             raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
@@ -116,7 +111,7 @@ class Assembler:
         failed = False
 
         #determine whether to pipe output to a file or /dev/null
-        if self.params['verbose']:
+        if self.universals['verbose']:
             out = open(os.path.join(self.params['target_dir'], "assembly.log"), 'w')
         else:
             out = open(os.devnull, 'w')
@@ -157,7 +152,7 @@ class Assembler:
             args += ['-noace']
         else:
             args += ['-nobig']
-        if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
+        if self.universals['urt'] and self.params['iteration'] < self.universals['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
         if self.params['rip']:
@@ -170,7 +165,7 @@ class Assembler:
             ret = subprocess.Popen(args, stdout=out, stderr=out)
             pid = ret.pid
             while ret.poll() is None:
-                if time.time() - start > self.params['assemblytimeout']:
+                if time.time() - start > self.universals['assemblytimeout']:
                     self.kill_process_children(pid)
                     logger.warn("Sample: %s target: %s iteration: %s Killing assembly after %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
                     killed = True
@@ -231,14 +226,14 @@ class Assembler:
 
         #Build args for assembler call
         args = ['spades.py', '-t', '1']
-        if self.params['format'] == 'fasta':
+        if self.universals['format'] == 'fasta':
             args.append('--only-assembler')  # spades errors on read correction if the input isn't fastq
         if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
             args += ['-1', self.params['assembly_PE1'], '-2', self.params['assembly_PE2']]
         if 'assembly_SE' in self.params:
             args += ['-s', self.params['assembly_SE']]
         args += ['-o', os.path.join(self.params['target_dir'], 'assembly')]
-        if self.params['verbose']:
+        if self.universals['verbose']:
             out = open(os.path.join(self.params['target_dir'], "assembly.log"), 'w')
         else:
             out = open(os.devnull, 'w')
@@ -253,7 +248,7 @@ class Assembler:
             ret = subprocess.Popen(args, stdout=out, stderr=out)
             pid = ret.pid
             while ret.poll() is None:
-                if time.time() - start > self.params['assemblytimeout']:
+                if time.time() - start > self.universals['assemblytimeout']:
                     ret.kill()
                     killed = True
                     logger.warn("Sample: %s target: %s Assembly killed after %s seconds." % (sample, target, time.time() - start))

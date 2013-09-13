@@ -15,10 +15,10 @@
 # limitations under the License.
 
 import time
-import multiprocessing
 #import os
 #from copy import deepcopy
 from Queue import Empty
+from ARC import ProcessQueue
 from ARC import ProcessRunner
 from ARC import logger
 from ARC import exceptions
@@ -26,45 +26,45 @@ from ARC.runners import Mapper
 
 
 class Spawn:
-    def __init__(self, config):
-        self.nprocs = int(config['nprocs'])
+    def __init__(self, params, universals):
+        self.nprocs = int(params['nprocs'])
 
         #Setup thread-safe shared objects
-        self.job_q = multiprocessing.Queue()
-        self.result_q = multiprocessing.Queue()
-        self.finished = multiprocessing.Array('i', [0] * self.nprocs)
+        # self.job_q = multiprocessing.Queue()
+        # self.result_q = multiprocessing.Queue()
+        # self.finished = multiprocessing.Array('i', [0] * self.nprocs)
+        self.pq = ProcessQueue()
+
+        # Add the universals to the process queue
+        self.pq.add_universals(universals)
 
         # Get the number of samples from the configuration
         logger.info("Submitting initial mapping runs.")
 
-        for sample in config['Samples']:
-            s = config['Samples'][sample]
-            params = {}
-            for k in config:
-                params[k] = config[k]
-            params['working_dir'] = s['working_dir']
-            params['finished_dir'] = s['finished_dir']
-            params['sample'] = sample
+        for sample in params['Samples']:
+            s = params['Samples'][sample]
+            mapper_params = {}
+            for k in params:
+                mapper_params[k] = params[k]
+            mapper_params['working_dir'] = s['working_dir']
+            mapper_params['finished_dir'] = s['finished_dir']
+            mapper_params['sample'] = sample
 
             if 'PE1' in s and 'PE2' in s:
-                params['PE1'] = s['PE1']
-                params['PE2'] = s['PE2']
+                mapper_params['PE1'] = s['PE1']
+                mapper_params['PE2'] = s['PE2']
             if 'SE' in s:
-                params['SE'] = s['SE']
+                mapper_params['SE'] = s['SE']
 
             mapper = Mapper(params)
-            self.job_q.put(mapper.to_dict())
+            self.pq.job_q.put(mapper.to_dict())
 
     def run(self):
         logger.info("Starting...")
         logger.debug("Setting up workers.")
         workers = []
         for i in range(self.nprocs):
-            worker = ProcessRunner(
-                self.job_q,
-                self.result_q,
-                self.finished,
-                i)
+            worker = ProcessRunner(i, self.pq)
             worker.daemon = False
             workers.append(worker)
             worker.start()
@@ -75,7 +75,7 @@ class Spawn:
         while True:
             try:
                 time.sleep(sleeptime)
-                result = self.result_q.get_nowait()
+                result = self.pq.result_q.get_nowait()
                 #print "Spawner, setting sleeptime to %s" % sleeptime
                 sleeptime = 0
                 if result['status'] == 0:
@@ -101,9 +101,7 @@ class Spawn:
                     self.retire_worker(
                         workers,
                         result['process'],
-                        self.job_q,
-                        self.result_q,
-                        self.finished)
+                        self.pq)
                 else:
                     logger.error("Unknown state returned from %s" % (
                         result['process']))
@@ -140,13 +138,13 @@ class Spawn:
             logger.debug("Shutting down %s" % (worker.name))
             worker.terminate()
 
-    def retire_worker(self, workers, process, job_q, result_q, finished):
+    def retire_worker(self, workers, process, pq):
         for i in range(len(workers)):
             worker = workers[i]
             if worker.name == process:
                 logger.info("Terminating working %s" % worker.name)
                 worker.terminate()
-                worker = ProcessRunner(job_q, result_q, finished, i)
+                worker = ProcessRunner(i, pq)
                 worker.daemon = False
                 workers[i] = worker
                 worker.start()
@@ -155,11 +153,11 @@ class Spawn:
     def not_done(self):
         logger.debug("Checking to see if workers are done")
         done = 0
-        for i in self.finished:
+        for i in self.pq.finished:
             done += i
         logger.debug("Active Workers: %d" % (
-            len(self.finished) - done))
-        return done < len(self.finished)
+            len(self.pq.finished) - done))
+        return done < len(self.pq.finished)
 
     def not_empty(self, q):
         return not q.empty()

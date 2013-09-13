@@ -19,12 +19,13 @@ import os
 from Bio import SeqIO
 from ARC import logger
 from ARC import exceptions
+from ARC.runners import Base
 from collections import Counter
 import traceback
 import sys
 
 
-class Finisher:
+class Finisher(Base):
     """
     Iterate through all targets, pull out the assembled contigs, rename
     them to:
@@ -77,13 +78,6 @@ class Finisher:
         (there is no expectation of an assembly having been done in this case)
 
     """
-
-    def __init__(self, params):
-        self.params = params
-
-    def queue(self, job_q):
-        self.job_q = job_q
-
     def to_dict(self):
         return {'runner': self,
                 'message': 'Finisher for Sample: %s' % self.params['sample'],
@@ -100,9 +94,9 @@ class Finisher:
             fin_outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'a')
             remap_outf = open(os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta'), 'w')
             #check whether the sample is globally finished
-            if self.params['iteration'] >= self.params['numcycles']:
+            if self.params['iteration'] >= self.universals['numcycles']:
                 sample_finished = True
-            # if self.params['map_against_reads'] and self.params['iteration'] == 1:
+            # if self.universals['map_against_reads'] and self.params['iteration'] == 1:
             #     logger.info("Sample %s: map_against_reads is set, writing all reads to contigs" % self.params['sample'])
             #     map_against_reads = True
 
@@ -111,7 +105,7 @@ class Finisher:
             for target_folder in self.params['targets']:
                 target_map_against_reads = False
                 safe_target = target_folder.split("/")[-1]  # get last element of path name
-                target = self.params['safe_targets'][safe_target]
+                target = self.universals['safe_targets'][safe_target]
                 logger.info("Sample: %s target: %s finishing target.." % (self.params['sample'], target))
                 finishedf = open(os.path.join(target_folder, 'finished'), 'r')
                 l = finishedf.readline().strip().split()[0]
@@ -136,7 +130,7 @@ class Finisher:
                 else:
                     #Check read counts and retire target, or send it back for re-mapping depending on mapped reads
                     if iteration > 1 and cur_reads != 0 and previous_reads != 0:
-                        if cur_reads / previous_reads > self.params['max_incorporation']:
+                        if cur_reads / previous_reads > self.universals['max_incorporation']:
                             logger.info("Sample %s target %s hit a repetitive region, no more mapping will be done" % (self.params['sample'], target))
                             self.write_target(target, target_folder, outf=fin_outf, finished=True)
                         elif cur_reads <= previous_reads and iteration > 2:
@@ -183,12 +177,12 @@ class Finisher:
         # assembler crashed and no contig file was created
         # --> write reads as contigs
         if map_against_reads is False and killed is False:
-            if self.params['assembler'] == 'newbler':
+            if self.universals['assembler'] == 'newbler':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "assembly", "454AllContigs.fna")
-            elif self.params['assembler'] == 'spades':
+            elif self.universals['assembler'] == 'spades':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "contigs.fasta")
             #add support for a special output if this is the final assembly and newbler -cdna was used:
-            if finished and self.params['cdna'] and self.params['assembler'] == 'newbler':
+            if finished and self.params['cdna'] and self.universals['assembler'] == 'newbler':
                 self.writeCDNAresults(target, target_folder, outf, contigf)
             elif os.path.exists(contigf):
                 i = 0
@@ -206,16 +200,16 @@ class Finisher:
             i = 0
             logger.info("Sample %s target %s: Writing reads as contigs." % (self.params['sample'], target))
             if 'PE1' in self.params and 'PE2' in self.params:
-                inf_PE1n = os.path.join(target_folder, "PE1." + self.params['format'])
-                inf_PE2n = os.path.join(target_folder, "PE2." + self.params['format'])
+                inf_PE1n = os.path.join(target_folder, "PE1." + self.universals['format'])
+                inf_PE2n = os.path.join(target_folder, "PE2." + self.universals['format'])
                 if os.path.exists(inf_PE1n) and os.path.exists(inf_PE2n):
                     inf_PE1 = open(inf_PE1n, 'r')
                     inf_PE2 = open(inf_PE2n, 'r')
-                    for r in SeqIO.parse(inf_PE1, self.params['format']):
+                    for r in SeqIO.parse(inf_PE1, self.universals['format']):
                         i += 1
                         r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Read%04d" % i
                         SeqIO.write(r, outf, "fasta")
-                    for r in SeqIO.parse(inf_PE2, self.params['format']):
+                    for r in SeqIO.parse(inf_PE2, self.universals['format']):
                         i += 1
                         r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Read%04d" % i
                         SeqIO.write(r, outf, "fasta")
@@ -223,10 +217,10 @@ class Finisher:
                     inf_PE2.close()
 
             if 'SE' in self.params:
-                inf_SEn = os.path.join(target_folder, "SE." + self.params['format'])
+                inf_SEn = os.path.join(target_folder, "SE." + self.universals['format'])
                 if os.path.exists(inf_SEn):
                     inf_SE = open(inf_SEn, 'r')
-                for r in SeqIO.parse(inf_SE, self.params['format']):
+                for r in SeqIO.parse(inf_SE, self.universals['format']):
                     i += 1
                     r.name = r.id = self.params['sample'] + "_:_" + target + "_:_" + "Read%04d" % i
                     SeqIO.write(r, outf, "fasta")
@@ -235,32 +229,32 @@ class Finisher:
         if finished or killed:
             #Write reads:
             if 'PE1' in self.params and 'PE2' in self.params:
-                inf_PE1n = os.path.join(target_folder, "PE1." + self.params['format'])
-                inf_PE2n = os.path.join(target_folder, "PE2." + self.params['format'])
+                inf_PE1n = os.path.join(target_folder, "PE1." + self.universals['format'])
+                inf_PE2n = os.path.join(target_folder, "PE2." + self.universals['format'])
                 if os.path.exists(inf_PE1n) and os.path.exists(inf_PE2n):
                     inf_PE1 = open(inf_PE1n, 'r')
                     inf_PE2 = open(inf_PE2n, 'r')
 
-                    outf_PE1 = open(os.path.join(self.params['finished_dir'], "PE1." + self.params['format']), 'a')
-                    outf_PE2 = open(os.path.join(self.params['finished_dir'], "PE2." + self.params['format']), 'a')
+                    outf_PE1 = open(os.path.join(self.params['finished_dir'], "PE1." + self.universals['format']), 'a')
+                    outf_PE2 = open(os.path.join(self.params['finished_dir'], "PE2." + self.universals['format']), 'a')
 
-                    for r in SeqIO.parse(inf_PE1, self.params['format']):
+                    for r in SeqIO.parse(inf_PE1, self.universals['format']):
                         r.description = self.params['sample'] + "_:_" + target
-                        SeqIO.write(r, outf_PE1, self.params['format'])
-                    for r in SeqIO.parse(inf_PE2, self.params['format']):
+                        SeqIO.write(r, outf_PE1, self.universals['format'])
+                    for r in SeqIO.parse(inf_PE2, self.universals['format']):
                         r.description = self.params['sample'] + "_:_" + target
-                        SeqIO.write(r, outf_PE2, self.params['format'])
+                        SeqIO.write(r, outf_PE2, self.universals['format'])
                     outf_PE1.close()
                     outf_PE2.close()
 
             if 'SE' in self.params:
-                inf_SEn = os.path.join(target_folder, "SE." + self.params['format'])
+                inf_SEn = os.path.join(target_folder, "SE." + self.universals['format'])
                 if os.path.exists(inf_SEn):
                     inf_SE = open(inf_SEn, 'r')
-                    outf_SE = open(os.path.join(self.params['finished_dir'], "SE." + self.params['format']), 'a')
-                    for r in SeqIO.parse(inf_SE, self.params['format']):
+                    outf_SE = open(os.path.join(self.params['finished_dir'], "SE." + self.universals['format']), 'a')
+                    for r in SeqIO.parse(inf_SE, self.universals['format']):
                         r.description = self.params['sample'] + "_:_" + target
-                        SeqIO.write(r, outf_SE, self.params['format'])
+                        SeqIO.write(r, outf_SE, self.universals['format'])
                     outf_SE.close()
         #Cleanup temporary assembly, and reads:
         #os.system("rm -rf %s" % target_folder)
@@ -279,7 +273,7 @@ class Finisher:
         4) Estimate of isotig specific reads.
 
         """
-        if self.params['assembler'] == 'newbler':
+        if self.universals['assembler'] == 'newbler':
             contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "assembly", "454AllContigs.fna")
             isotigsf = os.path.join(self.params['working_dir'], target_folder, "assembly", "assembly", "454IsotigsLayout.txt")
             readstatusf = os.path.join(self.params['working_dir'], target_folder, "assembly", "assembly", "454ReadStatus.txt")

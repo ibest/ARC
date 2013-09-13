@@ -21,24 +21,18 @@ import traceback
 # from copy import deepcopy
 from ARC import exceptions
 from ARC import logger
+from ARC.runners import Base
 from ARC.runners import Finisher
 # from ARC.runner import AssemblyChecker
 
 
-class AssemblyChecker:
+class AssemblyChecker(Base):
     """
     Checks for "finished" files in each of the assembly folders. Set values of params['assemblies'] to True for
     all finished assemblies. If all assemblies are finished, kick off the finisher process.
     required params:
         'targets': dictionary, keys are paths, values are boolean
     """
-
-    def __init__(self, params):
-        self.params = params
-
-    def queue(self, job_q):
-        self.job_q = job_q
-
     def to_dict(self):
         return {'runner': self, 'message': 'Starting AssemblyChecker for sample %s' % self.params['sample'], 'params': self.params}
 

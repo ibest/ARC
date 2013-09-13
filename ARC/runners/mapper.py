@@ -22,13 +22,14 @@ from Bio import SeqIO
 from ARC import exceptions
 from ARC import logger
 #from ARC import Assembler
+from ARC.runners import Base
 from ARC.runners import Assembler
 from ARC.runners import AssemblyChecker
 import traceback
 import sys
 
 
-class Mapper:
+class Mapper(Base):
     """
     This calss handles mapping jobs, as well as converting map results into a text version of a dict.
     required params:
@@ -36,12 +37,6 @@ class Mapper:
     params added:
         mapping_dict
     """
-    def __init__(self, params):
-        self.params = params
-
-    def queue(self, job_q):
-        self.job_q = job_q
-
     def to_dict(self):
         return {'runner': self, 'message': 'Sample: %s Starting mapper.' % self.params['sample'], 'params': self.params}
 
@@ -49,10 +44,10 @@ class Mapper:
         try:
             if not('mapper' in self.params):
                 raise exceptions.FatalError("mapper not defined in params")
-            if self.params['mapper'] == 'bowtie2':
+            if self.universals['mapper'] == 'bowtie2':
                 logger.info("Sample: %s Running bowtie2." % self.params['sample'])
                 self.run_bowtie2()
-            if self.params['mapper'] == 'blat':
+            if self.universals['mapper'] == 'blat':
                 logger.info("Sample: %s Running blat." % self.params['sample'])
                 self.run_blat()
             #Mapping is done, run splitreads:
@@ -120,7 +115,7 @@ class Mapper:
         args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
         if self.params['bowtie2_k'] > 1:
             args += ['-k', str(self.params['bowtie2_k'])]
-        if self.params['format'] == 'fasta':
+        if self.universals['format'] == 'fasta':
             args += ['-f']
         if 'PE1' in self.params and 'PE2' in self.params:
             args += ['-1', self.params['PE1'], '-2', self.params['PE2']]
@@ -181,7 +176,7 @@ class Mapper:
 
         #Do blat mapping
         args = ['blat', self.params['reference'], os.path.join(working_dir, 'reads.txt')]
-        if self.params['format'] == 'fastq':
+        if self.universals['format'] == 'fastq':
             args.append('-fastq')
         if 'fastmap' in self.params:
             args.append('-fastMap')
@@ -326,7 +321,7 @@ class Mapper:
             for target in self.params['mapping_dict']:
                 startT = time.time()
                 #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
-                target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
+                target_dir = os.path.join(self.params['working_dir'], self.universals['safe_targets'][target])
                 if target not in checker_params['readcounts']:
                     checker_params['readcounts'][target] = Counter()
                 if os.path.exists(target_dir):
@@ -342,10 +337,10 @@ class Mapper:
 
                 SEs = PEs = 0
                 if 'PE1' and 'PE2' in self.params:
-                    outf_PE1 = open(os.path.join(target_dir, "PE1." + self.params['format']), 'w')
-                    outf_PE2 = open(os.path.join(target_dir, "PE2." + self.params['format']), 'w')
+                    outf_PE1 = open(os.path.join(target_dir, "PE1." + self.universals['format']), 'w')
+                    outf_PE2 = open(os.path.join(target_dir, "PE2." + self.universals['format']), 'w')
                 if 'SE' in self.params:
-                    outf_SE = open(os.path.join(target_dir, "SE." + self.params['format']), 'w')
+                    outf_SE = open(os.path.join(target_dir, "SE." + self.universals['format']), 'w')
                 for readID in reads:
                     if 'PE1' in self.params and readID in idx_PE1:
                         read1 = idx_PE1[readID]
@@ -353,13 +348,13 @@ class Mapper:
                         new_readID = readID.replace(":", "_") + ":0:0:0:0#0/"
                         read1.id = read1.name = new_readID + "1"
                         read2.id = read2.name = new_readID + "2"
-                        SeqIO.write(read1, outf_PE1, self.params['format'])
-                        SeqIO.write(read2, outf_PE2, self.params['format'])
+                        SeqIO.write(read1, outf_PE1, self.universals['format'])
+                        SeqIO.write(read2, outf_PE2, self.universals['format'])
                         PEs += 1
                     elif 'SE' in self.params and readID in idx_SE:
                         read1 = idx_SE[readID]
                         read1.id = read1.name = readID.replace(":", "_") + ":0:0:0:0#0/"
-                        SeqIO.write(read1, outf_SE, self.params['format'])
+                        SeqIO.write(read1, outf_SE, self.universals['format'])
                         SEs += 1
                 if 'PE1' in self.params and 'PE2' in self.params:
                     outf_PE1.close()
@@ -381,16 +376,16 @@ class Mapper:
 
                 #Turn off URT in situations where this will be the last iteration due to readcounts:
 
-                if cur_reads <= previous_reads and iteration > 2 or iteration >= self.params['numcycles']:
+                if cur_reads <= previous_reads and iteration > 2 or iteration >= self.universals['numcycles']:
                     logger.info("Sample: %s target: %s iteration: %s Setting last_assembly to True" % (self.params['sample'], target, self.params['iteration']))
                     assembly_params['last_assembly'] = True
 
                 #properly handle the case where no reads ended up mapping for the PE or SE inputs:
                 if PEs > 0:
-                    assembly_params['assembly_PE1'] = os.path.join(target_dir, "PE1." + self.params['format'])
-                    assembly_params['assembly_PE2'] = os.path.join(target_dir, "PE2." + self.params['format'])
+                    assembly_params['assembly_PE1'] = os.path.join(target_dir, "PE1." + self.universals['format'])
+                    assembly_params['assembly_PE2'] = os.path.join(target_dir, "PE2." + self.universals['format'])
                 if SEs > 0:
-                    assembly_params['assembly_SE'] = os.path.join(target_dir, "SE." + self.params['format'])
+                    assembly_params['assembly_SE'] = os.path.join(target_dir, "SE." + self.universals['format'])
 
                 #All reads have been written at this point, add an assembly to the queue:
                 logger.info("Sample: %s target: %s iteration: %s Split %s reads in %s seconds" % (self.params['sample'], target, self.params['iteration'], len(reads), time.time() - startT))
@@ -421,4 +416,3 @@ class Mapper:
         except:
             print "".join(traceback.format_exception(*sys.exc_info()))
             raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
-
