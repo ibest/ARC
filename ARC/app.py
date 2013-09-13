@@ -90,13 +90,19 @@ class App:
                 ['Sample', 'Target', 'Iteration', 'Reads']) + '\n')
             statsf.close()
 
+            #Create a stats file for cdna
+            if config['cdna']:
+                countsf = open(os.path.join(finished_dir, "isogroup_read_counts.tsv"), 'a')
+                countsf.write('\t'.join(['Sample','Target','isogroup','readcount']) + '\n')
+                countsf.close()
+
             # Build a separate index for each read file in the input, put them
             # in working_dir
             start = time.time()
             if 'PE1' in s:
                 if not os.path.exists(os.path.join(working_dir, "PE1.idx")):
                     print s['PE1']
-                    SeqIO.index_db(
+                    p1 = SeqIO.index_db(
                         os.path.join(working_dir, "PE1.idx"),
                         s['PE1'],
                         format,
@@ -104,11 +110,14 @@ class App:
             if 'PE2' in s:
                 if not os.path.exists(os.path.join(working_dir, "PE2.idx")):
                     print s['PE2']
-                    SeqIO.index_db(
+                    p2 = SeqIO.index_db(
                         os.path.join(working_dir, "PE2.idx"),
                         s['PE2'],
                         format,
                         key_function=lambda x: x.split("/")[0])
+                    if len(p1) != len(p2):
+                        logger.error("The number of reads in %s and %s do not match, "
+                            "check the config for errors" %(s['PE1'], s['PE2']))
             if 'SE' in s:
                 if not os.path.exists(os.path.join(working_dir, "SE.idx")):
                     print s['SE']
