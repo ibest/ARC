@@ -1,12 +1,22 @@
 #!/bin/bash
 
+###
+### Run me:
+### curl https://github.com/ibest/ARC/raw.../virt-installer.sh | bash -- develop
+###
+###
+
 BRANCH="stable"
 if [ $# -eq 1 ] ; then
   BRANCH=$1
 fi
 BLATZIPBALL="http://users.soe.ucsc.edu/~kent/src/blatSrc${BLATVER}.zip"
+BLATPATCH="./blat_fastq_support.patch"
 BOWTIE2ZIPBALL="http://sourceforge.net/projects/bowtie-bio/files/latest/download?source=files"
-if [ "$(uname -s)" == "Darwin" ] ; then
+
+MACHTYPE=$(uname -s)
+
+if [ "$MACHTYPE" == "Darwin" ] ; then
   SPADESTARBALL="http://spades.bioinf.spbau.ru/release2.5.0/SPAdes-2.5.0-Darwin.tar.gz"
 else
   SPADESTARBALL="http://spades.bioinf.spbau.ru/release2.5.0/SPAdes-2.5.0-Linux.tar.gz"
@@ -14,19 +24,19 @@ fi
 
 # Is pip installed
 command -v pip > /dev/null 2>&1 || { 
-  echo >&2 "Please install pip before installing.";
+  echo >&2 "Please install pip before continuing.";
   exit 1
 }
 
 # Is virtualenv installed
 command -v virtualenv > /dev/null 2>&1 || { 
-  echo >&2 "Please install virtualenv before installing.";
+  echo >&2 "Please install virtualenv before continuing.";
   exit 1
 }
 
 # Is git installed
 command -v git > /dev/null 2>&1 || { 
-  echo >&2 "Please install git before installing.";
+  echo >&2 "Please install git before continuing.";
   exit 1
 }
 
@@ -72,7 +82,7 @@ else
 fi
 popd # arc/src
 
-export MACHTYPE=$(uname -m)
+export MACHTYPE
 # Grab the path to our virtualenv bin folder
 export BINDIR=$(echo $PATH | cut -d':' -f1)
 
@@ -81,7 +91,9 @@ command -v blat > /dev/null 2>&1 || {
   if [ ! -f src/blat.zip ] ; then
     wget $BLATZIPBALL -O blat.zip
     unzip blat.zip
+    cp -f $BLATPATCH blatSrc/.
     pushd blatSrc # arc/src/blatSrc
+    patch -p2 < $BLATPATCH
     make
     popd # arc/src
   fi
@@ -124,5 +136,6 @@ if [ ! -d data ] ; then
   cp -rf src/ARC/test_data data
 fi
 
-
-
+echo "The installation is complete.  You will need to download and install"
+echo "newbler from Roche before running ARC if you are using newbler as your"
+echo "assembler."
