@@ -1,9 +1,14 @@
 #!/bin/bash
 
 ###
-### Run me:
-### curl https://github.com/ibest/ARC/raw.../virt-installer.sh | bash -- develop
+### To run the installer run the following:
+### curl https://raw.github.com/ibest/ARC/develop/contrib/virt-installer.sh | bash < -- branch >
 ###
+### Example (For the stable version)
+### curl https://raw.github.com/ibest/ARC/develop/contrib/virt-installer.sh | bash
+###
+### Example (For the development branch)
+### curl https://raw.github.com/ibest/ARC/develop/contrib/virt-installer.sh | bash -- develop
 ###
 
 BRANCH="stable"
@@ -11,7 +16,7 @@ if [ $# -eq 1 ] ; then
   BRANCH=$1
 fi
 BLATZIPBALL="http://users.soe.ucsc.edu/~kent/src/blatSrc${BLATVER}.zip"
-BLATPATCH="./blat_fastq_support.patch"
+BLATPATCH="https://raw.github.com/ibest/ARC/develop/contrib/blat_fastq_support.patch"
 BOWTIE2ZIPBALL="http://sourceforge.net/projects/bowtie-bio/files/latest/download?source=files"
 
 MACHTYPE=$(uname -s)
@@ -37,6 +42,12 @@ command -v virtualenv > /dev/null 2>&1 || {
 # Is git installed
 command -v git > /dev/null 2>&1 || { 
   echo >&2 "Please install git before continuing.";
+  exit 1
+}
+
+# Is git installed
+command -v curl > /dev/null 2>&1 || { 
+  echo >&2 "Please install curl before continuing.";
   exit 1
 }
 
@@ -89,11 +100,13 @@ export BINDIR=$(echo $PATH | cut -d':' -f1)
 echo "Installing Blat"
 command -v blat > /dev/null 2>&1 || {
   if [ ! -f src/blat.zip ] ; then
-    wget $BLATZIPBALL -O blat.zip
+    curl $BLATZIPBALL > blat.zip
     unzip blat.zip
-    cp -f $BLATPATCH blatSrc/.
+    # cp -f $BLATPATCH blatSrc/.
     pushd blatSrc # arc/src/blatSrc
-    patch -p2 < $BLATPATCH
+    echo "Downloading the blat fastq patch..."
+    curl $BLATPATCH > blat_fastq_support.patch
+    patch -p2 < blat_fastq_support.patch
     make
     popd # arc/src
   fi
@@ -102,7 +115,7 @@ command -v blat > /dev/null 2>&1 || {
 echo "Installing Bowtie2"
 command -v bowtie2 > /dev/null 2>&1 || {
   if [ ! -f src/bowtie2.zip ] ; then
-    wget $BOWTIE2ZIPBALL -O bowtie2.zip
+    curl $BOWTIE2ZIPBALL > bowtie2.zip
     unzip bowtie2.zip
     pushd bowtie2-* # arc/src/bowtie2-*
     make
@@ -117,7 +130,7 @@ command -v bowtie2 > /dev/null 2>&1 || {
 echo "Installing Spades"
 command -v spades > /dev/null 2>&1 || {
   if [ ! -f src/spades.zip ] ; then
-    wget $SPADESTARBALL -O SPAdes.tar.gz
+    curl $SPADESTARBALL > SPAdes.tar.gz
     tar zxvf SPAdes.tar.gz
     pushd SPAdes-* # arc/src/SPAdes-*
     install -c bin/bwa-spades $BINDIR
