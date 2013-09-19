@@ -1,4 +1,15 @@
 ## News
+
+2013-09-18:
+
+ARC Updates:
+ * A major code refactor was recently pushed to the "develop" branch. You can test out this branch by typing "git checkout develop" after cloning the ARC repository. Please help us by submitting any bugs you find. A big thanks to Rob Lyon for his hard work re-organizing and modifying the code for better readability/maintainability.
+ * The develop branch now comes with a patch which adds Fastq support to the BLAT mapper. If you are not familiar with the Unix/Linux "patch" tool, please see the updated installation instructions for information on how to apply this patch.
+ * Basic support for cDNA assemblies has been integrated into ARC. Enable cDNA assemblies using cdna=True in the ARC_config.txt. Currently this only works with the Roche/Newbler assembler. After the run, check the finished_* folders for "isogroup_read_counts.tsv" files. These numbers represent the numbers of reads incorporated into assembled transcripts within the isogroup, and can be used to calculate an RPKM-like measure of gene expression. Preliminary results using reads generated from ovine tissue samples show good clustering of treatment and tissue based on these methods.
+ * We plan to release a tool-kit for ARC-based cDNA assembly, annotation, and expression analysis in the near future.
+ * ARC was presented in a talk by Dr. Matt Settles at the 5th International Symposium on Animal Functional Genomics in Brazil.
+
+
 2013-08-30:
 
 Updates on ARC progress:
@@ -104,6 +115,22 @@ Move to the directory where you keep all of your python virtual environments and
     $ ./runarc
 
     This will assemble PhiX reads into contigs for a pair of targets.
+
+### Patching BLAT to support FASTQ (Optional):
+We have found that the BLAT mapper by Jim Kent is an excellent, fast, and efficient piece of software. Unfortunately it doesn't natively support the FASTQ format. Ilya Zhbannikov (author of SeqyClean https://bitbucket.org/izhbannikov/seqyclean) wrote a patch which adds FASTQ support to BLAT. This patch is distributed in the "contrib" folder (but only in the develop branch for now). Please ensure that you have the proper academic/nonprofit status, or acquire a license from Kent Informatics (http://www.kentinformatics.com/) and then use the following set of commands to download, patch, and install BLAT with FASTQ support.
+
+    $ wget http://users.soe.ucsc.edu/~kent/src/blatSrc.zip
+    $ unzip blatSrc.zip
+    $ patch -p0 </path/to/ARC/contrib/blat+fastq_support.patch
+    $ cd blatSrc
+    $ export MACHTYPE=x86_64
+    $ mkdir ~/bin
+    $ mkdir ~/bin/x86_64
+    $ make
+
+    Executables for blat with FASTQ support will now be located in your ~/bin/x86_64 folder. Either add this folder to your path, or move the executable files to a folder already in your path.
+
+
 
 ## Usage
 
