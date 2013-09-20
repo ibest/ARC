@@ -1,15 +1,24 @@
 #!/bin/bash
 
 ###
-### To run the installer run the following:
-### curl https://raw.github.com/ibest/ARC/develop/contrib/virt-installer.sh | bash < -- branch >
+### Download the virtualenv install assistant:
+### curl https://raw.github.com/ibest/ARC/develop/contrib/virt-installer.sh > virt-installer.sh
+###
+### Run the installer
+### sh virt-installer.sh <branch>
 ###
 ### Example (For the stable version)
-### curl https://raw.github.com/ibest/ARC/develop/contrib/virt-installer.sh | bash
+### sh virt-installer.sh
 ###
 ### Example (For the development branch)
-### curl https://raw.github.com/ibest/ARC/develop/contrib/virt-installer.sh | bash -- develop
+### sh virt-installer.sh develop
 ###
+### Notes:
+### When installing on OSX you may see alot of warnings when compiling the numpy
+### libraries.  You can safely ignore them.
+###
+
+set -e
 
 BRANCH="stable"
 if [ $# -eq 1 ] ; then
@@ -100,7 +109,7 @@ export BINDIR=$(echo $PATH | cut -d':' -f1)
 echo "Installing Blat"
 command -v blat > /dev/null 2>&1 || {
   if [ ! -f src/blat.zip ] ; then
-    curl $BLATZIPBALL > blat.zip
+    curl -L $BLATZIPBALL > blat.zip
     unzip blat.zip
     # cp -f $BLATPATCH blatSrc/.
     pushd blatSrc # arc/src/blatSrc
@@ -115,7 +124,7 @@ command -v blat > /dev/null 2>&1 || {
 echo "Installing Bowtie2"
 command -v bowtie2 > /dev/null 2>&1 || {
   if [ ! -f src/bowtie2.zip ] ; then
-    curl $BOWTIE2ZIPBALL > bowtie2.zip
+    curl -L $BOWTIE2ZIPBALL > bowtie2.zip
     unzip bowtie2.zip
     pushd bowtie2-* # arc/src/bowtie2-*
     make
@@ -130,7 +139,7 @@ command -v bowtie2 > /dev/null 2>&1 || {
 echo "Installing Spades"
 command -v spades > /dev/null 2>&1 || {
   if [ ! -f src/spades.zip ] ; then
-    curl $SPADESTARBALL > SPAdes.tar.gz
+    curl -L $SPADESTARBALL > SPAdes.tar.gz
     tar zxvf SPAdes.tar.gz
     pushd SPAdes-* # arc/src/SPAdes-*
     install -c bin/bwa-spades $BINDIR
