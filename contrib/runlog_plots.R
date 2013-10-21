@@ -103,7 +103,8 @@ xlim = range(splits_times)
 d = 3600
 xlab = "time (hr)"
 
-par(mfrow=c(1,6))
+#par(mfrow=c(2,3))
+layout(mat=matrix(c(1,2,3,4,5,6), nrow=2, byrow=F), heights=c(1,1))
 plot(splits_times/d, as.numeric(splits$V15), main="Splitting times", xlab=xlab, ylab="seconds", col=as.factor(splits$V10), pch=".", xlim=xlim/d)
 plot(y=as.numeric(splits_p_s), x=splits_p_s_times/d, main="Splits per second", xlab=xlab, ylab="Splits/Second", type='p', pch=".", xlim=xlim/d)
 
@@ -128,7 +129,7 @@ text(x=1, y=sum(finished_p_s) * .7, labels=paste("Total repeats:", sum(repeats_p
 dim(splits)[1] - dim(assemblies)[1] - dim(killed)[1]
 
 Sys.sleep(20)
-}
+#}
 
 
 

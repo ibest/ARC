@@ -1,17 +1,20 @@
 ## News
 
-2013-09-18:
-
 ARC Updates:
+2013-10-21:
+ * After a month with no problems on the code-refactor develop is being merged back into stable. Please report any issues.
+ * Two new features will be implemented soon. These include
+   1. If an assembly is killed after iteration 1, contigs assembled in the previous iteration will be copied to the finished folder from the previous iteration.
+   2. A new parameter will be added allowing for sub-sampling of reads. This can help tremendously in situations of very high coverage when using the Newbler assembler.
+
+2013-09-18:
  * A major code refactor was recently pushed to the "develop" branch. You can test out this branch by typing "git checkout develop" after cloning the ARC repository. Please help us by submitting any bugs you find. A big thanks to Rob Lyon for his hard work re-organizing and modifying the code for better readability/maintainability.
  * The develop branch now comes with a patch which adds Fastq support to the BLAT mapper. If you are not familiar with the Unix/Linux "patch" tool, please see the updated installation instructions for information on how to apply this patch.
  * Basic support for cDNA assemblies has been integrated into ARC. Enable cDNA assemblies using cdna=True in the ARC_config.txt. Currently this only works with the Roche/Newbler assembler. After the run, check the finished_* folders for "isogroup_read_counts.tsv" files. These numbers represent the numbers of reads incorporated into assembled transcripts within the isogroup, and can be used to calculate an RPKM-like measure of gene expression. Preliminary results using reads generated from ovine tissue samples show good clustering of treatment and tissue based on these methods.
  * We plan to release a tool-kit for ARC-based cDNA assembly, annotation, and expression analysis in the near future.
  * ARC was presented in a talk by Dr. Matt Settles at the 5th International Symposium on Animal Functional Genomics in Brazil.
 
-
 2013-08-30:
-
 Updates on ARC progress:
  * ARC just finished 1.3 million assemblies in ~80hrs on a 60 core server! This was accomplished using a dataset containing 52 samples and ~6500 targets.
  * Tackling this big dataset with ARC exposed some issues with memory usage and speed which have now been addressed. ARC should be faster than ever.
@@ -22,12 +25,8 @@ Updates on ARC progress:
     * After profilemem.R has collected some data, run plot_memprofile.R (or source it from within R) to see some plots.
  * Work is currently underway to add preliminary RNA-seq support to ARC, stay tuned.
 
-2013-08-05:
-
-ARC has gone a month since the last reported bug and has performed well on numerous projects. At this point we'd like to release a stable version 1.0 and start implementing enhancements in a development branch.
 
 2013-07-09:
-
 New features added and some modifications to output:
  * A an improvement to the way ARC handles splitting read which results in a major speedup.
  * You can now set an assemblytimeout in ARC_config.txt. ARC will monitor assemblies, and if they run longer than assemblytimeout minutes they will be killed. Preliminary testing has shown that this works great for large projects where some of the targets may contain repeats or flanking regions with repeats which can cause the assembler to founder and block other assemblies from running.
@@ -40,7 +39,10 @@ New features added and some modifications to output:
 
 # ARC (Assembly by Reduced Complexity)
 
-ARC is a pipeline which facilitates iterative, reference guided *de nono* assemblies with the intent of 1) reducing time in analysis and increasing accuracy of results by only considering those reads which should assemble together and 2) reducing reference bias as compared to mapping based approaches. The software is designed to work in situations where a whole-genome assembly is not the objective, but rather when the researcher wishes to assemble discreet 'targets' contained within next-generation shotgun sequence data. ARC decomplexifies the traditionally difficult problem of assembly by breaking the reads into small, manageable subsets which can then be assembled quickly and efficiently. Applications include those in which the researcher wishes to *de novo* assemble specific content and a set of semi-similar reference targets is available to initialize the assembly process.
+ARC is a pipeline which facilitates iterative, reference guided *de nono* assemblies with the intent of
+1. Reducing time in analysis and increasing accuracy of results by only considering those reads which should assemble together
+2. Reducing reference bias as compared to mapping based approaches.
+The software is designed to work in situations where a whole-genome assembly is not the objective, but rather when the researcher wishes to assemble discreet 'targets' contained within next-generation shotgun sequence data. ARC decomplexifies the traditionally difficult problem of assembly by breaking the reads into small, manageable subsets which can then be assembled quickly and efficiently. Applications include those in which the researcher wishes to *de novo* assemble specific content and a set of semi-similar reference targets is available to initialize the assembly process.
 
 ARC has shown promise in:
 

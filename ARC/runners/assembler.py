@@ -26,7 +26,7 @@ import traceback
 import sys
 
 
-class AssemblyRunner:
+class Assembler:
     """
     This class represents assembly jobs and handles running assemblies.
     required params:
@@ -35,8 +35,8 @@ class AssemblyRunner:
     def __init__(self, params):
         self.params = params
 
-    def queue(self, ref_q):
-        self.ref_q = ref_q
+    def queue(self, job_q):
+        self.job_q = job_q
 
     def to_dict(self):
         return {'runner': self,
@@ -44,16 +44,21 @@ class AssemblyRunner:
                 'params': self.params}
 
     def start(self):
-        if not('assembler' in self.params):
-            raise exceptions.FatalError("assembler not defined in params")
-        if self.params['map_against_reads'] and self.params['iteration'] == 1:
-            self.RunMapAgainstReads()
-        elif self.params['assembler'] == 'newbler':
-            self.RunNewbler()
-        elif self.params['assembler'] == 'spades':
-            self.RunSpades()
-        else:
-            raise exceptions.FatalError("Assembler %s isn't recognized." % self.params['assembler'])
+        try:
+            if not('assembler' in self.params):
+                raise exceptions.FatalError("assembler not defined in params")
+            if self.params['map_against_reads'] and self.params['iteration'] == 1:
+                self.RunMapAgainstReads()
+            elif self.params['assembler'] == 'newbler':
+                self.RunNewbler()
+            elif self.params['assembler'] == 'spades':
+                self.RunSpades()
+            else:
+                raise exceptions.FatalError("Assembler %s isn't recognized." % self.params['assembler'])
+        except:
+            print "".join(traceback.format_exception(*sys.exc_info()))
+            raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
+
 
     def RunMapAgainstReads(self):
         """
@@ -117,9 +122,13 @@ class AssemblyRunner:
             out = open(os.devnull, 'w')
 
         #Build args for newAssembly:
-        args = ['newAssembly', '-force', os.path.join(self.params['target_dir'], 'assembly')]
+        args = ['newAssembly', '-force']
+        if self.params['last_assembly'] and self.params['cdna']:
+            #only run with the -urt switch when it isn't the final assembly
+            args += ['-cdna']
+        args += [os.path.join(self.params['target_dir'], 'assembly')]
         logger.debug("Calling newAssembly for sample: %s target %s" % (sample, target))
-        logger.debug(" ".join(args))
+        logger.info(" ".join(args))
         ret = subprocess.call(args, stdout=out, stderr=out)
         #Build args for addRun:
         if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
@@ -143,10 +152,16 @@ class AssemblyRunner:
 
         #Build args for runProject
         args = ['runProject']
-        args += ['-nobig', '-cpu', '1']
+        args += ['-cpu', '1']
+        if self.params['last_assembly'] and self.params['cdna']:
+            args += ['-noace']
+        else:
+            args += ['-nobig']
         if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
+        if self.params['rip']:
+            args += ['-rip']
         args += [os.path.join(self.params['target_dir'], 'assembly')]
         try:
             start = time.time()
@@ -229,7 +244,7 @@ class AssemblyRunner:
             out = open(os.devnull, 'w')
 
         logger.debug("Sample: %s target: %s Running spades assembler." % (sample, target))
-        logger.debug(" ".join(args))
+        logger.info(" ".join(args))
         killed = False
         failed = False
         start = time.time()

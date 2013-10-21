@@ -18,16 +18,17 @@ import time
 import subprocess
 import os
 from collections import Counter
-from copy import deepcopy
 from Bio import SeqIO
 from ARC import exceptions
 from ARC import logger
-#from ARC import AssemblyRunner
-from ARC.assembler import AssemblyRunner
-from ARC.assembly_checker import AssemblyChecker
+#from ARC import Assembler
+from ARC.runners import Assembler
+from ARC.runners import AssemblyChecker
+import traceback
+import sys
 
 
-class MapperRunner:
+class Mapper:
     """
     This calss handles mapping jobs, as well as converting map results into a text version of a dict.
     required params:
@@ -38,24 +39,28 @@ class MapperRunner:
     def __init__(self, params):
         self.params = params
 
-    def queue(self, ref_q):
-        self.ref_q = ref_q
+    def queue(self, job_q):
+        self.job_q = job_q
 
     def to_dict(self):
         return {'runner': self, 'message': 'Sample: %s Starting mapper.' % self.params['sample'], 'params': self.params}
 
     def start(self):
-        if not('mapper' in self.params):
-            raise exceptions.FatalError("mapper not defined in params")
-        if self.params['mapper'] == 'bowtie2':
-            logger.info("Sample: %s Running bowtie2." % self.params['sample'])
-            self.run_bowtie2()
-        if self.params['mapper'] == 'blat':
-            logger.info("Sample: %s Running blat." % self.params['sample'])
-            self.run_blat()
-        #Mapping is done, run splitreads:
-        logger.info("Sample: %s Running splitreads." % self.params['sample'])
-        self.splitreads()
+        try:
+            if not('mapper' in self.params):
+                raise exceptions.FatalError("mapper not defined in params")
+            if self.params['mapper'] == 'bowtie2':
+                logger.info("Sample: %s Running bowtie2." % self.params['sample'])
+                self.run_bowtie2()
+            if self.params['mapper'] == 'blat':
+                logger.info("Sample: %s Running blat." % self.params['sample'])
+                self.run_blat()
+            #Mapping is done, run splitreads:
+            logger.info("Sample: %s Running splitreads." % self.params['sample'])
+            self.splitreads()
+        except:
+            print "".join(traceback.format_exception(*sys.exc_info()))
+            raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
 
     def run_bowtie2(self):
         """
@@ -113,7 +118,8 @@ class MapperRunner:
         #args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', '1', '-x', base]
         #args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
         args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
-        args += ['-k', self.params['bowtie2_k']]
+        if self.params['bowtie2_k'] > 1:
+            args += ['-k', str(self.params['bowtie2_k'])]
         if self.params['format'] == 'fasta':
             args += ['-f']
         if 'PE1' in self.params and 'PE2' in self.params:
@@ -301,109 +307,118 @@ class MapperRunner:
 
     def splitreads(self):
         """ Split reads and then kick off assemblies once the reads are split for a target, use safe_targets for names"""
-        self.params['iteration'] += 1
-        #checker_params = deepcopy(self.params)
-        checker_params = {}
-        for k in self.params:
-            checker_params[k] = self.params[k]
-        del checker_params['mapping_dict']
-        checker_params['targets'] = {}
-        iteration = self.params['iteration']
-        if 'PE1' in self.params and 'PE2' in self.params:
-            idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=lambda x: x.split("/")[0])
-            idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=lambda x: x.split("/")[0])
-        if 'SE' in self.params:
-            idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=lambda x: x.split("/")[0])
-        if 'readcounts' not in checker_params:
-            checker_params['readcounts'] = {}
-        for target in self.params['mapping_dict']:
-            startT = time.time()
-            #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
-            target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
-            if target not in checker_params['readcounts']:
-                checker_params['readcounts'][target] = Counter()
-            os.mkdir(target_dir)
-
-            reads = self.params['mapping_dict'][target]
-            # track how many total reads were added for this cycle
-            checker_params['readcounts'][target][iteration] = len(reads)
-            statsf = open(os.path.join(self.params['finished_dir'], "mapping_stats.tsv"), 'a')
-            statsf.write('\t'.join([self.params['sample'], target, str(iteration), str(len(reads))]) + '\n')
-            statsf.close()
-
-            SEs = PEs = 0
-            if 'PE1' and 'PE2' in self.params:
-                outf_PE1 = open(os.path.join(target_dir, "PE1." + self.params['format']), 'w')
-                outf_PE2 = open(os.path.join(target_dir, "PE2." + self.params['format']), 'w')
-            if 'SE' in self.params:
-                outf_SE = open(os.path.join(target_dir, "SE." + self.params['format']), 'w')
-            for readID in reads:
-                if 'PE1' in self.params and readID in idx_PE1:
-                    read1 = idx_PE1[readID]
-                    read2 = idx_PE2[readID]
-                    new_readID = readID.replace(":", "_") + ":0:0:0:0#0/"
-                    read1.id = read1.name = new_readID + "1"
-                    read2.id = read2.name = new_readID + "2"
-                    SeqIO.write(read1, outf_PE1, self.params['format'])
-                    SeqIO.write(read2, outf_PE2, self.params['format'])
-                    PEs += 1
-                elif 'SE' in self.params and readID in idx_SE:
-                    read1 = idx_SE[readID]
-                    read1.id = read1.name = readID.replace(":", "_") + ":0:0:0:0#0/"
-                    SeqIO.write(read1, outf_SE, self.params['format'])
-                    SEs += 1
+        try:
+            self.params['iteration'] += 1
+            #checker_params = deepcopy(self.params)
+            checker_params = {}
+            for k in self.params:
+                checker_params[k] = self.params[k]
+            del checker_params['mapping_dict']
+            checker_params['targets'] = {}
+            iteration = self.params['iteration']
             if 'PE1' in self.params and 'PE2' in self.params:
-                outf_PE1.close()
-                outf_PE2.close()
+                idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=lambda x: x.split("/")[0])
+                idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=lambda x: x.split("/")[0])
             if 'SE' in self.params:
-                outf_SE.close()
+                idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=lambda x: x.split("/")[0])
+            if 'readcounts' not in checker_params:
+                checker_params['readcounts'] = {}
+            for target in self.params['mapping_dict']:
+                startT = time.time()
+                #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
+                target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
+                if target not in checker_params['readcounts']:
+                    checker_params['readcounts'][target] = Counter()
+                if os.path.exists(target_dir):
+                    os.system("rm -rf %s" % target_dir)
+                os.mkdir(target_dir)
 
-            #Build assembly job:
-            assembly_params = {}
-            assembly_params['target'] = target
-            assembly_params['target_dir'] = target_dir
-            assembly_params['iteration'] = iteration
-            assembly_params['last_assembly'] = False
-            assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles']
-            for k in assembler_keys:
-                assembly_params[k] = self.params[k]
-            cur_reads = checker_params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
-            previous_reads = checker_params['readcounts'][target][iteration - 1]
-            #Turn off URT in situations where this will be the last iteration due to readcounts:
-            if cur_reads <= previous_reads and iteration > 3:
-                logger.info("Sample: %s target: %s iteration: %s Setting urt false" % (self.params['sample'], target, self.params['iteration']))
-                assembly_params['urt'] = False
+                reads = self.params['mapping_dict'][target]
+                # track how many total reads were added for this cycle
+                checker_params['readcounts'][target][iteration] = len(reads)
+                statsf = open(os.path.join(self.params['finished_dir'], "mapping_stats.tsv"), 'a')
+                statsf.write('\t'.join([self.params['sample'], target, str(iteration), str(len(reads))]) + '\n')
+                statsf.close()
 
-            #properly handle the case where no reads ended up mapping for the PE or SE inputs:
-            if PEs > 0:
-                assembly_params['assembly_PE1'] = os.path.join(target_dir, "PE1." + self.params['format'])
-                assembly_params['assembly_PE2'] = os.path.join(target_dir, "PE2." + self.params['format'])
-            if SEs > 0:
-                assembly_params['assembly_SE'] = os.path.join(target_dir, "SE." + self.params['format'])
+                SEs = PEs = 0
+                if 'PE1' and 'PE2' in self.params:
+                    outf_PE1 = open(os.path.join(target_dir, "PE1." + self.params['format']), 'w')
+                    outf_PE2 = open(os.path.join(target_dir, "PE2." + self.params['format']), 'w')
+                if 'SE' in self.params:
+                    outf_SE = open(os.path.join(target_dir, "SE." + self.params['format']), 'w')
+                for readID in reads:
+                    if 'PE1' in self.params and readID in idx_PE1:
+                        read1 = idx_PE1[readID]
+                        read2 = idx_PE2[readID]
+                        new_readID = readID.replace(":", "_") + ":0:0:0:0#0/"
+                        read1.id = read1.name = new_readID + "1"
+                        read2.id = read2.name = new_readID + "2"
+                        SeqIO.write(read1, outf_PE1, self.params['format'])
+                        SeqIO.write(read2, outf_PE2, self.params['format'])
+                        PEs += 1
+                    elif 'SE' in self.params and readID in idx_SE:
+                        read1 = idx_SE[readID]
+                        read1.id = read1.name = readID.replace(":", "_") + ":0:0:0:0#0/"
+                        SeqIO.write(read1, outf_SE, self.params['format'])
+                        SEs += 1
+                if 'PE1' in self.params and 'PE2' in self.params:
+                    outf_PE1.close()
+                    outf_PE2.close()
+                if 'SE' in self.params:
+                    outf_SE.close()
 
-            #All reads have been written at this point, add an assembly to the queue:
-            logger.info("Sample: %s target: %s iteration: %s Split %s reads in %s seconds" % (self.params['sample'], target, self.params['iteration'], len(reads), time.time() - startT))
+                #Build assembly job:
+                assembly_params = {}
+                assembly_params['target'] = target
+                assembly_params['target_dir'] = target_dir
+                assembly_params['iteration'] = iteration
+                assembly_params['last_assembly'] = False
+                assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles', 'cdna', 'rip']
+                for k in assembler_keys:
+                    assembly_params[k] = self.params[k]
+                cur_reads = checker_params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
+                previous_reads = checker_params['readcounts'][target][iteration - 1]
 
-            #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
-            if PEs + SEs > 0:
-                checker_params['targets'][target_dir] = False
-                self.ref_q.put(AssemblyRunner(assembly_params).to_dict())
+                #Turn off URT in situations where this will be the last iteration due to readcounts:
 
-        logger.info("------------------------------------")
-        logger.info("| Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
-        logger.info("------------------------------------")
-        if 'PE1' in self.params and 'PE2' in self.params:
-            idx_PE1.close()
-            idx_PE2.close()
-            del idx_PE1
-            del idx_PE2
-        if 'SE' in self.params:
-            idx_SE.close()
-            del idx_SE
+                if cur_reads <= previous_reads and iteration > 2 or iteration >= self.params['numcycles']:
+                    logger.info("Sample: %s target: %s iteration: %s Setting last_assembly to True" % (self.params['sample'], target, self.params['iteration']))
+                    assembly_params['last_assembly'] = True
 
-        #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
-        if len(checker_params['targets']) > 0:
-            checker = AssemblyChecker(checker_params)
-            self.ref_q.put(checker.to_dict())
-        else:
-            logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
+                #properly handle the case where no reads ended up mapping for the PE or SE inputs:
+                if PEs > 0:
+                    assembly_params['assembly_PE1'] = os.path.join(target_dir, "PE1." + self.params['format'])
+                    assembly_params['assembly_PE2'] = os.path.join(target_dir, "PE2." + self.params['format'])
+                if SEs > 0:
+                    assembly_params['assembly_SE'] = os.path.join(target_dir, "SE." + self.params['format'])
+
+                #All reads have been written at this point, add an assembly to the queue:
+                logger.info("Sample: %s target: %s iteration: %s Split %s reads in %s seconds" % (self.params['sample'], target, self.params['iteration'], len(reads), time.time() - startT))
+
+                #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
+                if PEs + SEs > 0:
+                    checker_params['targets'][target_dir] = False
+                    self.job_q.put(Assembler(assembly_params).to_dict())
+
+            logger.info("------------------------------------")
+            logger.info("| Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
+            logger.info("------------------------------------")
+            if 'PE1' in self.params and 'PE2' in self.params:
+                idx_PE1.close()
+                idx_PE2.close()
+                del idx_PE1
+                del idx_PE2
+            if 'SE' in self.params:
+                idx_SE.close()
+                del idx_SE
+
+            #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
+            if len(checker_params['targets']) > 0:
+                checker = AssemblyChecker(checker_params)
+                self.job_q.put(checker.to_dict())
+            else:
+                logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
+        except:
+            print "".join(traceback.format_exception(*sys.exc_info()))
+            raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
+
