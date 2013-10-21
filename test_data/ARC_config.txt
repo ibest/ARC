@@ -28,6 +28,7 @@
 # bowtie2_k=1
 # rip=True
 # cdna=True
+# subsample=0.33
 Sample_ID	FileName	FileType
 Sample1	./reads/Sample1_R1.fastq	PE1
 Sample1	./reads/Sample1_R2.fastq	PE2

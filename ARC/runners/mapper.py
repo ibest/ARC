@@ -26,6 +26,7 @@ from ARC.runners import Assembler
 from ARC.runners import AssemblyChecker
 import traceback
 import sys
+from random import randint
 
 
 class Mapper:
@@ -346,7 +347,10 @@ class Mapper:
                     outf_PE2 = open(os.path.join(target_dir, "PE2." + self.params['format']), 'w')
                 if 'SE' in self.params:
                     outf_SE = open(os.path.join(target_dir, "SE." + self.params['format']), 'w')
+
                 for readID in reads:
+                    if self.params['subsample'] < 1 and randint(0, 100) > self.params['subsample'] * 100:
+                        continue
                     if 'PE1' in self.params and readID in idx_PE1:
                         read1 = idx_PE1[readID]
                         read2 = idx_PE2[readID]

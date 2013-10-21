@@ -35,7 +35,8 @@ class Config:
         'map_against_reads': False,
         'assemblytimeout': 10,
         'cdna': False,
-        'rip': False
+        'rip': False,
+        'subsample': 1
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {
@@ -115,7 +116,9 @@ class Config:
                 # Go ahead and convert the things that should be ints to ints
                 key = cfg[0].strip()
                 value = cfg[1].strip()
-                if re.match(r"[0-9]+", value):
+                if re.match(r"[0-9]*\.[0-9]+", value):
+                    self.config[key] = float(value)
+                elif re.match(r"[0-9]+", value):
                     self.config[key] = int(value)
                 elif value == 'True':
                     self.config[key] = True
@@ -218,6 +221,11 @@ class Config:
                     ', '.join(self.ASSEMBLERS.keys())))
         else:
             self.check_bins(self.ASSEMBLERS[self.config['assembler']])
+
+        if self.config['subsample'] <= 0 and  self.config['subsample'] > 1:
+            raise exceptions.FatalError(
+                "Error, you must specify a value greater than 0 and less than or equal to 1 for subsample")
+
 
     def convert(self):
         # Convert minutes to seconds for assembly timeouts
