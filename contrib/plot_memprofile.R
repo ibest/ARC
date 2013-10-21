@@ -35,17 +35,22 @@ time_data = na.omit(time_data)
   cols = rainbow(length(unique(time_data$PID)))
   names(cols) = unique(time_data$PID)
 
-  par(mar=c(0,1,1,1))
-  plot(NA, xlim=range(0,25), ylim=range(0,25), xaxt='n', yaxt='n', ylab="", xlab="")
+  #par(mar=c(0,1,1,1))
+  #plot(NA, xlim=range(0,25), ylim=range(0,25), xaxt='n', yaxt='n', ylab="", xlab="")
   #legend("top", col=cols, legend=unique(time_data2$PID), pch=20, ncol=30, title="ProcessID", bty='n', cex=.6)
+  par(mar=c(2,4,1,1))
+  total_CPU = tapply(as.numeric(time_data$CPU), INDEX=time_data$time, FUN=sum)
+  total_CPU_time = as.numeric(names(total_CPU))
+  plot(y=total_CPU, x=total_CPU_time, type='l', ylab="Total CPU", cex.axis=1.2, cex.lab=1.2)
+
 
   par(mar=c(2,4,1,1))
   total_mem = tapply(as.numeric(time_data$Mem), INDEX=time_data$time, FUN=sum)
   total_mem_time = as.numeric(names(total_mem))
-  plot(y=total_mem/1024/1024, x=total_mem_time, type='l', ylab="Total memory (Gb)")
+  plot(y=total_mem/1024/1024, x=total_mem_time, type='l', ylab="Total memory (Gb)", cex.axis=1.2, cex.lab=1.2)
 
 
-  par(mar=c(4,4,2,3))
+  par(mar=c(4,4,2,1))
   plot(NA, xlim=range(time_data$time), ylim=range(time_data$Mem/1024), ylab="Memory (MB)", xlab="Seconds")
   #for(p in unique(time_data2$PID)){
   #  col = cols[as.character(p)]
@@ -54,8 +59,8 @@ time_data = na.omit(time_data)
   points(y=time_data$Mem/1024, x=time_data$time, col=cols[as.character(time_data$PID)], pch=".", cex=2)
 
 
-  par(mar=c(4,4,2,3))
-  plot(NA, xlim=range(time_data$time), ylim=range(time_data$CPU), ylab="Percent CPU", xlab="Seconds")
+  par(mar=c(4,4,2,1))
+  plot(NA, xlim=range(time_data$time), ylim=range(time_data$CPU), ylab="Percent CPU", xlab="Seconds", cex.axis=1.2, cex.lab=1.2)
   #for(p in unique(time_data2$PID)){
   #  col = cols[as.character(p)]
   #  lines((CPU)~time, time_data2[time_data2$PID == p,], col=col, type="o", pch=".")
