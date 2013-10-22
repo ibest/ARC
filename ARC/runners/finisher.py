@@ -259,11 +259,15 @@ class Finisher:
                         r.description = self.params['sample'] + "_:_" + target
                         SeqIO.write(r, outf_SE, self.params['format'])
                     outf_SE.close()
-        if killed and self.params['iteration'] > 1:
+        # Finally a special case for situations where assembly of a target is killed, but contigs exist from
+        # a previous assembly. Note that we only do this when not running in cDNA mode.
+        if killed and self.params['iteration'] > 1 and not self.params['cdna']:
             #No contigs will be available, however contigs from the previous iteration will be present in
             # I00N_contigs.fasta, grab these and write them out instead
-            print "Writing contigs from previous iteration..."
-            contigf =  open(os.path.join(self.params['working_dir'], 'I%03d' % (self.params['iteration'] - 1) + '_contigs.fasta'), 'r')
+            logger.info("Sample: %s target: %s iteration: %s Writing contigs from previous iteration."
+                        % (self.params['sample'], target, self.params['iteration']))
+            #contigf =  open(os.path.join(self.params['working_dir'], 'I%03d' % (self.params['iteration'] - 1) + '_contigs.fasta'), 'r')
+            contigf =  os.path.join(self.params['working_dir'], 'I%03d' % (self.params['iteration'] - 1) + '_contigs.fasta')
             if os.path.exists(contigf):
                 for contig in SeqIO.parse(contigf, 'fasta'):
                     if contig.id.split("_:_")[1] == target:
