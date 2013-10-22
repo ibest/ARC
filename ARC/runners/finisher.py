@@ -99,14 +99,11 @@ class Finisher:
             #Set up output for both finished and additional mapping outputs
             fin_outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'a')
             remap_outf = open(os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta'), 'w')
+
             #check whether the sample is globally finished
             if self.params['iteration'] >= self.params['numcycles']:
                 sample_finished = True
-            # if self.params['map_against_reads'] and self.params['iteration'] == 1:
-            #     logger.info("Sample %s: map_against_reads is set, writing all reads to contigs" % self.params['sample'])
-            #     map_against_reads = True
 
-            ##TODO: figure out how to call a different handle to deal with finished cDNA targets
             #loop over the current set of targets_folders
             for target_folder in self.params['targets']:
                 target_map_against_reads = False
@@ -199,7 +196,7 @@ class Finisher:
                     SeqIO.write(contig, outf, "fasta")
                 contig_inf.close()
                 logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs " % (self.params['sample'], target, self.params['iteration'], i))
-                if i == 0 and finished is False:
+                if i == 0 and finished is False and self.params['iteration'] < 2:
                     map_against_reads = True
 
         if map_against_reads:
@@ -262,8 +259,18 @@ class Finisher:
                         r.description = self.params['sample'] + "_:_" + target
                         SeqIO.write(r, outf_SE, self.params['format'])
                     outf_SE.close()
+        if killed and self.params['iteration'] > 1:
+            #No contigs will be available, however contigs from the previous iteration will be present in
+            # I00N_contigs.fasta, grab these and write them out instead
+            print "Writing contigs from previous iteration..."
+            contigf =  open(os.path.join(self.params['working_dir'], 'I%03d' % (self.params['iteration'] - 1) + '_contigs.fasta'), 'r')
+            if os.path.exists(contigf):
+                for contig in SeqIO.parse(contigf, 'fasta'):
+                    if contig.id.split("_:_")[1] == target:
+                        SeqIO.write(contig, outf, "fasta")
         #Cleanup temporary assembly, and reads:
         #os.system("rm -rf %s" % target_folder)
+
 
     def writeCDNAresults(self, target, target_folder, outf, contigf):
         """

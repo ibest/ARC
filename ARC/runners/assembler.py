@@ -124,7 +124,7 @@ class Assembler:
         #Build args for newAssembly:
         args = ['newAssembly', '-force']
         if self.params['last_assembly'] and self.params['cdna']:
-            #only run with the -urt switch when it isn't the final assembly
+            #only run with cdna switch on the final assembly
             args += ['-cdna']
         args += [os.path.join(self.params['target_dir'], 'assembly')]
         logger.debug("Calling newAssembly for sample: %s target %s" % (sample, target))
@@ -157,7 +157,7 @@ class Assembler:
             args += ['-noace']
         else:
             args += ['-nobig']
-        if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
+        if self.params['urt'] and not self.params['last_assembly']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
         if self.params['rip']:
