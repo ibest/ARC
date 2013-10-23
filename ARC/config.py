@@ -40,7 +40,7 @@ class Config:
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {
-        'newbler': ['runAssembly', 'newbler', 'addRun'],
+        'newbler': ['runAssembly', 'newbler', 'addRun', 'runProject'],
         'spades': ['spades.py']
     }
     MAPPERS = {
