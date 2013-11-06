@@ -24,7 +24,7 @@ import traceback
 import sys
 
 
-class Finisher:
+class Finisher(Base):
     """
     Iterate through all targets, pull out the assembled contigs, rename
     them to:
@@ -77,17 +77,8 @@ class Finisher:
         (there is no expectation of an assembly having been done in this case)
 
     """
-
-    def __init__(self, params):
-        self.params = params
-
-    def queue(self, job_q):
-        self.job_q = job_q
-
-    def to_dict(self):
-        return {'runner': self,
-                'message': 'Finisher for Sample: %s' % self.params['sample'],
-                'params': self.params}
+    def message(self):
+        return 'Finisher for Sample: %s' % self.params['sample']
 
     def start(self):
         try:

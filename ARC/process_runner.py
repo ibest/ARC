@@ -46,7 +46,8 @@ class ProcessRunner(Process):
         # process
         self.not_done()
         # Begin the run
-        job = item['runner']
+        # job = item['runner']
+        job = getattr(ARC.runners, item['runner'])(item['params'])
         logger.debug("[%s] Processing: %s" % (self.name, item['message']))
         job.queue(self.job_q)
         #self.numjobs += 1

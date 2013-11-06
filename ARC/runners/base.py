@@ -26,10 +26,25 @@ import logging
 
 
 class Base:
-    def __init__(self, params, gvars, jobq):
+    def __init__(self, params):
         self.params = params
-        self.gvars = gvars
-        self.jobq = jobq
+
+    def name(self):
+        return self.__class__.__name__
+
+    def message(self):
+        return 'Starting %s' % self.name
+
+    def queue(self, job_q):
+        self.job_q = job_q
+
+    def to_dict(self):
+        return {'runner': self.name,
+                'params': self.params}
+
+    def to_job(self, params):
+        return {'runner': self.name,
+                'params': params}
 
     # def run(self):
     #     try:
