@@ -42,6 +42,9 @@ class Base:
         return {'runner': self.name,
                 'params': self.params}
 
+    def submit(self, job):
+        self.submit(job)
+
     @classmethod
     def to_job(obj, params):
         return {'runner': obj.__name__,

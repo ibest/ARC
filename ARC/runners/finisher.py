@@ -155,8 +155,8 @@ class Finisher(Base):
                 # if 'SE' in self.params:
                 #     params['SE'] = self.['SE']
 
-                mapper = Mapper(mapper_params)
-                self.job_q.put(mapper.to_dict())
+                # mapper = Mapper(mapper_params)
+                self.submit(Mapper.to_job(mapper_params))
                 logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
             else:
                 logger.info("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])

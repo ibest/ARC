@@ -398,7 +398,7 @@ class Mapper(Base):
                 #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
                 if PEs + SEs > 0:
                     checker_params['targets'][target_dir] = False
-                    self.job_q.put(Assembler.to_job(assembly_params))
+                    self.submit(Assembler.to_job(assembly_params))
 
             logger.info("------------------------------------")
             logger.info("| Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
@@ -415,7 +415,7 @@ class Mapper(Base):
             #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
             if len(checker_params['targets']) > 0:
                 # checker = AssemblyChecker(checker_params)
-                self.job_q.put(AssemblyChecker.to_job(checker_params))
+                self.submit(AssemblyChecker.to_job(checker_params))
             else:
                 logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
         except:
