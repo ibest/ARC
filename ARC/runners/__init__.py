@@ -13,8 +13,8 @@
 # limitations under the License.
 # from base import Base
 # from test import Test
+from base import Base
 from finisher import Finisher
 from assembler import Assembler
 from assembly_checker import AssemblyChecker
 from mapper import Mapper
-from base import Base
