@@ -22,6 +22,7 @@ import time
 import signal
 from ARC import logger
 from ARC import exceptions
+from ARC.runners import Base
 import traceback
 import sys
 

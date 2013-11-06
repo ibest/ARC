@@ -22,6 +22,7 @@ from Bio import SeqIO
 from ARC import exceptions
 from ARC import logger
 #from ARC import Assembler
+from ARC.runners import Base
 from ARC.runners import Assembler
 from ARC.runners import AssemblyChecker
 import traceback

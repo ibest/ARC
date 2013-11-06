@@ -19,6 +19,7 @@ import os
 from Bio import SeqIO
 from ARC import logger
 from ARC import exceptions
+from ARC.runners import Base
 from collections import Counter
 import traceback
 import sys
