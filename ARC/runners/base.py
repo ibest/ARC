@@ -42,7 +42,7 @@ class Base:
         return {'runner': self.name,
                 'params': self.params}
 
-    def to_job(self, params):
+    def to_job(params):
         return {'runner': self.name,
                 'params': params}
 
