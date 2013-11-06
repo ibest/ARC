@@ -43,7 +43,7 @@ class Base:
                 'params': self.params}
 
     def submit(self, job):
-        self.submit(job)
+        self.job_q.put(job)
 
     @classmethod
     def to_job(obj, params):
