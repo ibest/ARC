@@ -40,7 +40,7 @@ class Mapper(Base):
     """
 
     def message(self):
-        return 'Sample: %s Starting mapper.' % self.params['sample'], 'params': self.params
+        return 'Sample: %s Starting mapper.' % self.params['sample']
 
     def start(self):
         try:
