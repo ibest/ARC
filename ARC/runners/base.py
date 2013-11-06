@@ -44,7 +44,7 @@ class Base:
 
     @classmethod
     def to_job(obj, params):
-        return {'runner': obj.__class__.__name__,
+        return {'runner': obj.__name__,
                 'params': params}
 
     # def run(self):
