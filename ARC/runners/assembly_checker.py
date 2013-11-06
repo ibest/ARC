@@ -35,7 +35,7 @@ class AssemblyChecker(Base):
     """
 
     def message(self):
-        return 'Starting AssemblyChecker for sample %s' % self.params['sample'], 'params': self.params
+        return 'Starting AssemblyChecker for sample %s' % self.params['sample']
 
     def start(self):
         """ run through list of targets, check any that haven't finished already """
