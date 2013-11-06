@@ -18,6 +18,7 @@ from Queue import Empty
 from multiprocessing import Process
 from ARC import logger
 from ARC import exceptions
+import ARC.runners
 # from ARC.runners import Assembler
 # from ARC.runners import AssemblyChecker
 # from ARC.runners import Mapper
