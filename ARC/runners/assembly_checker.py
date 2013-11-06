@@ -60,7 +60,7 @@ class AssemblyChecker(Base):
                 #checker_params = deepcopy(self.params)
                 # checker = AssemblyChecker(checker_params)
                 time.sleep(5)  # sleep 4 seconds before putting a checker back on the job_q
-                self.job_q.put(AssemblyChecker.to_job(params))
+                self.job_q.put(AssemblyChecker.to_job(checker_params))
                 logger.info("Sample: %s Assemblies not finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
             else:
                 params = {}
