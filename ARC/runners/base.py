@@ -42,8 +42,9 @@ class Base:
         return {'runner': self.name,
                 'params': self.params}
 
-    def to_job(params):
-        return {'runner': self.name,
+    @classmethod
+    def to_job(obj, params):
+        return {'runner': obj.__class__.__name__,
                 'params': params}
 
     # def run(self):
