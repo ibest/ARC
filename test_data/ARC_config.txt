@@ -24,7 +24,7 @@
 # verbose=True
 # urt=True
 # map_against_reads=False
-# assemblytimeout=.03
+# assemblytimeout=1
 # bowtie2_k=1
 # rip=True
 # cdna=False
