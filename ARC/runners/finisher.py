@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2013, Institute for Bioninformatics and Evolutionary Studies
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +13,6 @@
 # limitations under the License.
 
 import os
-#from copy import deepcopy
 from Bio import SeqIO
 from ARC import logger
 from ARC import exceptions
