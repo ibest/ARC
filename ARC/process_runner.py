@@ -54,6 +54,8 @@ class ProcessRunner(Process):
         job.clean()
         del job
         job = None
+        del item
+        item = None
 
     def run(self):
         """
