@@ -32,13 +32,21 @@ import glob
 from multiprocessing import Pool
 from Bio.SeqRecord import SeqRecord
 from copy import deepcopy
+import subprocess
+
+#Globals
+GATKPATH = '/bio/software/HT_sequence/GATK/GenomeAnalysisTK-2.4-9-g532efad/'
+PICARDPATH = '/bio/software/HT_sequence/picard/picard-tools-1.103/'
 
 
-def make_vcf(i, j, target, PE, SE):
+def make_vcf(i, j, target, PE, SE, caller='GATK'):
     """
     i is sample
     j is target
+
     """
+    #output handle for stderr and stdout:
+    out = open('./make_vcf_temp/S%s_%s.log' % (i, j), 'a')
     #Build indexes:
     if os.path.exists("./make_vcf_temp/idx_%s_%s" % (i, j)):
         os.system("rm -rf ./make_vcf_temp/idx_%s_%s" % (i, j))
@@ -51,13 +59,47 @@ def make_vcf(i, j, target, PE, SE):
 
     #Do mapping:
     #print "Running bowtie.."
-    #--rg SM:'" + target
-    # --rg-id ", lib, "_I --rg PL:ILLUMINA --rg SM:", lib,
+    ## Note that RG fields are included in order to make the output compatible with GATK
     cmd = "bowtie2 --seed 42 -p 2 -t -I 0 -X 1500 --rg-id none --rg PL:ILLUMINA --rg SM:none"
     cmd += " -x ./make_vcf_temp/idx_%s_%s/idx" % (i, j)
     cmd += PE + SE + " -S ./make_vcf_temp/tmp_%s_%s.sam >> ./make_vcf_temp/S%s_%s.log 2>&1" % (i, j, i, j)
     #print i, j, cmd
     os.system(cmd)
+
+    # Screen for low map q, sort and convert to bam
+    #print "Filtering and converting to bam"
+    #Note, you can't use subprocess.call() with this command because stdout is getting
+    # piped from one call to the next and subprocess.call() seems to mess this up:
+    cmd = "samtools view -q 10 -bS ./make_vcf_temp/tmp_%s_%s.sam | samtools sort - ./make_vcf_temp/tmp_%s_%s" % (i, j, i, j)
+    cmd += " >> ./make_vcf_temp/S%s_%s.log 2>&1" % (i, j)
+    #print cmd
+    os.system(cmd)
+
+    #Create index for GATK:
+    args = ['samtools', 'index', './make_vcf_temp/tmp_%s_%s.bam' % (i, j)]
+    ret = subprocess.call(args, stdout=out, stderr=out)
+    args = ['samtools', 'faidx', "./make_vcf_temp/ref_%s_%s.fasta" % (i, j)]
+    ret = subprocess.call(args, stdout=out, stderr=out)
+
+
+    #Call variants:
+    if caller == 'GATK':
+        #Build dict for GATK:
+        args = [
+            'java', '-jar', PICARDPATH + 'CreateSequenceDictionary.jar',
+            'REFERENCE=', './make_vcf_temp/ref_%s_%s.fasta' % (i, j),
+            'OUTPUT=', './make_vcf_temp/ref_%s_%s.dict' % (i, j)
+        ]
+        ret = subprocess.call(args, stdout=out, stderr=out)
+
+        #Call with GATK:
+        args = [
+            'java', '-Xmx6g', '-jar', GATKPATH + 'GenomeAnalysisTK.jar', '-T', 'HaplotypeCaller', '-R', './make_vcf_temp/ref_%s_%s.fasta' % (i, j),
+            '-I', './make_vcf_temp/tmp_%s_%s.bam' % (i, j),
+            '-o', './make_vcf_temp/tmp_%s_%s.vcf' % (i, j)]
+        ret = subprocess.call(args, stdout=out, stderr=out)
+    else:
+        #Call with samtools
 
 # gtk <- "java -Xmx6g -jar /mnt/home/msettles/opt/src/GenomeAnalysisTK-2.7-4/GenomeAnalysisTK.jar"
 # if (opt$generate_vcf){## Extract Unmapped Reads
@@ -72,13 +114,6 @@ def make_vcf(i, j, target, PE, SE):
 #     })
 #   },mc.cores=procs)
 # }
-
-    # Screen for low map q, sort and convert to bam
-    #print "Filtering and converting to bam"
-    cmd = "samtools view -q 10 -bS ./make_vcf_temp/tmp_%s_%s.sam | samtools sort - ./make_vcf_temp/tmp_%s_%s" % (i, j, i, j)
-    cmd += " >> ./make_vcf_temp/S%s_%s.log 2>&1" % (i, j)
-    #print cmd
-    os.system(cmd)
 
     # Call variants:
     print "Calling variants"
