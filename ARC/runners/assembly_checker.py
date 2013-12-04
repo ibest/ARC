@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2013, Institute for Bioninformatics and Evolutionary Studies
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,11 +19,12 @@ import traceback
 # from copy import deepcopy
 from ARC import exceptions
 from ARC import logger
+from ARC.runners import Base
 from ARC.runners import Finisher
 # from ARC.runner import AssemblyChecker
 
 
-class AssemblyChecker:
+class AssemblyChecker(Base):
     """
     Checks for "finished" files in each of the assembly folders. Set values of params['assemblies'] to True for
     all finished assemblies. If all assemblies are finished, kick off the finisher process.
@@ -33,14 +32,8 @@ class AssemblyChecker:
         'targets': dictionary, keys are paths, values are boolean
     """
 
-    def __init__(self, params):
-        self.params = params
-
-    def queue(self, job_q):
-        self.job_q = job_q
-
-    def to_dict(self):
-        return {'runner': self, 'message': 'Starting AssemblyChecker for sample %s' % self.params['sample'], 'params': self.params}
+    def message(self):
+        return 'Starting AssemblyChecker for sample %s' % self.params['sample']
 
     def start(self):
         """ run through list of targets, check any that haven't finished already """
@@ -63,17 +56,17 @@ class AssemblyChecker:
                 for k in self.params:
                     checker_params[k] = self.params[k]
                 #checker_params = deepcopy(self.params)
-                checker = AssemblyChecker(checker_params)
+                # checker = AssemblyChecker(checker_params)
                 time.sleep(5)  # sleep 4 seconds before putting a checker back on the job_q
-                self.job_q.put(checker.to_dict())
+                self.submit(AssemblyChecker.to_job(checker_params))
                 logger.info("Sample: %s Assemblies not finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
             else:
                 params = {}
                 for k in self.params:
                     params[k] = self.params[k]
-                #params = deepcopy(self.params)
-                finisher = Finisher(params)
-                self.job_q.put(finisher.to_dict())
+                # params = deepcopy(self.params)
+                # finisher = Finisher(params)
+                self.submit(Finisher.to_job(params))
                 logger.info("Sample: %s Assemblies finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
         except:
             print "".join(traceback.format_exception(*sys.exc_info()))

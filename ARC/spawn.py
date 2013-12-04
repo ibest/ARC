@@ -52,8 +52,8 @@ class Spawn:
             if 'SE' in s:
                 params['SE'] = s['SE']
 
-            mapper = Mapper(params)
-            self.job_q.put(mapper.to_dict())
+            # mapper = Mapper(params)
+            self.job_q.put(Mapper.to_job(params))
 
     def run(self):
         logger.info("Starting...")

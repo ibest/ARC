@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2013, Institute for Bioninformatics and Evolutionary Studies
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,16 +13,16 @@
 # limitations under the License.
 
 import os
-#from copy import deepcopy
 from Bio import SeqIO
 from ARC import logger
 from ARC import exceptions
+from ARC.runners import Base
 from collections import Counter
 import traceback
 import sys
 
 
-class Finisher:
+class Finisher(Base):
     """
     Iterate through all targets, pull out the assembled contigs, rename
     them to:
@@ -77,17 +75,8 @@ class Finisher:
         (there is no expectation of an assembly having been done in this case)
 
     """
-
-    def __init__(self, params):
-        self.params = params
-
-    def queue(self, job_q):
-        self.job_q = job_q
-
-    def to_dict(self):
-        return {'runner': self,
-                'message': 'Finisher for Sample: %s' % self.params['sample'],
-                'params': self.params}
+    def message(self):
+        return 'Finisher for Sample: %s' % self.params['sample']
 
     def start(self):
         try:
@@ -163,8 +152,8 @@ class Finisher:
                 # if 'SE' in self.params:
                 #     params['SE'] = self.['SE']
 
-                mapper = Mapper(mapper_params)
-                self.job_q.put(mapper.to_dict())
+                # mapper = Mapper(mapper_params)
+                self.submit(Mapper.to_job(mapper_params))
                 logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
             else:
                 logger.info("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])
