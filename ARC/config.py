@@ -36,7 +36,8 @@ class Config:
         'assemblytimeout': 10,
         'cdna': False,
         'rip': False,
-        'subsample': 1
+        'subsample': 1,
+        'maskrepeats': True
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {

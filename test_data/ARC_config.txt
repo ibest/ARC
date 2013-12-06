@@ -16,8 +16,8 @@
 ## FileType: PE1, PE2, or SE
 ## FileFormat: fasta or fastq
 # reference=./targets.fa
-# numcycles=2
-# mapper=bowtie2
+# numcycles=10
+# mapper=blat
 # assembler=newbler
 # nprocs=7
 # format=fastq
@@ -28,7 +28,7 @@
 # bowtie2_k=1
 # rip=True
 # cdna=False
-# subsample=0.90
+# subsample=1
 Sample_ID	FileName	FileType
 Sample1	./reads/Sample1_R1.fastq	PE1
 Sample1	./reads/Sample1_R2.fastq	PE2

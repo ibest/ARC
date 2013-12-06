@@ -180,6 +180,12 @@ class Mapper(Base):
             args.append('-fastq')
         if 'fastmap' in self.params:
             args.append('-fastMap')
+        #Some new experimental params to increase specificity after the first iteration:
+        if self.params['maskrepeats']:
+            args.append("-mask=lower")
+        if self.params['iteration'] > 0:
+            args.append("-minIdentity=95")
+            args.append("-minScore=40")
         args.append(os.path.join(working_dir, 'mapping.psl'))
 
         logger.info("Sample: %s Calling blat mapper" % self.params['sample'])
