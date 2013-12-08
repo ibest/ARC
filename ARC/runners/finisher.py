@@ -14,6 +14,7 @@
 
 import os
 from Bio import SeqIO
+from Bio.Seq import Seq
 from ARC import logger
 from ARC import exceptions
 from ARC.runners import Base
@@ -85,6 +86,8 @@ class Finisher(Base):
             finished_dir = self.params['finished_dir']
             sample_finished = False
             targets_written = 0
+            iteration = self.params['iteration']
+
             #Set up output for both finished and additional mapping outputs
             fin_outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'a')
             remap_outf = open(os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta'), 'w')
@@ -95,20 +98,22 @@ class Finisher(Base):
 
             #loop over the current set of targets_folders
             for target_folder in self.params['targets']:
+                #Extract target specific details:
                 target_map_against_reads = False
                 safe_target = target_folder.split("/")[-1]  # get last element of path name
                 target = self.params['safe_targets'][safe_target]
-                logger.info("Sample: %s target: %s finishing target.." % (self.params['sample'], target))
-                finishedf = open(os.path.join(target_folder, 'finished'), 'r')
-                l = finishedf.readline().strip().split()[0]
-                finishedf.close()
-                logger.info("Sample: %s target: %s iteration: %s Assembly reports status: %s." % (sample, target, self.params['iteration'], l))
-
-                if l == 'assembly_failed' or l == 'map_against_reads':
-                    target_map_against_reads = True
-                iteration = self.params['iteration']
                 cur_reads = self.params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
                 previous_reads = self.params['readcounts'][target][iteration - 1]
+
+                #Get finished assembly status:
+                with open(os.path.join(target_folder, 'finished'), 'r') as finishedf:
+                    l = finishedf.readline().strip().split()[0]
+
+                logger.info("Sample: %s target: %s finishing target.." % (self.params['sample'], target))
+                logger.info("Sample: %s target: %s iteration: %s Assembly reports status: %s." % (sample, target, self.params['iteration'], l))
+
+                if l in ('assembly_failed', 'map_against_reads'):
+                    target_map_against_reads = True
 
                 if l == 'assembly_killed':
                     #only write out the reads, assembly won't have contigs
@@ -137,31 +142,48 @@ class Finisher(Base):
                         #nothing fancy is going on, just write the contigs out for remapping
                         self.write_target(target, target_folder, outf=remap_outf, finished=False)
                         targets_written += 1
+
             if targets_written > 0:
                 # Build a new mapper and put it on the queue
                 from ARC.runners import Mapper
-                #params = deepcopy(self.params)
                 mapper_params = {}
                 for k in self.params:
                     mapper_params[k] = self.params[k]
                 del mapper_params['targets']
                 mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
-                # if 'PE1' in self.params and 'PE2' in self.params:
-                #     params['PE1'] = self.params['PE1']
-                #     params['PE2'] = self.params['PE2']
-                # if 'SE' in self.params:
-                #     params['SE'] = self.['SE']
-
-                # mapper = Mapper(mapper_params)
                 self.submit(Mapper.to_job(mapper_params))
                 logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
+
             else:
                 logger.info("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])
+
+            fin_outf.close()
+            remap_outf.close()
+
         except:
             print "".join(traceback.format_exception(*sys.exc_info()))
             raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
 
+    #Functions for repeat masking:
+    def num_unmers(self, seq, N):
+        #Calculate the number of unique nmers in seq
+        nmers = {}
+        for i in range(len(seq) - (N - 1)):
+            nmers[str(seq[i:i+N]).upper()] = True
+        return(len(nmers))
 
+    def mask_seq(self, seq, W=15, N=3):
+        #Replace simple repeats with 'n' characters
+        #This masks a window if the number of unique Nmers is <
+        seq_copy = bytearray(seq)
+        i = 0
+        for i in range(len(seq) - (W - 1)):
+            if self.num_unmers(seq[i:i + W], N) < 7:
+                if self.params['mapper'] == 'blat':
+                    seq_copy[i:i + W] = seq[i:i + W].lower()
+                if self.params['mapper'] == 'bowtie2':
+                    seq_copy[i:i + W] = 'n' * W
+        return(seq_copy)
 
     def write_target(self, target, target_folder, outf, finished=False, map_against_reads=False, killed=False):
         # either map_against_reads was passed in, or
@@ -182,11 +204,12 @@ class Finisher(Base):
                 for contig in SeqIO.parse(contig_inf, 'fasta'):
                     i += 1
                     contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
+                    contig.seq = Seq(str(self.mask_seq(contig.seq.tostring().upper())))
                     SeqIO.write(contig, outf, "fasta")
                 contig_inf.close()
                 logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs " % (self.params['sample'], target, self.params['iteration'], i))
-                if i == 0 and finished is False and self.params['iteration'] < 2:
-                    map_against_reads = True
+                #if i == 0 and finished is False and self.params['iteration'] < 2:
+                #    map_against_reads = True
 
         if map_against_reads:
             i = 0

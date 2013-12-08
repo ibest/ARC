@@ -37,3 +37,4 @@ Sample2	./reads/Sample2_R1.fastq	PE1
 Sample2	./reads/Sample2_R2.fastq	PE2
 Sample2	./reads/Sample2_SE.fastq	SE
 cDNASample ./reads/Sample3_SE.fastq	SE
+Repeat ./reads/repeat_reads.fastq	SE
