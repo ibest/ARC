@@ -184,7 +184,7 @@ class Mapper(Base):
         if self.params['maskrepeats']:
             args.append("-mask=lower")
         if self.params['iteration'] > 0:
-            args.append("-minIdentity=95")
+            args.append("-minIdentity=98")
             args.append("-minScore=40")
         args.append(os.path.join(working_dir, 'mapping.psl'))
 
