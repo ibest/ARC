@@ -73,7 +73,7 @@ def make_vcf(i, j, target, PE, SE, caller='GATK'):
     cmd = "samtools view -q 10 -bS ./make_vcf_temp/tmp_%s_%s.sam | samtools sort - ./make_vcf_temp/tmp_%s_%s" % (i, j, i, j)
     cmd += " >> ./make_vcf_temp/S%s_%s.log 2>&1" % (i, j)
     #print cmd
-    os.system(cmd)
+    #os.system(cmd)
 
     #Create index for GATK:
     args = ['samtools', 'index', './make_vcf_temp/tmp_%s_%s.bam' % (i, j)]
@@ -98,29 +98,14 @@ def make_vcf(i, j, target, PE, SE, caller='GATK'):
             '-I', './make_vcf_temp/tmp_%s_%s.bam' % (i, j),
             '-o', './make_vcf_temp/tmp_%s_%s.vcf' % (i, j)]
         ret = subprocess.call(args, stdout=out, stderr=out)
+
     else:
-        #Call with samtools
-
-# gtk <- "java -Xmx6g -jar /mnt/home/msettles/opt/src/GenomeAnalysisTK-2.7-4/GenomeAnalysisTK.jar"
-# if (opt$generate_vcf){## Extract Unmapped Reads
-#   vcf_out <- mclapply(bowtie, function(index){
-#     try({
-#       system(paste(gtk,
-#                  "-T HaplotypeCaller",
-#                  "-R",paste(index$target_path,"fasta",sep="."),
-#                  "-I",file.path(opt$bowtieFolder,index$sampleFolder,paste(index$sampleFolder,index$target_name,"bam",sep=".")),
-#                  "-o",file.path(opt$bowtieFolder,index$sampleFolder,paste(index$sampleFolder,index$target_name,"vcf",sep=".")),
-#                  ">",file.path(opt$bowtieFolder,index$sampleFolder,paste(index$sampleFolder,index$target_name,"gtk","out",sep=".")),sep=" "));
-#     })
-#   },mc.cores=procs)
-# }
-
-    # Call variants:
-    print "Calling variants"
-    cmd = "samtools mpileup -D -u -f ./make_vcf_temp/ref_%s_%s.fasta ./make_vcf_temp/tmp_%s_%s.bam |" % (i, j, i, j)
-    cmd += " bcftools view -vgc - > ./make_vcf_temp/tmp_%s_%s.vcf 2> ./make_vcf_temp/S%s_%s.log" % (i, j, i, j)
-    #print cmd  1>> ./make_vcf_temp/S%s_%s.log
-    os.system(cmd)
+        # Call variants:
+        #print "Calling variants"
+        cmd = "samtools mpileup -D -u -f ./make_vcf_temp/ref_%s_%s.fasta ./make_vcf_temp/tmp_%s_%s.bam |" % (i, j, i, j)
+        cmd += " bcftools view -vgc - > ./make_vcf_temp/tmp_%s_%s.vcf 2> ./make_vcf_temp/S%s_%s.log" % (i, j, i, j)
+        #print cmd  1>> ./make_vcf_temp/S%s_%s.log
+        os.system(cmd)
 
     # Cleanup:
     os.system("rm ./make_vcf_temp/PE1_%s_%s.fastq" % (i, j))
@@ -312,8 +297,8 @@ results = {}
 
 lsamples = samples.keys()
 
-for i in range(len(lsamples)):
-    sample = lsamples[i]
+for i, sample in enumerate(lsamples):
+    #sample = lsamples[i]
     results[sample] = []
     print "Sample: ", sample
 
@@ -323,8 +308,8 @@ for i in range(len(lsamples)):
     targets = list(set(map(lambda x: x.strip().split("_:_")[1], contigsidx.keys())))
 
     #Get contigs, reads, and do mapping and variant calling for each target:
-    for j in range(len(targets)):
-        target = targets[j]
+    for j, target in enumerate(targets):
+        #target = targets[j]
         #Get contigs, reads, and do mapping and variant calling for each target:
         #print "Target: ", target
         outf = open("./make_vcf_temp/ref_%s_%s.fasta" % (i, j), 'w')

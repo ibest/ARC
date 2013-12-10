@@ -120,7 +120,7 @@ class Spawn:
                 # status. This will cause not_done() to return False, causing
                 # the loop to break. Adding a short sleep here allows workers
                 # to update their status.
-                time.sleep(1)
+                time.sleep(5.5)
                 if not self.not_done():
                     logger.debug(
                         "Results queue is empty and there are no active "
