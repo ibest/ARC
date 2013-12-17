@@ -207,8 +207,6 @@ class Mapper(Base):
         os.remove(os.path.join(working_dir, 'mapping.psl'))
         out.close()
 
-
-
     def SAM_to_dict(self, filename):
         """ Read a SAM file to a mapping dict and return it """
         #Check for necessary files:

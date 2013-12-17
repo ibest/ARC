@@ -29,6 +29,7 @@
 # rip=True
 # cdna=False
 # subsample=1
+# maskrepeats=False
 Sample_ID	FileName	FileType
 Sample1	./reads/Sample1_R1.fastq	PE1
 Sample1	./reads/Sample1_R2.fastq	PE2

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 This script takes a finished ARC run, maps the reads which were recruited per-target against
 the contigs which were assembled from those reads, and then calls varaints.
@@ -28,15 +29,18 @@ from Bio import SeqIO
 import os
 import sys
 import time
-import glob
+#import glob
 from multiprocessing import Pool
-from Bio.SeqRecord import SeqRecord
+#from Bio.SeqRecord import SeqRecord
 from copy import deepcopy
 import subprocess
+import argparse
 
-#Globals
-GATKPATH = '/bio/software/HT_sequence/GATK/GenomeAnalysisTK-2.4-9-g532efad/'
-PICARDPATH = '/bio/software/HT_sequence/picard/picard-tools-1.103/'
+
+#Function definitions:
+def log(txt):
+    if LOGLEVEL > 0:
+        print(txt)
 
 
 def make_vcf(i, j, target, PE, SE, caller='GATK'):
@@ -51,38 +55,41 @@ def make_vcf(i, j, target, PE, SE, caller='GATK'):
     if os.path.exists("./make_vcf_temp/idx_%s_%s" % (i, j)):
         os.system("rm -rf ./make_vcf_temp/idx_%s_%s" % (i, j))
     os.system("mkdir ./make_vcf_temp/idx_%s_%s" % (i, j))
-    #print "Building index.."
+    log("Building index..")
     cmd = "bowtie2-build -f ./make_vcf_temp/ref_%s_%s.fasta" % (i, j)
     cmd += " ./make_vcf_temp/idx_%s_%s/idx >>./make_vcf_temp/S%s_%s.log 2>&1" % (i, j, i, j)
-    #print cmd
+    log(cmd)
     os.system(cmd)
 
     #Do mapping:
-    #print "Running bowtie.."
+    log("Running bowtie..")
     ## Note that RG fields are included in order to make the output compatible with GATK
     cmd = "bowtie2 --seed 42 -p 2 -t -I 0 -X 1500 --rg-id none --rg PL:ILLUMINA --rg SM:none"
     cmd += " -x ./make_vcf_temp/idx_%s_%s/idx" % (i, j)
     cmd += PE + SE + " -S ./make_vcf_temp/tmp_%s_%s.sam >> ./make_vcf_temp/S%s_%s.log 2>&1" % (i, j, i, j)
-    #print i, j, cmd
+    log(' '.join((str(i), str(j), cmd)))
     os.system(cmd)
 
     # Screen for low map q, sort and convert to bam
-    #print "Filtering and converting to bam"
+    log("Filtering and converting to bam")
     #Note, you can't use subprocess.call() with this command because stdout is getting
     # piped from one call to the next and subprocess.call() seems to mess this up:
     cmd = "samtools view -q 10 -bS ./make_vcf_temp/tmp_%s_%s.sam | samtools sort - ./make_vcf_temp/tmp_%s_%s" % (i, j, i, j)
     cmd += " >> ./make_vcf_temp/S%s_%s.log 2>&1" % (i, j)
-    #print cmd
-    #os.system(cmd)
+    log(cmd)
+    os.system(cmd)
 
     #Create index for GATK:
     args = ['samtools', 'index', './make_vcf_temp/tmp_%s_%s.bam' % (i, j)]
+    log(' '.join(args))
     ret = subprocess.call(args, stdout=out, stderr=out)
     args = ['samtools', 'faidx', "./make_vcf_temp/ref_%s_%s.fasta" % (i, j)]
+    log(' '.join(args))
     ret = subprocess.call(args, stdout=out, stderr=out)
 
-
     #Call variants:
+    #TODO: Add checks to handle bad return values in 'ret' properly, i.e. if
+    # one of the programs crashes.
     if caller == 'GATK':
         #Build dict for GATK:
         args = [
@@ -90,21 +97,24 @@ def make_vcf(i, j, target, PE, SE, caller='GATK'):
             'REFERENCE=', './make_vcf_temp/ref_%s_%s.fasta' % (i, j),
             'OUTPUT=', './make_vcf_temp/ref_%s_%s.dict' % (i, j)
         ]
+        log(' '.join(args))
         ret = subprocess.call(args, stdout=out, stderr=out)
 
         #Call with GATK:
         args = [
-            'java', '-Xmx6g', '-jar', GATKPATH + 'GenomeAnalysisTK.jar', '-T', 'HaplotypeCaller', '-R', './make_vcf_temp/ref_%s_%s.fasta' % (i, j),
+            'java', '-Xmx6g', '-jar', GATKPATH + 'GenomeAnalysisTK.jar',
+            '-T', 'HaplotypeCaller', '-R', './make_vcf_temp/ref_%s_%s.fasta' % (i, j),
             '-I', './make_vcf_temp/tmp_%s_%s.bam' % (i, j),
             '-o', './make_vcf_temp/tmp_%s_%s.vcf' % (i, j)]
+        log(' '.join(args))
         ret = subprocess.call(args, stdout=out, stderr=out)
 
     else:
         # Call variants:
-        #print "Calling variants"
+        log("Calling variants")
         cmd = "samtools mpileup -D -u -f ./make_vcf_temp/ref_%s_%s.fasta ./make_vcf_temp/tmp_%s_%s.bam |" % (i, j, i, j)
         cmd += " bcftools view -vgc - > ./make_vcf_temp/tmp_%s_%s.vcf 2> ./make_vcf_temp/S%s_%s.log" % (i, j, i, j)
-        #print cmd  1>> ./make_vcf_temp/S%s_%s.log
+        log(cmd)
         os.system(cmd)
 
     # Cleanup:
@@ -133,6 +143,7 @@ def check_status(results):
         if unfinished == 0:
             return sample
     return None
+
 
 def inject_variants(sample):
     """
@@ -181,33 +192,38 @@ def inject_variants(sample):
     for l in vcff:
         if l[0] != '#':
             l = l.split('\t')
+            if len(l) != 10:
+                print "ERROR in sample", sample, "VCF record has", str(len(l)), "columns instead of 10."
+                print ' '.join(l)
             # variants which don't start with DP are INDELS
-            if l[7][0:2] == 'DP' and float(l[5]) > filters['minQual']:
-                contig = l[0]
-                pos = l[1]
-                ref = l[3]
-                alt = l[4]
+            contig = l[0]
+            pos = l[1]
+            ref = l[3]
+            alt = l[4]
+            qual = float(l[5])
+            gt = l[9][0:3]
 
-                gt = l[9][0:3]
+            #Currently we only handle HET calls (ref and alt have length of 1)
+            if len(ref) == 1 and len(alt) == 1 and qual > filters['minQual']:
                 #pull details out of info line and check minDP4
-                info = l[7].split(';')
-                r = a = 0
-                for i in info:
-                    i = i.split('=')
-                    if i[0] == 'DP4':
-                        r = float(int(i[1].split(',')[0]) + int(i[1].split(',')[1]))
-                        a = float(int(i[1].split(',')[2]) + int(i[1].split(',')[3]))
-                #Coverage filter:
-                if (r+a) < filters['mincov']:
-                    print "Filtered for mincoverage:", r+a
-                    print "Contig %s, pos %s, ref %s, alt %s, gt %s, r %s, a %s, qual %s" % (contig, pos, ref, alt, gt, r, a, float(l[5]))
-                    continue
+                # info = l[7].split(';')
+                # r = a = 0
+                # for i in info:
+                #     i = i.split('=')
+                #     if i[0] == 'DP4':
+                #         r = float(int(i[1].split(',')[0]) + int(i[1].split(',')[1]))
+                #         a = float(int(i[1].split(',')[2]) + int(i[1].split(',')[3]))
+                # #Coverage filter:
+                # if (r+a) < filters['mincov']:
+                #     print "Filtered for mincoverage:", r+a
+                #     print "Contig %s, pos %s, ref %s, alt %s, gt %s, r %s, a %s, qual %s" % (contig, pos, ref, alt, gt, r, a, float(l[5]))
+                #     continue
 
                 #het filter:
-                if gt == '0/1' and float(a)/(r + a) < filters['minDP4'] or float(r)/(r + a) < filters['minDP4']:
-                    print "Filtered for het and low coverage", float(a)/(r+a), float(r)/(r+a)
-                    print "Contig %s, pos %s, ref %s, alt %s, gt %s, r %s, a %s, qual %s" % (contig, pos, ref, alt, gt, r, a, float(l[5]))
-                    continue
+                # if gt == '0/1' and float(a)/(r + a) < filters['minDP4'] or float(r)/(r + a) < filters['minDP4']:
+                #     print "Filtered for het and low coverage", float(a)/(r+a), float(r)/(r+a)
+                #     print "Contig %s, pos %s, ref %s, alt %s, gt %s, r %s, a %s, qual %s" % (contig, pos, ref, alt, gt, r, a, float(l[5]))
+                #     continue
                 # if a/(r + a) < filters['minDP4'] or r/(r + a) < filters['minDP4'] or (r+a) < filters['mincov']:
                 #     print "Failed filter:"
                 #     print "Contig %s, pos %s, ref %s, alt %s, gt %s, r %s, a %s, qual %s" % (contig, pos, ref, alt, gt, r, a, float(l[5]))
@@ -220,7 +236,8 @@ def inject_variants(sample):
                                     'alt': alt,
                                     'gt': gt
                                     }
-                print "SNP Inserted: Contig %s, pos %s, ref %s, alt %s, gt %s, r %s, a %s, qual %s" % (contig, pos, ref, alt, gt, r, a, float(l[5]))
+                #print "SNP Inserted: Contig %s, pos %s, ref %s, alt %s, gt %s, r %s, a %s, qual %s" % (contig, pos, ref, alt, gt, r, a, float(l[5]))
+                log("Variant passed filter: Contig %s, pos %s, ref %s, alt %s, gt %s, qual %s" % (contig, pos, ref, alt, gt, qual))
 
     #Parse the contigs and apply variants:
     #outf = open(outf, 'w')
@@ -236,8 +253,9 @@ def inject_variants(sample):
             for pos in variants.keys():
                 if variants[pos]['gt'] == '0/1':
                     # Het call
-                    ac = ACs[''.join([variants[pos]['ref'], variants[pos]['alt']])]
-                    print variants[pos], contigm[int(pos) - 1], ac
+                    het = ''.join([variants[pos]['ref'], variants[pos]['alt']])
+                    ac = ACs[het]
+                    log(str(variants[pos]) + contigm[int(pos) - 1] + ac)
                     contigm[int(pos) - 1] = ac
                     totalhets += 1
                 if variants[pos]['gt'] == '1/1':
@@ -245,7 +263,7 @@ def inject_variants(sample):
                     contigm[int(pos) - 1] = 'N'
                     totalhomoozygous += 1
         else:
-            print "------", sample, contig.name, ": No Variants pass filter--------"
+            log("------" + sample + contig.name + ": No Variants pass filter--------")
         #All variants processed:
         new_seq = deepcopy(contig)
         new_seq.seq = contigm.toseq()
@@ -256,6 +274,22 @@ def inject_variants(sample):
 
 
 ## MAIN:
+
+#Globals
+GATKPATH = '/bio/software/HT_sequence/GATK/GenomeAnalysisTK-2.4-9-g532efad/'
+PICARDPATH = '/bio/software/HT_sequence/picard/picard-tools-1.103/'
+LOGLEVEL = 0
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-g', action='store', dest='GATKPATH', default=None,
+                    help='Path where GATK jar file is stored.')
+parser.add_argument('-p', action='store', dest='processes', default=7,
+                    help='Number of processes to use')
+
+args = parser.parse_args()
+processes = int(args.processes)
+targets = args.targets
+
 
 ############
 ## TODO: add some switches
@@ -321,7 +355,7 @@ for i, sample in enumerate(lsamples):
         if format == "fastq":
             A = 3
         elif format == "fasta":
-            A = 2
+            A = 1
         else:
             print "format %s not recognized, exiting" % format
         PE = SE = ""

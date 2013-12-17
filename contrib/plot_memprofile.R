@@ -37,7 +37,7 @@ names(cols) = unique(time_data$PID)
 
 par(mar=c(2,5,1,1))
 plot(y=total_CPU, x=total_CPU_time, type='l', ylab="Total % CPU", cex.axis=1.2, cex.lab=1.2)
-text(y=max(total_CPU)/2.5, x=max(time_data$time)/2,
+text(y=max(total_CPU)/5.5, x=max(time_data$time)/2,
      paste("Running time", signif((max(time_data$time) - min(time_data$time))/60/60, 4), "hrs\n",
      "Max cpu:", signif(max(total_CPU), 4), "%\n",
      "Average cpu:", signif(mean(total_CPU), 4), "%" ))

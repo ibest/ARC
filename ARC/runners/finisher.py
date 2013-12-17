@@ -204,7 +204,9 @@ class Finisher(Base):
                 for contig in SeqIO.parse(contig_inf, 'fasta'):
                     i += 1
                     contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
-                    contig.seq = Seq(str(self.mask_seq(contig.seq.tostring().upper())))
+                    contig = contig.upper()
+                    if self.params['maskrepeats']:
+                        contig.seq = Seq(str(self.mask_seq(contig.seq.tostring())))
                     SeqIO.write(contig, outf, "fasta")
                 contig_inf.close()
                 logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs " % (self.params['sample'], target, self.params['iteration'], i))
@@ -278,15 +280,14 @@ class Finisher(Base):
             # I00N_contigs.fasta, grab these and write them out instead
             logger.info("Sample: %s target: %s iteration: %s Writing contigs from previous iteration."
                         % (self.params['sample'], target, self.params['iteration']))
-            #contigf =  open(os.path.join(self.params['working_dir'], 'I%03d' % (self.params['iteration'] - 1) + '_contigs.fasta'), 'r')
-            contigf =  os.path.join(self.params['working_dir'], 'I%03d' % (self.params['iteration'] - 1) + '_contigs.fasta')
+            #contigf = open(os.path.join(self.params['working_dir'], 'I%03d' % (self.params['iteration'] - 1) + '_contigs.fasta'), 'r')
+            contigf = os.path.join(self.params['working_dir'], 'I%03d' % (self.params['iteration'] - 1) + '_contigs.fasta')
             if os.path.exists(contigf):
                 for contig in SeqIO.parse(contigf, 'fasta'):
                     if contig.id.split("_:_")[1] == target:
                         SeqIO.write(contig, outf, "fasta")
         #Cleanup temporary assembly, and reads:
         #os.system("rm -rf %s" % target_folder)
-
 
     def writeCDNAresults(self, target, target_folder, outf, contigf):
         """
@@ -317,7 +318,7 @@ class Finisher(Base):
             return None
         #Storage data structures:
         isogroups = {}  # A dict of isogroups which each contain an in-order list of contigs
-        readcounts = Counter() # A dict of all contigs, these contain read counts (from ReadStatus)
+        readcounts = Counter()  # A dict of all contigs, these contain read counts (from ReadStatus)
         contig_orientation = {}
         contig_to_isogroup = {}
         contig_idx = SeqIO.index(contigf, "fasta")
@@ -344,7 +345,7 @@ class Finisher(Base):
                         raise exceptions.FatalError('Contig %s in %s more than once' % (contig, contigf))
             #Handle lines containing contig orientation info:
             elif l[0:6] == 'isotig':
-                l2 = l[l.find(" ") + 1: l.rfind(" ") -1]
+                l2 = l[l.find(" ") + 1: l.rfind(" ") - 1]
                 l3 = [l2[i:i+6] for i in range(0, len(l2), 6)]
                 for i in range(len(l3)):
                     if l3[i][0] == '<':
