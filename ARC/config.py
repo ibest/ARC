@@ -37,7 +37,8 @@ class Config:
         'cdna': False,
         'rip': False,
         'subsample': 1,
-        'maskrepeats': True
+        'maskrepeats': True,
+        'nprocs': 1
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {
