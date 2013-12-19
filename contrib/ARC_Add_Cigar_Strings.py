@@ -135,8 +135,10 @@ def process_sample(sample, targets, contigs):
     """
     outf_s = open("./finished_" + sample + '/align_log.txt', 'w')
     #First run blat to generate PSL:
+    print "Running blat for sample: %s" % sample
     psl = run_blat(sample, targets, contigs, outf_s)
     #TODO add appropriate behavior if output is None
+    print "Processing PSL for sample: %s" % sample
     psl_processed = process_psl(sample, psl)
 
     with open(str("./finished_" + sample + "/processedcontigs.fa"), "w") as outfile:

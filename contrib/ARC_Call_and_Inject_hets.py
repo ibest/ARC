@@ -56,14 +56,33 @@ def sp_caller(args, out):
         raise e
 
 
-def make_vcf(i, j, target, PE, SE, caller='GATK'):
+def make_vcf(i, j, target, PE, SE, format, caller='GATK'):
     """
     i is sample
     j is target
 
     """
+    #Get reads for this target:
+    if format == "fastq":
+        A = 3
+    elif format == "fasta":
+        A = 1
+    else:
+        print "format %s not recognized, exiting" % format
     #output handle for stderr and stdout:
     with open('./make_vcf_temp/S%s_%s.log' % (i, j), 'a') as out:
+        PEp = SEp = ""
+        if PE:
+            cmd = "grep -A %s '%s$' ./finished_%s/PE1.%s > ./make_vcf_temp/PE1_%s_%s.%s" % (A, target, sample, format, i, j, format)
+            os.system(cmd)
+            cmd = "grep -A %s '%s$' ./finished_%s/PE2.%s > ./make_vcf_temp/PE2_%s_%s.%s" % (A, target, sample, format, i, j, format)
+            os.system(cmd)
+            PEp = " -1 ./make_vcf_temp/PE1_%s_%s.%s -2 ./make_vcf_temp/PE2_%s_%s.%s" % (i, j, format, i, j, format)
+        if SE:
+            cmd = "grep -A %s '%s$' ./finished_%s/SE.%s > ./make_vcf_temp/SE_%s_%s.%s" % (A, target, sample, format, i, j, format)
+            os.system(cmd)
+            SEp = " -U ./make_vcf_temp/SE_%s_%s.%s" % (i, j, format)
+
         log("Starting processing for target %s" % target, out)
         #Build indexes:
         if os.path.exists("./make_vcf_temp/idx_%s_%s" % (i, j)):
@@ -83,7 +102,7 @@ def make_vcf(i, j, target, PE, SE, caller='GATK'):
         ## Note that RG fields are included in order to make the output compatible with GATK
         args = ['bowtie2', '--seed', '42', '-p', '2', '-t', '-I', '0', '-X', '1500',
                 '--rg-id', 'none', '--rg', 'PL:ILLUMINA', '--rg', 'SM:none', '-x',
-                './make_vcf_temp/idx_%s_%s/idx' % (i, j), PE, SE, '-S',
+                './make_vcf_temp/idx_%s_%s/idx' % (i, j), PEp, SEp, '-S',
                 './make_vcf_temp/tmp_%s_%s.sam' % (i, j)]
         sp_caller(args, out)
         # cmd = "bowtie2 --seed 42 -p 2 -t -I 0 -X 1500 --rg-id none --rg PL:ILLUMINA --rg SM:none"
@@ -387,32 +406,29 @@ for i, sample in enumerate(lsamples):
             #print contig
             SeqIO.write(contigsidx[contig], outf, "fasta")
         outf.close()
-        #Get reads for this target:
-        if format == "fastq":
-            A = 3
-        elif format == "fasta":
-            A = 1
-        else:
-            print "format %s not recognized, exiting" % format
-        PE = SE = ""
-        if samples[sample]['PE1'] and samples[sample]['PE2']:
-            #For reasons that remain unclear to me, grep sometimes outputs a '--' line after the qual, causing major problems
-            # Because bowtie2 views it as 2 additional quality characters and fails.
-            cmd = "grep -A %s '%s$' ./finished_%s/PE1.%s > ./make_vcf_temp/PE1_%s_%s.%s" % (A, target, sample, format, i, j, format)
-            #print cmd
-            os.system(cmd)
-            cmd = "grep -A %s '%s$' ./finished_%s/PE2.%s > ./make_vcf_temp/PE2_%s_%s.%s" % (A, target, sample, format, i, j, format)
-            #print cmd
-            os.system(cmd)
-            PE = " -1 ./make_vcf_temp/PE1_%s_%s.%s -2 ./make_vcf_temp/PE2_%s_%s.%s" % (i, j, format, i, j, format)
-        if samples[sample]['SE']:
-            cmd = "grep -A %s '%s$' ./finished_%s/SE.%s > ./make_vcf_temp/SE_%s_%s.%s" % (A, target, sample, format, i, j, format)
-            #print cmd
-            os.system(cmd)
-            SE = " -U ./make_vcf_temp/SE_%s_%s.%s" % (i, j, format)
 
-        results[sample].append((i, j, p.apply_async(make_vcf, (i, j, target, PE, SE,))))
+        # PE = SE = ""
+        # if samples[sample]['PE1'] and samples[sample]['PE2']:
+        #     #For reasons that remain unclear to me, grep sometimes outputs a '--' line after the qual, causing major problems
+        #     # Because bowtie2 views it as 2 additional quality characters and fails.
+        #     cmd = "grep -A %s '%s$' ./finished_%s/PE1.%s > ./make_vcf_temp/PE1_%s_%s.%s" % (A, target, sample, format, i, j, format)
+        #     #print cmd
+        #     os.system(cmd)
+        #     cmd = "grep -A %s '%s$' ./finished_%s/PE2.%s > ./make_vcf_temp/PE2_%s_%s.%s" % (A, target, sample, format, i, j, format)
+        #     #print cmd
+        #     os.system(cmd)
+        #     PE = " -1 ./make_vcf_temp/PE1_%s_%s.%s -2 ./make_vcf_temp/PE2_%s_%s.%s" % (i, j, format, i, j, format)
+        # if samples[sample]['SE']:
+        #     cmd = "grep -A %s '%s$' ./finished_%s/SE.%s > ./make_vcf_temp/SE_%s_%s.%s" % (A, target, sample, format, i, j, format)
+        #     SE = " -U ./make_vcf_temp/SE_%s_%s.%s" % (i, j, format)
+        #     os.system(cmd)
+        #     #print cmd
+
+        PE = samples[sample]['PE1'] and samples[sample]['PE2']
+        SE = samples[sample]['SE']
+        results[sample].append((i, j, p.apply_async(make_vcf, (i, j, target, PE, SE, format,))))
         #make_vcf(i,j,target,PE, SE)
+
 
 #Check results, if anything is done combine the vcf
 while len(results) > 0:
