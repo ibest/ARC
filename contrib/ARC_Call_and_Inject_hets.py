@@ -434,7 +434,7 @@ while len(results) > 0:
                     elif line[0] != '#':
                         variants.append(line)
             os.system("rm ./make_vcf_temp/tmp_%s_%s.vcf" % (i, j))
-            os.system("rm ./make_vcf_temp/tmp_%s_%s.vcf" % (i, j))
+            os.system("rm ./make_vcf_temp/tmp_%s_%s.vcf.idx" % (i, j))
         outf = open('./make_vcf_temp/%s.vcf' % finished_sample, 'w')
         outf.write("".join(header[0:4]))
         outf.write("".join(contigs))
