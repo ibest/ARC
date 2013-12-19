@@ -7,13 +7,20 @@ import subprocess
 import time
 import sys
 
+### Function definitons:
+def log(txt, out):
+    if LOGLEVEL > 0:
+        print(txt)
+    out.write(txt+'\n')
+    out.flush()
 
-def process_psl(sample, psl):
+
+def process_psl(sample, contigs, psl):
     """
     Iterate over a PSL file, pull out the higest scoring hit and do a number of other
     calculations. TODO: Break this into a couple of functions to clean up the logic a bit.
     """
-    sequences = SeqIO.index("./finished_" + sample + "/contigs.fasta", "fasta")  # how should i avoid doing this?
+    sequences = SeqIO.index("./finished_" + sample + "/" + contigs, "fasta")  # how should i avoid doing this?
     blatfinal = {}
     for line in open(psl, 'r'):
         line = line.strip().split()
@@ -85,18 +92,18 @@ def process_psl(sample, psl):
     return blatfinal
 
 
-def run_blat(sample, targets, outf_s):
+def run_blat(sample, targets, contigs, outf_s):
     """
     Given a sample name and targets file, this will run blat, sending all output to a log
     file, and returning the PSL file path.
     """
     print("processing " + sample)
     #this needs to be more flexible
-    originalcontigs = list(SeqIO.parse("./finished_" + sample + "/contigs.fasta", "fasta"))
+    originalcontigs = list(SeqIO.parse("./finished_" + sample + "/" + contigs, "fasta"))
     if len(originalcontigs) == 0:
-        print("contigs.fasta file empty")
+        print("./finished_" + sample + "/" + contigs + " file empty")
     elif len(originalcontigs) > 0:
-        args = ["blat", "-noHead", targets, "./finished_" + sample + "/contigs.fasta",
+        args = ["blat", "-noHead", targets, "./finished_" + sample + "/" + contigs,
                 "./finished_" + sample + "/blat_" + sample + ".psl"]
         ret = subprocess.call(args, stdout=outf_s, stderr=outf_s)
         if ret != 0:
@@ -122,13 +129,13 @@ def check_status(results):
     return unfinished
 
 
-def process_sample(sample, targets):
+def process_sample(sample, targets, contigs):
     """
     Wrapper function which handles processing for a single sample.
     """
     outf_s = open("./finished_" + sample + '/align_log.txt', 'w')
     #First run blat to generate PSL:
-    psl = run_blat(sample, targets, outf_s)
+    psl = run_blat(sample, targets, contigs, outf_s)
     #TODO add appropriate behavior if output is None
     psl_processed = process_psl(sample, psl)
 
@@ -144,7 +151,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-t', action='store', dest='targets', default=None,
                     help='targets file for mapping (uses path specified in config file by default')
 parser.add_argument('-p', action='store', dest='processes', default=7,
-                    help='Number of processes to use')
+                    help='Number of processes to use', type=int)
 parser.add_argument("-c", action='store', dest='contigs', default='contigs.fasta',
                     help='alternate names for contigs, i.e. if hets have been injected.')
 
@@ -174,7 +181,7 @@ p = Pool(processes=processes, maxtasksperchild=1)
 results = {}
 
 for sample in samples:
-    results[sample] = p.apply_async(process_sample, (sample, targets,))
+    results[sample] = p.apply_async(process_sample, (sample, targets, contigs, ))
 
 allfinished = False
 while not allfinished:
