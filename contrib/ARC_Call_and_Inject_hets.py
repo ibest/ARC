@@ -56,113 +56,119 @@ def sp_caller(args, out):
         raise e
 
 
-def make_vcf(i, j, target, PE, SE, format, caller='GATK'):
+def make_vcf(i, j, target, PE, SE, format, sample, caller='GATK'):
     """
     i is sample
     j is target
 
     """
     #Get reads for this target:
-    if format == "fastq":
-        A = 3
-    elif format == "fasta":
-        A = 1
-    else:
-        print "format %s not recognized, exiting" % format
-    #output handle for stderr and stdout:
-    with open('./make_vcf_temp/S%s_%s.log' % (i, j), 'a') as out:
-        PEp = SEp = ""
-        if PE:
-            cmd = "grep -A %s '%s$' ./finished_%s/PE1.%s > ./make_vcf_temp/PE1_%s_%s.%s" % (A, target, sample, format, i, j, format)
-            os.system(cmd)
-            cmd = "grep -A %s '%s$' ./finished_%s/PE2.%s > ./make_vcf_temp/PE2_%s_%s.%s" % (A, target, sample, format, i, j, format)
-            os.system(cmd)
-            PEp = " -1 ./make_vcf_temp/PE1_%s_%s.%s -2 ./make_vcf_temp/PE2_%s_%s.%s" % (i, j, format, i, j, format)
-        if SE:
-            cmd = "grep -A %s '%s$' ./finished_%s/SE.%s > ./make_vcf_temp/SE_%s_%s.%s" % (A, target, sample, format, i, j, format)
-            os.system(cmd)
-            SEp = " -U ./make_vcf_temp/SE_%s_%s.%s" % (i, j, format)
-
-        log("Starting processing for target %s" % target, out)
-        #Build indexes:
-        if os.path.exists("./make_vcf_temp/idx_%s_%s" % (i, j)):
-            os.system("rm -rf ./make_vcf_temp/idx_%s_%s" % (i, j))
-        os.system("mkdir ./make_vcf_temp/idx_%s_%s" % (i, j))
-        log("Building index..", out)
-        args = ['bowtie2-build', '-f', './make_vcf_temp/ref_%s_%s.fasta' % (i, j)]
-        args += ['./make_vcf_temp/idx_%s_%s/idx' % (i, j)]
-        sp_caller(args, out)
-        #cmd = "bowtie2-build -f ./make_vcf_temp/ref_%s_%s.fasta" % (i, j)
-        #cmd += " ./make_vcf_temp/idx_%s_%s/idx >>./make_vcf_temp/S%s_%s.log 2>&1" % (i, j, i, j)
-        #log(cmd, out)
-        #os.system(cmd)
-
-        #Do mapping:
-        log("Running bowtie..", out)
-        ## Note that RG fields are included in order to make the output compatible with GATK
-        args = ['bowtie2', '--seed', '42', '-p', '2', '-t', '-I', '0', '-X', '1500',
-                '--rg-id', 'none', '--rg', 'PL:ILLUMINA', '--rg', 'SM:none', '-x',
-                './make_vcf_temp/idx_%s_%s/idx' % (i, j), PEp, SEp, '-S',
-                './make_vcf_temp/tmp_%s_%s.sam' % (i, j)]
-        sp_caller(args, out)
-        # cmd = "bowtie2 --seed 42 -p 2 -t -I 0 -X 1500 --rg-id none --rg PL:ILLUMINA --rg SM:none"
-        # cmd += " -x ./make_vcf_temp/idx_%s_%s/idx" % (i, j)
-        # cmd += PE + SE + " -S ./make_vcf_temp/tmp_%s_%s.sam >> ./make_vcf_temp/S%s_%s.log 2>&1" % (i, j, i, j)
-        #log(' '.join((str(i), str(j), cmd)), out)
-        #os.system(cmd)
-
-        # Screen for low map q, sort and convert to bam
-        log("Filtering and converting to bam", out)
-        #Note, you can't use subprocess.call() with this command because stdout is getting
-        # piped from one call to the next and subprocess.call() seems to mess this up:
-        cmd = "samtools view -q 10 -bS ./make_vcf_temp/tmp_%s_%s.sam | samtools sort - ./make_vcf_temp/tmp_%s_%s" % (i, j, i, j)
-        cmd += " >> ./make_vcf_temp/S%s_%s.log 2>&1" % (i, j)
-        log(cmd, out)
-        os.system(cmd)
-
-        #Create index for GATK:
-        args = ['samtools', 'index', './make_vcf_temp/tmp_%s_%s.bam' % (i, j)]
-        sp_caller(args, out)
-        args = ['samtools', 'faidx', "./make_vcf_temp/ref_%s_%s.fasta" % (i, j)]
-        sp_caller(args, out)
-
-        #Call variants:
-        if caller == 'GATK':
-            #Build dict for GATK:
-            args = [
-                'java', '-jar', PICARDPATH + 'CreateSequenceDictionary.jar',
-                'REFERENCE=./make_vcf_temp/ref_%s_%s.fasta' % (i, j),
-                'OUTPUT=./make_vcf_temp/ref_%s_%s.dict' % (i, j)
-            ]
-            sp_caller(args, out)
-
-            #Call with GATK:
-            args = [
-                'java', '-Xmx6g', '-jar', GATKPATH + 'GenomeAnalysisTK.jar',
-                '-T', 'HaplotypeCaller', '-R', './make_vcf_temp/ref_%s_%s.fasta' % (i, j),
-                '-I', './make_vcf_temp/tmp_%s_%s.bam' % (i, j),
-                '-o', './make_vcf_temp/tmp_%s_%s.vcf' % (i, j)]
-            sp_caller(args, out)
-
+    try:
+        if format == "fastq":
+            A = 3
+        elif format == "fasta":
+            A = 1
         else:
-            # Call variants:
-            log("Calling variants", out)
-            cmd = "samtools mpileup -D -u -f ./make_vcf_temp/ref_%s_%s.fasta ./make_vcf_temp/tmp_%s_%s.bam |" % (i, j, i, j)
-            cmd += " bcftools view -vgc - > ./make_vcf_temp/tmp_%s_%s.vcf 2> ./make_vcf_temp/S%s_%s.log" % (i, j, i, j)
-            log(cmd, out)
-            os.system(cmd, out)
+            print "format %s not recognized, exiting" % format
+        #output handle for stderr and stdout:
+        with open('./make_vcf_temp/S%s_%s.log' % (i, j), 'a') as out:
+            PEp = SEp = ""
+            if PE:
+                cmd = "grep -A %s '%s$' ./finished_%s/PE1.%s > ./make_vcf_temp/PE1_%s_%s.%s" % (A, target, sample, format, i, j, format)
+                os.system(cmd)
+                cmd = "grep -A %s '%s$' ./finished_%s/PE2.%s > ./make_vcf_temp/PE2_%s_%s.%s" % (A, target, sample, format, i, j, format)
+                os.system(cmd)
+                PEp = " -1 ./make_vcf_temp/PE1_%s_%s.%s -2 ./make_vcf_temp/PE2_%s_%s.%s" % (i, j, format, i, j, format)
+            if SE:
+                cmd = "grep -A %s '%s$' ./finished_%s/SE.%s > ./make_vcf_temp/SE_%s_%s.%s" % (A, target, sample, format, i, j, format)
+                os.system(cmd)
+                SEp = " -U ./make_vcf_temp/SE_%s_%s.%s" % (i, j, format)
 
-        # Cleanup:
-        log("Cleaning up...", out)
-        os.system("rm ./make_vcf_temp/PE1_%s_%s.fastq" % (i, j))
-        os.system("rm ./make_vcf_temp/PE2_%s_%s.fastq" % (i, j))
-        os.system("rm ./make_vcf_temp/SE_%s_%s.fastq" % (i, j))
-        os.system("rm ./make_vcf_temp/tmp_%s_%s.sam" % (i, j))
-        os.system("rm ./make_vcf_temp/tmp_%s_%s.bam" % (i, j))
-        os.system("rm ./make_vcf_temp/tmp_%s_%s.bam.bai" % (i, j))
-        os.system("rm -rf ./make_vcf_temp/idx_%s_%s" % (i, j))
-        os.system("rm ./make_vcf_temp/ref_%s_%s.*" % (i, j))
-        log("target %s complete" % target, out)
+            log("Starting processing for target %s" % target, out)
+            #Build indexes:
+            if os.path.exists("./make_vcf_temp/idx_%s_%s" % (i, j)):
+                os.system("rm -rf ./make_vcf_temp/idx_%s_%s" % (i, j))
+            os.system("mkdir ./make_vcf_temp/idx_%s_%s" % (i, j))
+            log("Building index..", out)
+            args = ['bowtie2-build', '-f', './make_vcf_temp/ref_%s_%s.fasta' % (i, j)]
+            args += ['./make_vcf_temp/idx_%s_%s/idx' % (i, j)]
+            sp_caller(args, out)
+            #cmd = "bowtie2-build -f ./make_vcf_temp/ref_%s_%s.fasta" % (i, j)
+            #cmd += " ./make_vcf_temp/idx_%s_%s/idx >>./make_vcf_temp/S%s_%s.log 2>&1" % (i, j, i, j)
+            #log(cmd, out)
+            #os.system(cmd)
+
+            #Do mapping:
+            log("Running bowtie..", out)
+            ## Note that RG fields are included in order to make the output compatible with GATK
+            args = ['bowtie2', '--seed', '42', '-p', '2', '-t', '-I', '0', '-X', '1500',
+                    '--rg-id', 'none', '--rg', 'PL:ILLUMINA', '--rg', 'SM:none', '-x',
+                    './make_vcf_temp/idx_%s_%s/idx' % (i, j), PEp, SEp, '-S',
+                    './make_vcf_temp/tmp_%s_%s.sam' % (i, j)]
+            sp_caller(args, out)
+            # cmd = "bowtie2 --seed 42 -p 2 -t -I 0 -X 1500 --rg-id none --rg PL:ILLUMINA --rg SM:none"
+            # cmd += " -x ./make_vcf_temp/idx_%s_%s/idx" % (i, j)
+            # cmd += PE + SE + " -S ./make_vcf_temp/tmp_%s_%s.sam >> ./make_vcf_temp/S%s_%s.log 2>&1" % (i, j, i, j)
+            #log(' '.join((str(i), str(j), cmd)), out)
+            #os.system(cmd)
+
+            # Screen for low map q, sort and convert to bam
+            log("Filtering and converting to bam", out)
+            #Note, you can't use subprocess.call() with this command because stdout is getting
+            # piped from one call to the next and subprocess.call() seems to mess this up:
+            cmd = "samtools view -q 10 -bS ./make_vcf_temp/tmp_%s_%s.sam | samtools sort - ./make_vcf_temp/tmp_%s_%s" % (i, j, i, j)
+            cmd += " >> ./make_vcf_temp/S%s_%s.log 2>&1" % (i, j)
+            log(cmd, out)
+            os.system(cmd)
+
+            #Create index for GATK:
+            args = ['samtools', 'index', './make_vcf_temp/tmp_%s_%s.bam' % (i, j)]
+            sp_caller(args, out)
+            args = ['samtools', 'faidx', "./make_vcf_temp/ref_%s_%s.fasta" % (i, j)]
+            sp_caller(args, out)
+
+            #Call variants:
+            if caller == 'GATK':
+                #Build dict for GATK:
+                args = [
+                    'java', '-jar', PICARDPATH + 'CreateSequenceDictionary.jar',
+                    'REFERENCE=./make_vcf_temp/ref_%s_%s.fasta' % (i, j),
+                    'OUTPUT=./make_vcf_temp/ref_%s_%s.dict' % (i, j)
+                ]
+                sp_caller(args, out)
+
+                #Call with GATK:
+                args = [
+                    'java', '-Xmx6g', '-jar', GATKPATH + 'GenomeAnalysisTK.jar',
+                    '-T', 'HaplotypeCaller', '-R', './make_vcf_temp/ref_%s_%s.fasta' % (i, j),
+                    '-I', './make_vcf_temp/tmp_%s_%s.bam' % (i, j),
+                    '-o', './make_vcf_temp/tmp_%s_%s.vcf' % (i, j)]
+                sp_caller(args, out)
+
+            else:
+                # Call variants:
+                log("Calling variants", out)
+                cmd = "samtools mpileup -D -u -f ./make_vcf_temp/ref_%s_%s.fasta ./make_vcf_temp/tmp_%s_%s.bam |" % (i, j, i, j)
+                cmd += " bcftools view -vgc - > ./make_vcf_temp/tmp_%s_%s.vcf 2> ./make_vcf_temp/S%s_%s.log" % (i, j, i, j)
+                log(cmd, out)
+                os.system(cmd, out)
+
+            # Cleanup:
+            log("Cleaning up...", out)
+            os.system("rm ./make_vcf_temp/PE1_%s_%s.fastq" % (i, j))
+            os.system("rm ./make_vcf_temp/PE2_%s_%s.fastq" % (i, j))
+            os.system("rm ./make_vcf_temp/SE_%s_%s.fastq" % (i, j))
+            os.system("rm ./make_vcf_temp/tmp_%s_%s.sam" % (i, j))
+            os.system("rm ./make_vcf_temp/tmp_%s_%s.bam" % (i, j))
+            os.system("rm ./make_vcf_temp/tmp_%s_%s.bam.bai" % (i, j))
+            os.system("rm -rf ./make_vcf_temp/idx_%s_%s" % (i, j))
+            os.system("rm ./make_vcf_temp/ref_%s_%s.fasta" % (i, j))
+            os.system("rm ./make_vcf_temp/ref_%s_%s.fasta.fai" % (i, j))
+            os.system("rm ./make_vcf_temp/ref_%s_%s.dict" % (i, j))
+            os.system("rm ./make_vcf_temp/S%s_%s.log" % (i, j))
+    except Exception as e:
+        print "EXCEPTION:", e
+        log(str(e), out)
 
 
 def check_status(results):
@@ -181,6 +187,22 @@ def check_status(results):
         if unfinished == 0:
             return sample
     return None
+
+
+def count_jobs(results):
+    """
+    run through each of the lists in results, count all of the jobs which haven't
+    finished
+    """
+    unfinished = 0
+    finished = 0
+    for sample in results:
+        for r in results[sample]:
+            if not r[2].ready():
+                unfinished += 1
+            else:
+                finished += 1
+    return (finished, unfinished)
 
 
 def inject_variants(sample):
@@ -287,9 +309,9 @@ def inject_variants(sample):
     for contig in SeqIO.parse(contigf, 'fasta'):
         contigm = contig.seq.tomutable()
         if contig.id in vcf:
-            print contig.id
+            #print contig.id
             variants = vcf[contig.id]
-            print variants
+            #print variants
             for pos in variants.keys():
                 if variants[pos]['gt'] == '0/1':
                     # Het call
@@ -311,6 +333,33 @@ def inject_variants(sample):
         SeqIO.write(new_seq, outf, 'fasta')
     outf.close()
     log(sample + "Total hets: %s " % totalhets + " Totalhomozygous:%s" % totalhomozygous, out)
+
+
+def finish_sample(results, sample):
+    #Sample is finished, combine and delete VCF files:
+    contigs = []
+    header = []
+    variants = []
+    for result in results[finished_sample]:
+        i, j = result[0:2]
+        #print "i:", i, " j:", j
+        if os.path.exists("./make_vcf_temp/tmp_%s_%s.vcf" % (i, j)):
+            for line in open("./make_vcf_temp/tmp_%s_%s.vcf" % (i, j), 'r'):
+                if j == 0 and line[0] == "#" and line[0:9] != "##contig=":
+                    header.append(line)
+                elif line[0:9] == "##contig=":
+                    contigs.append(line)
+                elif line[0] != '#':
+                    variants.append(line)
+        os.system("rm ./make_vcf_temp/tmp_%s_%s.vcf" % (i, j))
+        os.system("rm ./make_vcf_temp/tmp_%s_%s.vcf.idx" % (i, j))
+    outf = open('./make_vcf_temp/%s.vcf' % finished_sample, 'w')
+    outf.write("".join(header[0:4]))
+    outf.write("".join(contigs))
+    outf.write("".join(header[4:]))
+    outf.write("".join(variants))
+    outf.close()
+    inject_variants(finished_sample)
 
 
 ## MAIN:
@@ -381,11 +430,12 @@ else:
     print "Can't find config file:", CONFIGF
     sys.exit()
 
+print "Processes:", processes
 p = Pool(processes=processes, maxtasksperchild=1)
 results = {}
 
 lsamples = samples.keys()
-
+jobs = 0
 for i, sample in enumerate(lsamples):
     #sample = lsamples[i]
     results[sample] = []
@@ -407,27 +457,23 @@ for i, sample in enumerate(lsamples):
             SeqIO.write(contigsidx[contig], outf, "fasta")
         outf.close()
 
-        # PE = SE = ""
-        # if samples[sample]['PE1'] and samples[sample]['PE2']:
-        #     #For reasons that remain unclear to me, grep sometimes outputs a '--' line after the qual, causing major problems
-        #     # Because bowtie2 views it as 2 additional quality characters and fails.
-        #     cmd = "grep -A %s '%s$' ./finished_%s/PE1.%s > ./make_vcf_temp/PE1_%s_%s.%s" % (A, target, sample, format, i, j, format)
-        #     #print cmd
-        #     os.system(cmd)
-        #     cmd = "grep -A %s '%s$' ./finished_%s/PE2.%s > ./make_vcf_temp/PE2_%s_%s.%s" % (A, target, sample, format, i, j, format)
-        #     #print cmd
-        #     os.system(cmd)
-        #     PE = " -1 ./make_vcf_temp/PE1_%s_%s.%s -2 ./make_vcf_temp/PE2_%s_%s.%s" % (i, j, format, i, j, format)
-        # if samples[sample]['SE']:
-        #     cmd = "grep -A %s '%s$' ./finished_%s/SE.%s > ./make_vcf_temp/SE_%s_%s.%s" % (A, target, sample, format, i, j, format)
-        #     SE = " -U ./make_vcf_temp/SE_%s_%s.%s" % (i, j, format)
-        #     os.system(cmd)
-        #     #print cmd
-
         PE = samples[sample]['PE1'] and samples[sample]['PE2']
         SE = samples[sample]['SE']
-        results[sample].append((i, j, p.apply_async(make_vcf, (i, j, target, PE, SE, format,))))
-        #make_vcf(i,j,target,PE, SE)
+        results[sample].append((i, j, p.apply_async(make_vcf, (i, j, target, PE, SE, format, sample,))))
+        jobs += 1
+        if jobs % (3 * processes) == 0:
+            finished, unfinished = count_jobs(results)
+            print "Total jobs submitted:%s, finished: %s, unfinished: %s" % (jobs, finished, unfinished)
+            while unfinished > (2 * processes):
+                time.sleep(5)
+                finished, unfinished = count_jobs(results)
+                print "Waiting.. finished: %s, unfinished: %s" % (finished, unfinished)
+                if len(results) > 1:
+                        finished_sample = check_status(results)
+                        if finished_sample is not None:
+                            #Sample is finished, combine and delete VCF files:
+                            finish_sample(results, finished_sample)
+                            del results[finished_sample]
 
 
 #Check results, if anything is done combine the vcf
@@ -435,30 +481,8 @@ while len(results) > 0:
     finished_sample = check_status(results)
     if finished_sample is not None:
         #Sample is finished, combine and delete VCF files:
-        contigs = []
-        header = []
-        variants = []
-        for result in results[finished_sample]:
-            i, j = result[0:2]
-            #print "i:", i, " j:", j
-            if os.path.exists("./make_vcf_temp/tmp_%s_%s.vcf" % (i, j)):
-                for line in open("./make_vcf_temp/tmp_%s_%s.vcf" % (i, j), 'r'):
-                    if j == 0 and line[0] == "#" and line[0:9] != "##contig=":
-                        header.append(line)
-                    elif line[0:9] == "##contig=":
-                        contigs.append(line)
-                    elif line[0] != '#':
-                        variants.append(line)
-            os.system("rm ./make_vcf_temp/tmp_%s_%s.vcf" % (i, j))
-            os.system("rm ./make_vcf_temp/tmp_%s_%s.vcf.idx" % (i, j))
-        outf = open('./make_vcf_temp/%s.vcf' % finished_sample, 'w')
-        outf.write("".join(header[0:4]))
-        outf.write("".join(contigs))
-        outf.write("".join(header[4:]))
-        outf.write("".join(variants))
-        outf.close()
+        finish_sample(results, finished_sample)
         del results[finished_sample]
-        inject_variants(finished_sample)
 
     else:
         time.sleep(1)
