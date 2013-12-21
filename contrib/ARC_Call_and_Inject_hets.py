@@ -35,6 +35,7 @@ from multiprocessing import Pool
 from copy import deepcopy
 import subprocess
 import argparse
+import traceback
 
 
 #Function definitions:
@@ -168,7 +169,8 @@ def make_vcf(i, j, target, PE, SE, format, sample, caller='GATK'):
             os.system("rm ./make_vcf_temp/S%s_%s.log" % (i, j))
     except Exception as e:
         print "EXCEPTION:", e
-        log(str(e), out)
+        print "".join(traceback.format_exception(*sys.exec_info()))
+        log(str(e) + "".join(traceback.format_exception(*sys.exec_info())), out)
 
 
 def check_status(results):
