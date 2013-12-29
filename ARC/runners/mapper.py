@@ -178,7 +178,7 @@ class Mapper(Base):
         args = ['blat', self.params['reference'], os.path.join(working_dir, 'reads.txt')]
         if self.params['format'] == 'fastq':
             args.append('-fastq')
-        if 'fastmap' in self.params:
+        if self.params['fastmap']:
             args.append('-fastMap')
         #Some new experimental params to increase specificity after the first iteration:
         if self.params['maskrepeats']:

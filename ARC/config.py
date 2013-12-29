@@ -38,7 +38,8 @@ class Config:
         'rip': False,
         'subsample': 1,
         'maskrepeats': True,
-        'nprocs': 1
+        'nprocs': 1,
+        'fastmap': False
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {
@@ -122,9 +123,9 @@ class Config:
                     self.config[key] = float(value)
                 elif re.match(r"[0-9]+", value):
                     self.config[key] = int(value)
-                elif value == 'True':
+                elif value in ('True', 'true'):
                     self.config[key] = True
-                elif value == 'False':
+                elif value in ('False', 'false'):
                     self.config[key] = False
                 else:
                     self.config[key] = value

@@ -205,7 +205,8 @@ class Finisher(Base):
                     i += 1
                     contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
                     contig = contig.upper()
-                    if self.params['maskrepeats']:
+                    #Only mask repeats on intermediate iterations.
+                    if self.params['maskrepeats'] and not finished:
                         contig.seq = Seq(str(self.mask_seq(contig.seq.tostring())))
                     SeqIO.write(contig, outf, "fasta")
                 contig_inf.close()
