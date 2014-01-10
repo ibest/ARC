@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2013, Institute for Bioninformatics and Evolutionary Studies
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,34 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#import time
 import subprocess
-#import errno
 import os
 import time
 import signal
 from ARC import logger
 from ARC import exceptions
+from ARC.runners import Base
 import traceback
 import sys
 
 
-class Assembler:
+class Assembler(Base):
     """
     This class represents assembly jobs and handles running assemblies.
     required params:
         assembler, sample, target, PE1 and PE2 and/or SE, target_dir
     """
-    def __init__(self, params):
-        self.params = params
 
-    def queue(self, job_q):
-        self.job_q = job_q
-
-    def to_dict(self):
-        return {'runner': self,
-                'message': 'Assembler for Sample: %s Target: %s' % (self.params['sample'], self.params['target']),
-                'params': self.params}
+    def message(self):
+        return 'Assembler for Sample: %s Target: %s' % (self.params['sample'], self.params['target'])
 
     def start(self):
         try:
@@ -124,7 +114,7 @@ class Assembler:
         #Build args for newAssembly:
         args = ['newAssembly', '-force']
         if self.params['last_assembly'] and self.params['cdna']:
-            #only run with the -urt switch when it isn't the final assembly
+            #only run with cdna switch on the final assembly
             args += ['-cdna']
         args += [os.path.join(self.params['target_dir'], 'assembly')]
         logger.debug("Calling newAssembly for sample: %s target %s" % (sample, target))
@@ -157,7 +147,7 @@ class Assembler:
             args += ['-noace']
         else:
             args += ['-nobig']
-        if self.params['urt'] and self.params['iteration'] < self.params['numcycles']:
+        if self.params['urt'] and not self.params['last_assembly']:
             #only run with the -urt switch when it isn't the final assembly
             args += ['-urt']
         if self.params['rip']:

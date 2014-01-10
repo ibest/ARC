@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2013, Institute for Bioninformatics and Evolutionary Studies
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,13 +20,15 @@ from Bio import SeqIO
 from ARC import exceptions
 from ARC import logger
 #from ARC import Assembler
+from ARC.runners import Base
 from ARC.runners import Assembler
 from ARC.runners import AssemblyChecker
 import traceback
 import sys
+from random import randint
 
 
-class Mapper:
+class Mapper(Base):
     """
     This calss handles mapping jobs, as well as converting map results into a text version of a dict.
     required params:
@@ -36,14 +36,9 @@ class Mapper:
     params added:
         mapping_dict
     """
-    def __init__(self, params):
-        self.params = params
 
-    def queue(self, job_q):
-        self.job_q = job_q
-
-    def to_dict(self):
-        return {'runner': self, 'message': 'Sample: %s Starting mapper.' % self.params['sample'], 'params': self.params}
+    def message(self):
+        return 'Sample: %s Starting mapper.' % self.params['sample']
 
     def start(self):
         try:
@@ -183,8 +178,14 @@ class Mapper:
         args = ['blat', self.params['reference'], os.path.join(working_dir, 'reads.txt')]
         if self.params['format'] == 'fastq':
             args.append('-fastq')
-        if 'fastmap' in self.params:
+        if self.params['fastmap']:
             args.append('-fastMap')
+        #Some new experimental params to increase specificity after the first iteration:
+        if self.params['maskrepeats']:
+            args.append("-mask=lower")
+        if self.params['iteration'] > 0:
+            args.append("-minIdentity=98")
+            args.append("-minScore=40")
         args.append(os.path.join(working_dir, 'mapping.psl'))
 
         logger.info("Sample: %s Calling blat mapper" % self.params['sample'])
@@ -205,8 +206,6 @@ class Mapper:
         #Cleanup
         os.remove(os.path.join(working_dir, 'mapping.psl'))
         out.close()
-
-
 
     def SAM_to_dict(self, filename):
         """ Read a SAM file to a mapping dict and return it """
@@ -346,7 +345,10 @@ class Mapper:
                     outf_PE2 = open(os.path.join(target_dir, "PE2." + self.params['format']), 'w')
                 if 'SE' in self.params:
                     outf_SE = open(os.path.join(target_dir, "SE." + self.params['format']), 'w')
+
                 for readID in reads:
+                    if self.params['subsample'] < 1 and randint(0, 100) > self.params['subsample'] * 100:
+                        continue
                     if 'PE1' in self.params and readID in idx_PE1:
                         read1 = idx_PE1[readID]
                         read2 = idx_PE2[readID]
@@ -398,7 +400,7 @@ class Mapper:
                 #Only add an assembly job and AssemblyChecker target if is there are >0 reads:
                 if PEs + SEs > 0:
                     checker_params['targets'][target_dir] = False
-                    self.job_q.put(Assembler(assembly_params).to_dict())
+                    self.submit(Assembler.to_job(assembly_params))
 
             logger.info("------------------------------------")
             logger.info("| Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
@@ -414,8 +416,8 @@ class Mapper:
 
             #Kick off a job which checks if all assemblies are done, and if not adds a copy of itself to the job queue
             if len(checker_params['targets']) > 0:
-                checker = AssemblyChecker(checker_params)
-                self.job_q.put(checker.to_dict())
+                # checker = AssemblyChecker(checker_params)
+                self.submit(AssemblyChecker.to_job(checker_params))
             else:
                 logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
         except:

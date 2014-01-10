@@ -25,6 +25,7 @@ def run(loglevel):
     app = App()
     return app.start(loglevel)
 
+VERSION = '1.1.0'
 
 def main():
     #
@@ -43,6 +44,10 @@ def main():
         "-c", "--config",
         type="string", dest="config", default='ARC_config.txt',
         help="Specify the ARC config file.  The default is ARC_config.txt in the working directory")
+    parser.add_option(
+        "-v", "--version",
+        action="store_true", dest="version", default=False,
+        help="Print version and exit.")
 
     (options, args) = parser.parse_args()
 
@@ -50,6 +55,9 @@ def main():
         loglevel = logging.DEBUG
     else:
         loglevel = logging.INFO
+    if options.version:
+        print "ARC Version", VERSION
+        sys.exit()
 
     lib_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
     if lib_path not in sys.path:

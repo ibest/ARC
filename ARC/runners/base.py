@@ -11,12 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from ARC import logger
 from ARC import FatalError
 from ARC import TimeoutError
 from ARC import RerunnableError
 from ARC import SubprocessError
-# from ARC import Job
+from copy import deepcopy
 import os
 import time
 import subprocess
@@ -26,10 +27,35 @@ import logging
 
 
 class Base:
-    def __init__(self, params, gvars, jobq):
+    def __init__(self, params):
         self.params = params
-        self.gvars = gvars
-        self.jobq = jobq
+
+    def clean(self):
+        del self.params
+        del self.job_q
+        self.params = None
+        self.job_q = None
+
+    def name(self):
+        return self.__class__.__name__
+
+    def message(self):
+        return 'Starting %s' % self.name
+
+    def queue(self, job_q):
+        self.job_q = job_q
+
+    def to_dict(self):
+        return {'runner': self.name,
+                'params': deepcopy(self.params)}
+
+    def submit(self, job):
+        self.job_q.put(job)
+
+    @classmethod
+    def to_job(obj, params):
+        return {'runner': obj.__name__,
+                'params': deepcopy(params)}
 
     # def run(self):
     #     try:

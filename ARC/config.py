@@ -35,11 +35,15 @@ class Config:
         'map_against_reads': False,
         'assemblytimeout': 10,
         'cdna': False,
-        'rip': False
+        'rip': False,
+        'subsample': 1,
+        'maskrepeats': True,
+        'nprocs': 1,
+        'fastmap': False
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {
-        'newbler': ['runAssembly', 'newbler', 'addRun'],
+        'newbler': ['runAssembly', 'newbler', 'addRun', 'runProject'],
         'spades': ['spades.py']
     }
     MAPPERS = {
@@ -115,11 +119,13 @@ class Config:
                 # Go ahead and convert the things that should be ints to ints
                 key = cfg[0].strip()
                 value = cfg[1].strip()
-                if re.match(r"[0-9]+", value):
+                if re.match(r"[0-9]*\.[0-9]+", value):
+                    self.config[key] = float(value)
+                elif re.match(r"[0-9]+", value):
                     self.config[key] = int(value)
-                elif value == 'True':
+                elif value in ('True', 'true'):
                     self.config[key] = True
-                elif value == 'False':
+                elif value in ('False', 'false'):
                     self.config[key] = False
                 else:
                     self.config[key] = value
@@ -218,6 +224,11 @@ class Config:
                     ', '.join(self.ASSEMBLERS.keys())))
         else:
             self.check_bins(self.ASSEMBLERS[self.config['assembler']])
+
+        if self.config['subsample'] <= 0 and  self.config['subsample'] > 1:
+            raise exceptions.FatalError(
+                "Error, you must specify a value greater than 0 and less than or equal to 1 for subsample")
+
 
     def convert(self):
         # Convert minutes to seconds for assembly timeouts

@@ -18,6 +18,7 @@ from Queue import Empty
 from multiprocessing import Process
 from ARC import logger
 from ARC import exceptions
+import ARC.runners
 # from ARC.runners import Assembler
 # from ARC.runners import AssemblyChecker
 # from ARC.runners import Mapper
@@ -45,13 +46,16 @@ class ProcessRunner(Process):
         # are not done prior to starting so spawner doesn't kill the
         # process
         self.not_done()
-        # Begin the run
-        job = item['runner']
-        logger.debug("[%s] Processing: %s" % (self.name, item['message']))
+
+        job = getattr(ARC.runners, item['runner'])(item['params'])
+        logger.debug("[%s] Processing: %s" % (self.name, job.message()))
         job.queue(self.job_q)
-        #self.numjobs += 1
         job.start()
-        # return job.run()
+        job.clean()
+        del job
+        job = None
+        del item
+        item = None
 
     def run(self):
         """

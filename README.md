@@ -6,6 +6,7 @@ ARC Updates:
  * Two new features will be implemented soon. These include
    1. If an assembly is killed after iteration 1, contigs assembled in the previous iteration will be copied to the finished folder from the previous iteration.
    2. A new parameter will be added allowing for sub-sampling of reads. This can help tremendously in situations of very high coverage when using the Newbler assembler.
+ * Support for subsampling reads has been added. For example, add "subsample=0.8" to include only 80% of mapped reads in assemblies at each iteration.
 
 2013-09-18:
  * A major code refactor was recently pushed to the "develop" branch. You can test out this branch by typing "git checkout develop" after cloning the ARC repository. Please help us by submitting any bugs you find. A big thanks to Rob Lyon for his hard work re-organizing and modifying the code for better readability/maintainability.

@@ -16,7 +16,7 @@
 ## FileType: PE1, PE2, or SE
 ## FileFormat: fasta or fastq
 # reference=./targets.fa
-# numcycles=2
+# numcycles=10
 # mapper=bowtie2
 # assembler=newbler
 # nprocs=7
@@ -24,10 +24,12 @@
 # verbose=True
 # urt=True
 # map_against_reads=False
-# assemblytimeout=2
+# assemblytimeout=1
 # bowtie2_k=1
 # rip=True
-# cdna=True
+# cdna=False
+# subsample=1
+# maskrepeats=True
 Sample_ID	FileName	FileType
 Sample1	./reads/Sample1_R1.fastq	PE1
 Sample1	./reads/Sample1_R2.fastq	PE2
@@ -36,3 +38,4 @@ Sample2	./reads/Sample2_R1.fastq	PE1
 Sample2	./reads/Sample2_R2.fastq	PE2
 Sample2	./reads/Sample2_SE.fastq	SE
 cDNASample ./reads/Sample3_SE.fastq	SE
+Repeat ./reads/repeat_reads.fastq	SE

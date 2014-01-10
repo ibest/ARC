@@ -4,12 +4,10 @@ m = function(t){
     t[1]*60*60 + t[2]*60 + t[3]
 }
 
-#while(TRUE){
-
 ## Splits
 system("grep 'Split' log.txt > splits")
 splits = read.table("splits", fill=T, as.is=T)
-splits = splits[splits$V16 == "seconds" & splits$V5 == "Sample:",]
+splits = splits[splits$V16 == "seconds" & splits$V5 == "Sample:" & substr(splits$V1, 1,1) == '[',]
 
 #Figure out split times in seconds:
 splits_times = sapply(strsplit( sapply(strsplit(splits$V2, ","), '[', 1), ':'), m)
@@ -31,7 +29,7 @@ splits_p_s_times  = splits_p_s_times - zero
 ## Assemblies
 system("grep 'Assembly finished' log.txt > assemblies")
 assemblies = read.table("assemblies", fill=T, as.is=T)
-assemblies = assemblies[assemblies$V15 == "seconds" & assemblies$V5 == "Sample:",]
+assemblies = assemblies[assemblies$V15 == "seconds" & assemblies$V5 == "Sample:" & substr(assemblies$V1, 1,1) == '[',]
 
 #Figure out assemblies times in seconds:
 ts = sapply(strsplit( sapply(strsplit(assemblies$V2, ","), '[', 1), ':'), m)
@@ -51,8 +49,8 @@ assemblies_p_s_times  = assemblies_p_s_times - zero
 
 ## Finished:
 system('grep "did not incorporate any more reads" log.txt > finished')
-finished = read.table("finished", fill=T)
-finished = finished[finished$V20  == "done" & finished$V5 == "Sample", ]
+finished = read.table("finished", fill=T, as.is=T)
+finished = finished[finished$V20  == "done" & finished$V5 == "Sample" & substr(finished$V1, 1,1) == '[', ]
 
 #Figure out finished per second:
 ts = sapply(strsplit( sapply(strsplit(finished$V2, ","), '[', 1), ':'), m)
@@ -71,8 +69,8 @@ finished_p_s_times  = finished_p_s_times - zero
 
 ## killed:
 system('grep "Assembly killed" log.txt > killed')
-killed = read.table("killed", fill=T)
-killed = killed[killed$V5  == "Sample:" & killed$V15 == "seconds", ]
+killed = read.table("killed", fill=T, as.is=T)
+killed = killed[killed$V5  == "Sample:" & killed$V15 == "seconds" & substr(killed$V1, 1,1) == '[', ]
 
 #Figure out finished per second:
 killed_p_s = table( paste(killed$V1, sapply(strsplit(killed$V2, ","), '[', 1), sep="_") )
@@ -84,8 +82,8 @@ kiled_p_s_times  = killed_p_s_times - zero
 
 ## repetitive:
 system('grep -E  "repetitive" log.txt > repeat')
-repeats = read.table("repeat", fill=T)
-repeats = repeats[repeats$V5  == "Sample" & repeats$V18 == "done", ]
+repeats = read.table("repeat", fill=T, as.is=T)
+repeats = repeats[repeats$V5  == "Sample" & repeats$V18 == "done" & substr(repeats$V1, 1,1) == '[', ]
 
 #Figure out finished per second:
 repeats_p_s = table( paste(repeats$V1, sapply(strsplit(repeats$V2, ","), '[', 1), sep="_") )
@@ -121,164 +119,10 @@ plot(x=finished_p_s_times/d, y=cumsum(finished_p_s), pch=".", col="black", cex=2
 points(x=killed_p_s_times/d, y=cumsum(killed_p_s), pch=".", col="red", cex=2)
 points(x=repeats_p_s_times/d, y=cumsum(repeats_p_s), pch=".", col="green", cex=2)
 legend("topleft", col=c("black","red", "green"), pch=20, legend=c("Completed", "Killed", "Repeatitive"))
-text(x=1, y=sum(finished_p_s) * .8, labels=paste("Total killed:", sum(killed_p_s), sep=" "), adj=c(0,0))
-text(x=1, y=sum(finished_p_s) * .75, labels=paste("Total completed:", sum(finished_p_s), sep=" "), adj=c(0,0))
-text(x=1, y=sum(finished_p_s) * .7, labels=paste("Total repeats:", sum(repeats_p_s), sep=" "), adj=c(0,0))
+text(x=max(xlim/d) * .01, y=sum(finished_p_s) * .75, labels=paste("Total completed:", sum(finished_p_s), sep=" "), adj=c(0,0))
+text(x=max(xlim/d) * .01, y=sum(finished_p_s) * .7, labels=paste("Total killed:", sum(killed_p_s), sep=" "), adj=c(0,0))
+text(x=max(xlim/d) * .01, y=sum(finished_p_s) * .65, labels=paste("Total repeats detected:", sum(repeats_p_s), sep=" "), adj=c(0,0))
 
 
-dim(splits)[1] - dim(assemblies)[1] - dim(killed)[1]
 
-Sys.sleep(20)
-#}
 
-
-
-
-########################### ------------------- ##################
-# Check splits vs finished
-sp_uniq = paste(splits$V6, splits$V8, splits$V10, sep="_")
-as_uniq = paste(assemblies$V6, assemblies$V8, assemblies$V10, sep="_")
-ki_uniq = paste(killed$V6, killed$V8, killed$V10, sep="_")
-
-(sp_uniq %in% as_uniq | sp_uniq %in% ki_uniq)
-sp_uniq[!(sp_uniq %in% as_uniq | sp_uniq %in% ki_uniq))]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### v2  --  Split running time ####
-m = function(t){
-    t = as.numeric(t)
-    t[1]*60*60 + t[2]*60 + t[3]
-}
-
-while(TRUE){
-
-system("grep 'Split' log.txt > splits")
-splits = read.table("splits", fill=T)
-#splits = na.omit(dat)
-splits = splits[splits$V12 == "Split",]
-splits_p_s = table( sapply(strsplit(splits$V2, ","), '[', 1) )
-
-splits_p_s_times = sapply(strsplit(names(splits_p_s), ':'), m)
-zero = splits_p_s_times[1]
-splits_p_s_times = splits_p_s_times - zero
-
-system("grep 'Assembly finished' log.txt > assemblies")
-assemblies = read.table("assemblies", fill=T)
-#assemblies = na.omit(assemblies)
-assemblies = assemblies[assemblies$V12 == "Assembly",]
-assemblies_p_s = table( sapply(strsplit(assemblies$V2, ","), '[', 1) )
-assemblies_p_s_times = sapply(strsplit(names(assemblies_p_s), ':'), m)
-assemblies_p_s_times = assemblies_p_s_times - zero
-
-par(mfrow=c(1,5))
-plot(splits$V16, main="Splitting times", xlab="split", ylab="seconds", col=as.factor(splits$V10), pch=".")
-plot(splits_p_s, main="Splits per second", xlab="time", ylab="Splits/Second", type='p', pch=".")
-
-plot(assemblies$V15, main="Assembly times", xlab="assembly", ylab="seconds", col=as.factor(splits$V10), pch=".")
-plot(assemblies_p_s, main="Assemblies per second", xlab="time", ylab="Assemblies/Second", type='p', pch=".")
-
-plot(x=splits_p_s_times, y=cumsum(splits_p_s), pch=".", col="red", cex=2, xlab="Time (s)", ylab = "Operations performed",
-    xlim=range(c(splits_p_s_times, assemblies_p_s_times)), ylim=c(0, sum(splits_p_s)))
-points(x=assemblies_p_s_times, y=cumsum(assemblies_p_s), pch=".", col="black", cex=2)
-legend("topleft", col=c("red","black"), pch=20, legend=c("Splits", "Assemblies"))
-
-
-Sys.sleep(20)
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### Assemblies per second ####
-system("grep Split log.txt > tmp2")
-splits = read.table("tmp", fill=T)
-splits = na.omit(splits)
-
-splits_p_s = table( sapply(strsplit(splits$V2, ","), '[', 1) )
-splits_p_m = table( substr(splits$V2, 1, 5))
-}
-
-
-### Assembly running time ####
-system("grep 'Assembly finished' log.txt > tmp")
-dat = read.table("tmp", fill=T)
-dat = na.omit(dat)
-#plot(dat$V14, pch=".", cex=2, main="Newbler assembly time",
-#    xlab="Consecuitive Assembly", ylab="Time (s)", col=as.factor(dat$V8))
-
-plot(dat$V14, pch=".", cex=2, main="Newbler assembly time",
-    xlab="Consecuitive Assembly", ylab="Time (s)", col=dat$V10)
-
-#legend("topright", col=unique(as.factor(dat$V8)), pch=20, legend=unique(dat$V8), cex=.4)
-legend(title="Iteration", "topright", col=unique(as.factor(dat$V10)), pch=20, legend=unique(dat$V10), cex=.8)
-
-m = 1:dim(dat)[1]
-l = lm(dat$V14~m)
-abline(l, col="black", lwd=2)
-
-w = median(dat$V14)/dat$V14
-w[dat$V14 < 1] = 1
-ss = smooth.spline(m,  w=w, dat$V14, spar=0.35)
-lines(ss, col="orange", lwd=2)
-
-boxplot(dat$V14~dat$V10)
-
-#lo = loess(m~dat$V12)
-#lines(predict(lo), col='red', lwd=2)
-#lo = loess(dat$V12~m)
-#lines(predict(lo), col='red', lwd=2)
-
-# Get contigs lengths:
-
-lens = fasta.info("100_targets_genes.txt")
-targets = sapply(strsplit(names(lens), "_:_", fixed=T), '[', 2)
-tlenghts = tapply(lens, INDEX=targets, sum)
-dat2 = cbind(dat, tlengths=tlenghts[match(dat$V8, names(tlenghts))])
-boxplot(dat$V12~dat$tlengths)
-cor(dat2$V12,dat2$tlengths)
-
-
-
-### Failed assemblies ####
-system("grep -i kill spades_log.txt > tmp")
-dat = read.table("tmp")
-
-barplot(table(dat$V8))
-
-plot(dat$V12, pch=".", cex=2, main="Spades assembly time",
-    xlab="Consecuitive Assembly", ylab="Time (s)", col=as.factor(dat$V8))
-#legend("topright", col=unique(as.factor(dat$V8)), pch=20, legend=unique(dat$V8), cex=.4)
-
-m = 1:dim(dat)[1]
-l = lm(dat$V12~m+m^2)
-abline(l, col="black", lwd=2)
-
-ss = smooth.spline(m, dat$V12, spar=0.35)
-lines(ss, col="red", lwd=2)
