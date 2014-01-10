@@ -1,44 +1,10 @@
 ## News
 
 ARC Updates:
-2013-10-21:
- * After a month with no problems on the code-refactor develop is being merged back into stable. Please report any issues.
- * Support for subsampling reads has been added. For example, add "subsample=0.8" to include only 80% of mapped reads in assemblies at each iteration.
-
-2013-09-18:
- * A major code refactor was recently pushed to the "develop" branch. You can test out this branch by typing "git checkout develop" after cloning the ARC repository. Please help us by submitting any bugs you find. A big thanks to Rob Lyon for his hard work re-organizing and modifying the code for better readability/maintainability.
- * The develop branch now comes with a patch which adds Fastq support to the BLAT mapper. If you are not familiar with the Unix/Linux "patch" tool, please see the updated installation instructions for information on how to apply this patch.
- * Basic support for cDNA assemblies has been integrated into ARC. Enable cDNA assemblies using cdna=True in the ARC_config.txt. Currently this only works with the Roche/Newbler assembler. After the run, check the finished_* folders for "isogroup_read_counts.tsv" files. These numbers represent the numbers of reads incorporated into assembled transcripts within the isogroup, and can be used to calculate an RPKM-like measure of gene expression. Preliminary results using reads generated from ovine tissue samples show good clustering of treatment and tissue based on these methods.
- * We plan to release a tool-kit for ARC-based cDNA assembly, annotation, and expression analysis in the near future.
- * ARC was presented in a talk by Dr. Matt Settles at the 5th International Symposium on Animal Functional Genomics in Brazil.
-
-
-2013-08-30:
-
-Updates on ARC progress:
- * ARC just finished 1.3 million assemblies in ~80hrs on a 60 core server! This was accomplished using a dataset containing 52 samples and ~6500 targets.
- * Tackling this big dataset with ARC exposed some issues with memory usage and speed which have now been addressed. ARC should be faster than ever.
-    * These improvements to memory as well as some improvements to logging etc have been added to the Stable (default) branch.
- * ARC now outputs mapping statistics on each iteration with details per-target. See "mapping_stats.tsv" in the finished_* folders.
- * Some preliminary R scripts for profiling and plotting memory usage have been added in the Extensions folder.
-    * Run profilemem.R during your ARC run to collect data (this collections information on ALL processes for a user, so it can be misleading if you use your server for something else while running ARC).
-    * After profilemem.R has collected some data, run plot_memprofile.R (or source it from within R) to see some plots.
- * Work is currently underway to add preliminary RNA-seq support to ARC, stay tuned.
-
-2013-08-05:
-
-ARC has gone a month since the last reported bug and has performed well on numerous projects. At this point we'd like to release a stable version 1.0 and start implementing enhancements in a development branch.
-
-2013-07-09:
-
-New features added and some modifications to output:
- * A an improvement to the way ARC handles splitting read which results in a major speedup.
- * You can now set an assemblytimeout in ARC_config.txt. ARC will monitor assemblies, and if they run longer than assemblytimeout minutes they will be killed. Preliminary testing has shown that this works great for large projects where some of the targets may contain repeats or flanking regions with repeats which can cause the assembler to founder and block other assemblies from running.
-  * assemblytimeout defaults to 10 minutes and accepts fractional values if you would like to limit assemblies to less than a minute.
-  * No contigs are output for assemblies that are killed for running too long, however all of the reads which mapped to that contig are written into the finished_* reads files for further analysis if necessary. Additionally, previously generated contigs (if any) will remain in the working*/I*_contigs.fasta intermediate contig files.
-  *  Previously assemblies which didn't result in any contigs had their reads written to the finished* contigs.fasta. We found that this cluttered up the contigs.fasta file and this behavior has been changed so that reads are now written to the PE1, PE2 and SE fastq/fasta files and no contigs are written.
- * Output has been mostly standardized so that all output starts with "Sample: SampleID target: TargetID" which makes it easy to grep the assembly log and get progress information for a single sample. It is recommended that you run ARC with stdout pipped to a log file to facilitate this: ARC > arc.log
- * Added an Extensions folder to hold ARC extensions, currently there is only one, check_status.R. Please contact us if you are interested in contributing an extension.
+2014-01-10:
+* Fixing the Git branches so that we have "master" and "develop" again.
+* A variety of improvements and bug fixes which all seem to be working well.
+* Prepping for a v1.1.0 release.
 
 
 # ARC (Assembly by Reduced Complexity)
@@ -84,13 +50,14 @@ A mapper and assembler must be installed in your path, the following are current
 * For more information on installing these programs see the Wiki: https://github.com/ibest/ARC/wiki/Details-on-installation
 
 ### Additional Requirements:
-* Python 2.7.X - http://www.python.org/getit/ (not tested, but should work with 3.3X)
+* Python 2.7.X - http://www.python.org/getit/
 * Python Modules:
     * BioPython - http://biopython.org/wiki/Download (tested with v 1.6.0, but should work with any recent release)
 
-Any combination of the mappers and assemblers above should work well, however Newbler and Bowtie 2 are typically faster in our tests.
+Any combination of the mappers and assemblers above should work, however Newbler and Bowtie 2 are typically faster in our tests.
 
 ### Get the source:
+
     $ git clone git://github.com/ibest/ARC.git
 
 ### Option 1: Install to the system path:
@@ -167,7 +134,6 @@ All configuration for ARC is stored in the ARC_config.txt file. Consult the exam
 * format - the read format (fasta/fastq)
 * urt - only applies to Newbler, causes it to 'use read tips' for all but the final assembly
 * map_against_reads - causes ARC to map against reads instead of contigs on the second iteration
-
 
 
 ## Tips and tricks for advanced users
