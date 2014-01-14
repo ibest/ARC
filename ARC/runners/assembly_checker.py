@@ -48,7 +48,6 @@ class AssemblyChecker(Base):
                         self.params['targets'][target_folder] = True
                         logger.info("%s exists" % f)
                         completed += 1
-
             #Now check whether all have finished, if not, add a new AssemblyChecker to the queue
             if len(self.params['targets']) > sum(self.params['targets'].values()):
                 #some jobs haven't completed yet
@@ -68,6 +67,7 @@ class AssemblyChecker(Base):
                 # finisher = Finisher(params)
                 self.submit(Finisher.to_job(params))
                 logger.info("Sample: %s Assemblies finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
+                time.sleep(1)  # test for occasionally not kicking off finisher properly.
         except:
             print "".join(traceback.format_exception(*sys.exc_info()))
             raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
