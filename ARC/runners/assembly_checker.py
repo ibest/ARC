@@ -65,6 +65,7 @@ class AssemblyChecker(Base):
                     params[k] = self.params[k]
                 # params = deepcopy(self.params)
                 # finisher = Finisher(params)
+                logger.debug("Sample: %s, iteration %s, Submitting finisher job to queue." % (sample, self.params['iteration']))
                 self.submit(Finisher.to_job(params))
                 logger.info("Sample: %s Assemblies finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
                 time.sleep(1)  # test for occasionally not kicking off finisher properly.
