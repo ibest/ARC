@@ -36,6 +36,7 @@ class App:
             spawn = Spawn(values)
 
             logger.info("Running ARC.")
+            spawn.submit()
             spawn.run()
 
             logger.info("Cleaning up.")
