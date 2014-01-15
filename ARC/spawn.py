@@ -28,6 +28,7 @@ from ARC.runners import Mapper
 class Spawn:
     def __init__(self, config):
         self.workers = []
+        self.config = config
         self.nprocs = int(config['nprocs'])
         self.q = multiprocessing.JoinableQueue()
         # Contains the state of the job
@@ -48,11 +49,11 @@ class Spawn:
         # Get the number of samples from the configuration
         logger.info("Submitting initial mapping runs.")
 
-        for sample in config['Samples']:
-            s = config['Samples'][sample]
+        for sample in self.config['Samples']:
+            s = self.config['Samples'][sample]
             params = {}
-            for k in config:
-                params[k] = config[k]
+            for k in self.config:
+                params[k] = self.config[k]
             params['working_dir'] = s['working_dir']
             params['finished_dir'] = s['finished_dir']
             params['sample'] = sample
