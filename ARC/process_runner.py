@@ -31,7 +31,6 @@ class ProcessRunner(Process):
 
     def launch(self):
         # Block until there is an item on the queue
-        self.waiting()
         item = self.q.get()
 
         # Run the job
@@ -48,9 +47,13 @@ class ProcessRunner(Process):
         del item
         item = None
 
+        # Notify that the task has been completed
+        self.q.task_done()
+
     def run(self):
         while True:
             try:
+                self.waiting()
                 self.launch()
                 self.update_runstats()
             except exceptions.RerunnableError as e:
@@ -65,9 +68,6 @@ class ProcessRunner(Process):
             except Exception as e:
                 logger.error("An unhandled exception occurred")
                 raise exceptions.FatalError("An unhandled exception occurred")
-            finally:
-                # Notify that the task has been completed
-                self.q.task_done()
 
     def waiting(self):
         self.status[self.proc] = 1
