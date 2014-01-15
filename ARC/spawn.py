@@ -98,7 +98,7 @@ class Spawn:
                 raise
             except (KeyboardInterrupt, SystemExit):
                 logger.error("Terminating processes")
-                self.killall(workers)
+                self.killall()
                 raise
 
         # Kill 'em all!
@@ -122,7 +122,7 @@ class Spawn:
     def all_workers_waiting(self):
         for i in range(self.nprocs):
             print "Spawn: Runner %d reports %d" % (i, self.status[i])
-            
+
         waiting = 0
         for worker in self.workers:
             if worker.is_waiting():
