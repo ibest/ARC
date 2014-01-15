@@ -48,9 +48,6 @@ class ProcessRunner(Process):
         del item
         item = None
 
-        # Notify that the task has been completed
-        self.q.task_done()
-
     def run(self):
         while True:
             try:
@@ -68,6 +65,9 @@ class ProcessRunner(Process):
             except Exception as e:
                 logger.error("An unhandled exception occurred")
                 raise exceptions.FatalError("An unhandled exception occurred")
+            finally:
+                # Notify that the task has been completed
+                self.q.task_done()
 
     def waiting(self):
         self.status[self.proc] = 1

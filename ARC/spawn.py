@@ -98,7 +98,7 @@ class Spawn:
                 raise
             except (KeyboardInterrupt, SystemExit):
                 logger.error("Terminating processes")
-                self.kill_workers(workers)
+                self.killall(workers)
                 raise
 
         # Kill 'em all!
@@ -124,5 +124,5 @@ class Spawn:
         for worker in self.workers:
             if worker.is_waiting():
                 waiting += 1
-
+        print "%d workers are in the waiting state" % (waiting)
         return waiting == len(self.workers)
