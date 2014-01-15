@@ -44,7 +44,7 @@ class Spawn:
         # [5]: Number of Finisher jobs run
         self.stats = multiprocessing.Array('i', [0] * self.nprocs)
 
-    def submit():
+    def submit(self):
         # Get the number of samples from the configuration
         logger.info("Submitting initial mapping runs.")
 

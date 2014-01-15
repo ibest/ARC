@@ -24,10 +24,10 @@ import ARC.runners
 class ProcessRunner(Process):
     def __init__(self, proc, q, status, stats):
         super(ProcessRunner, self).__init__()
+        self.proc = proc
         self.q = q
         self.status = status
         self.stats = stats
-        self.proc = proc
 
     def launch(self):
         # Block until there is an item on the queue
