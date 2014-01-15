@@ -38,7 +38,7 @@ class ProcessRunner(Process):
         self.running()
         job = getattr(ARC.runners, item['runner'])(item['params'])
         logger.debug("[%s] Processing: %s" % (self.name, job.message()))
-        job.queue(self.job_q)
+        job.queue(self.q)
         job.start()
         
         # Clean up
