@@ -127,4 +127,4 @@ class Spawn:
                 waiting += 1
 
         print "%d of %d workers are in the waiting state" % (waiting, self.nprocs)
-        return waiting == len(self.nprocs)
+        return waiting == self.nprocs
