@@ -123,7 +123,7 @@ class Spawn:
         waiting = 0
         for i in range(self.nprocs):
             print "Spawn: Runner %d reports %d" % (i, self.status[i])
-            if self.status[i] == 1
+            if self.status[i] == 1:
                 waiting += 1
 
         print "%d of %d workers are in the waiting state" % (waiting, self.nprocs)
