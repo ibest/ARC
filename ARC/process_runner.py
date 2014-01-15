@@ -1,4 +1,4 @@
-# Copyright 2013, Institute for Bioninformatics and Evolutionary Studies
+# Copyright 2013, Institute for Bioinformatics and Evolutionary Studies
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ class ProcessRunner(Process):
         self.proc = proc
         #self.numjobs = 0
         self.retired = False
+        self.wasEmpty = False
 
     def launch(self):
         # Moving this up into launch to see if running outside the scope of the
@@ -45,8 +46,6 @@ class ProcessRunner(Process):
         # queue so we need to make sure we let the spawner know we
         # are not done prior to starting so spawner doesn't kill the
         # process
-        self.not_done()
-
         job = getattr(ARC.runners, item['runner'])(item['params'])
         logger.debug("[%s] Processing: %s" % (self.name, job.message()))
         job.queue(self.job_q)
@@ -69,6 +68,7 @@ class ProcessRunner(Process):
             try:
                 time.sleep(sleeptime)
                 if not self.retired:
+                    self.not_done()
                     self.launch()
                     self.result_q.put({"status": 0, "process": self.name})
                     sleeptime = 0
@@ -77,22 +77,24 @@ class ProcessRunner(Process):
                 logger.warn("[%s] A job needs to be rerun: %s" % (self.name, e))
                 self.result_q.put({"status": 1, "process": self.name})
             except exceptions.FatalError as e:
-                logger.error("[%s] A fatal error occured: %s" % (self.name, e))
+                logger.error("[%s] A fatal error occurred: %s" % (self.name, e))
                 self.result_q.put({"status": 2, "process": self.name})
             except Empty:
                 # Since we aren't allowing the process to exit until the spawner
                 # don't report the status if we are already done
                 sleeptime = 5
                 #print "got Empty exception, sleeptime", sleeptime
-                if not self.is_done():
+                #if not self.is_done():
+                self.done()
+                if not self.wasEmpty:
+                    self.wasEmpty = True
                     logger.debug("[%s] The queue is empty" % (self.name))
                     self.result_q.put({"status": 3, "process": self.name})
-                    self.done()
             except (KeyboardInterrupt, SystemExit):
                 logger.debug("Process interrupted")
                 sys.exit()
             except Exception as e:
-                logger.error("An unhandled exception occured")
+                logger.error("An unhandled exception occurred")
                 self.result_q.put({"status": 2, "process": self.name})
                 raise e
 

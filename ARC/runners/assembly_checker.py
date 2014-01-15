@@ -56,7 +56,7 @@ class AssemblyChecker(Base):
                     checker_params[k] = self.params[k]
                 #checker_params = deepcopy(self.params)
                 # checker = AssemblyChecker(checker_params)
-                time.sleep(5)  # sleep 4 seconds before putting a checker back on the job_q
+                time.sleep(5)  # sleep 5 seconds before putting a checker back on the job_q
                 self.submit(AssemblyChecker.to_job(checker_params))
                 logger.info("Sample: %s Assemblies not finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
             else:
@@ -68,7 +68,6 @@ class AssemblyChecker(Base):
                 logger.debug("Sample: %s, iteration %s, Submitting finisher job to queue." % (sample, self.params['iteration']))
                 self.submit(Finisher.to_job(params))
                 logger.info("Sample: %s Assemblies finished: %s of %s targets completed" % (sample, completed, len(self.params['targets'])))
-                time.sleep(1)  # test for occasionally not kicking off finisher properly.
         except:
             print "".join(traceback.format_exception(*sys.exc_info()))
             raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))

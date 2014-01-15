@@ -116,20 +116,20 @@ class Spawn:
                 sleeptime = 5
                 #print "Spawn setting sleeptime to", sleeptime
                 # In rare cases, the queue can be empty because a worker just
-                # pulled a job, but hasn't yet gotten to uppdate the finished
+                # pulled a job, but hasn't yet gotten to update the finished
                 # status. This will cause not_done() to return False, causing
                 # the loop to break. Adding a short sleep here allows workers
                 # to update their status.
-                time.sleep(5.5)
-                if not self.not_done():
+                #time.sleep(5.5)
+                if self.done():
                     logger.debug(
-                        "Results queue is empty and there are no active "
-                        "processes.  Exiting")
+                        "Results queue is empty, Job queue is empty, "
+                        "and there are no active processes. Exiting")
                     break
                 else:
                     logger.debug(
-                        "Results queue is empty and there are still "
-                        "active processes.  Waiting")
+                        "Results queue is empty but not all jobs are done. "
+                        "Waiting...")
 
         logger.info("%d processes returned ok" % (status_ok))
         logger.info("%d processes had to be rerun" % (status_rerun))
@@ -152,14 +152,30 @@ class Spawn:
                 worker.start()
                 logger.info("Started new worker %s" % worker.name)
 
-    def not_done(self):
-        logger.debug("Checking to see if workers are done")
-        done = 0
-        for i in self.finished:
-            done += i
-        logger.debug("Active Workers: %d" % (
-            len(self.finished) - done))
-        return done < len(self.finished)
+    def done(self):
+        # Check that all workers are done and all queues are empty
+        logger.debug("Checking to see if everything is done.")
+
+        #check workers
+        if 0 in self.finished:
+            logger.debug("Worker was not done.")
+            return(False)
+
+        # for i in self.finished:
+        #     done += i
+        #check queues
+        if not self.job_q.empty():
+            logger.debug("Job_q was not empty.")
+            return(False)
+
+        if not self.result_q.empty():
+            logger.debug("Results_q was not empty.")
+            return(False)
+
+        # logger.debug("Active Workers: %d" % (
+        #     len(self.finished) - done))
+        #return done < len(self.finished)
+        return(True)
 
     def not_empty(self, q):
         return not q.empty()
