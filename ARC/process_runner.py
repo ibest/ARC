@@ -39,6 +39,9 @@ class ProcessRunner(Process):
         logger.debug("[%s] Processing: %s" % (self.name, job.message()))
         job.queue(self.q)
         job.start()
+
+        # Update stats
+        update_jobstats(item['runner'])
         
         # Clean up
         job.clean()
