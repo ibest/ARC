@@ -113,8 +113,8 @@ class Spawn:
         logger.info("%d Checker jobs run." %(self.stats[4]))
         logger.info("%d Finisher jobs run." %(self.stats[5]))
 
-    def killall(self, workers):
-        for worker in workers:
+    def killall(self):
+        for worker in self.workers:
             logger.debug("Shutting down %s" % (worker.name))
             worker.terminate()
             worker.join()
