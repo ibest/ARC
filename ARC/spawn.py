@@ -121,8 +121,8 @@ class Spawn:
 
     def all_workers_waiting(self):
         waiting = 0
-        for worker in workers:
+        for worker in self.workers:
             if worker.is_waiting():
                 waiting += 1
 
-        return waiting == len(workers)
+        return waiting == len(self.workers)
