@@ -114,18 +114,17 @@ class Spawn:
         logger.info("%d Finisher jobs run." %(self.stats[5]))
 
     def killall(self):
-        for worker in self.workers:
-            logger.debug("Shutting down %s" % (worker.name))
-            worker.terminate()
-            worker.join()
+        for i in range(self.nprocs):
+            logger.debug("Shutting down %s" % (self.workers[i].name))
+            self.workers[i].terminate()
+            self.workers[i].join()
 
     def all_workers_waiting(self):
+        waiting = 0
         for i in range(self.nprocs):
             print "Spawn: Runner %d reports %d" % (i, self.status[i])
-
-        waiting = 0
-        for worker in self.workers:
-            if worker.is_waiting():
+            if self.status[i] == 1
                 waiting += 1
-        print "%d workers are in the waiting state" % (waiting)
-        return waiting == len(self.workers)
+
+        print "%d of %d workers are in the waiting state" % (waiting, self.nprocs)
+        return waiting == len(self.nprocs)
