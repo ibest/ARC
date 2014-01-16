@@ -115,6 +115,7 @@ class Spawn:
         logger.info("%d Assembly jobs run." %(self.stats[3]))
         logger.info("%d Checker jobs run." %(self.stats[4]))
         logger.info("%d Finisher jobs run." %(self.stats[5]))
+        logger.info("-----")
 
     def killall(self):
         for i in range(self.nprocs):

@@ -68,12 +68,10 @@ class ProcessRunner(Process):
                 self.update_runstats(1)
             except exceptions.FatalError as e:
                 logger.error("[%s] A fatal error occurred: %s" % (self.name, e))
-                self.errored()
-                self.drain()
                 os.kill(self.ppid, signal.SIGINT)
             except (KeyboardInterrupt, SystemExit):
                 logger.debug("Process interrupted")
-                sys.exit()
+                os.kill(self.ppid, signal.SIGINT)
             except Exception as e:
                 ex_type, ex, tb = sys.exc_info()
                 logger.error("\n".join(traceback.format_exception(ex_type, ex, tb)))
