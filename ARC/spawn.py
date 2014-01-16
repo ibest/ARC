@@ -34,7 +34,6 @@ class Spawn:
         # 0: Not set
         # 1: Waiting for jobs
         # 2: Running a job
-        # 3: Job has encountered a fatal error
         self.status = multiprocessing.Array('i', [0] * self.nprocs)
         # Contains stats for the run
         # [0]: Number of jobs returned ok
