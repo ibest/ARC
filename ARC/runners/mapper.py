@@ -41,21 +41,17 @@ class Mapper(Base):
         return 'Sample: %s Starting mapper.' % self.params['sample']
 
     def start(self):
-        try:
-            if not('mapper' in self.params):
-                raise exceptions.FatalError("mapper not defined in params")
-            if self.params['mapper'] == 'bowtie2':
-                logger.info("Sample: %s Running bowtie2." % self.params['sample'])
-                self.run_bowtie2()
-            if self.params['mapper'] == 'blat':
-                logger.info("Sample: %s Running blat." % self.params['sample'])
-                self.run_blat()
-            #Mapping is done, run splitreads:
-            logger.info("Sample: %s Running splitreads." % self.params['sample'])
-            self.splitreads()
-        except:
-            print "".join(traceback.format_exception(*sys.exc_info()))
-            raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
+        if not('mapper' in self.params):
+            raise exceptions.FatalError("mapper not defined in params")
+        if self.params['mapper'] == 'bowtie2':
+            logger.info("Sample: %s Running bowtie2." % self.params['sample'])
+            self.run_bowtie2()
+        if self.params['mapper'] == 'blat':
+            logger.info("Sample: %s Running blat." % self.params['sample'])
+            self.run_blat()
+        #Mapping is done, run splitreads:
+        logger.info("Sample: %s Running splitreads." % self.params['sample'])
+        self.splitreads()
 
     def run_bowtie2(self):
         """

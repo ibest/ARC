@@ -34,21 +34,16 @@ class Assembler(Base):
         return 'Assembler for Sample: %s Target: %s' % (self.params['sample'], self.params['target'])
 
     def start(self):
-        try:
-            if not('assembler' in self.params):
-                raise exceptions.FatalError("assembler not defined in params")
-            if self.params['map_against_reads'] and self.params['iteration'] == 1:
-                self.RunMapAgainstReads()
-            elif self.params['assembler'] == 'newbler':
-                self.RunNewbler()
-            elif self.params['assembler'] == 'spades':
-                self.RunSpades()
-            else:
-                raise exceptions.FatalError("Assembler %s isn't recognized." % self.params['assembler'])
-        except:
-            print "".join(traceback.format_exception(*sys.exc_info()))
-            raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
-
+        if not('assembler' in self.params):
+            raise exceptions.FatalError("assembler not defined in params")
+        if self.params['map_against_reads'] and self.params['iteration'] == 1:
+            self.RunMapAgainstReads()
+        elif self.params['assembler'] == 'newbler':
+            self.RunNewbler()
+        elif self.params['assembler'] == 'spades':
+            self.RunSpades()
+        else:
+            raise exceptions.FatalError("Assembler %s isn't recognized." % self.params['assembler'])
 
     def RunMapAgainstReads(self):
         """

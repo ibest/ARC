@@ -17,7 +17,6 @@ import time
 import traceback
 import os
 import signal
-from Queue import Empty
 from multiprocessing import Process
 from ARC import logger
 from ARC import exceptions
@@ -42,13 +41,13 @@ class ProcessRunner(Process):
         job = getattr(ARC.runners, item['runner'])(item['params'])
         logger.debug("[%s] Processing: %s" % (self.name, job.message()))
         job.queue(self.q)
-        job.start()
+        job.runner()
 
         # Update stats
         self.update_jobstats(item['runner'])
         
         # Clean up
-        job.clean()
+        # job.clean()
         del job
         job = None
         del item
@@ -71,7 +70,6 @@ class ProcessRunner(Process):
                 os.kill(self.ppid, signal.SIGINT)
             except (KeyboardInterrupt, SystemExit):
                 logger.debug("Process interrupted")
-                sys.exit()
             except Exception as e:
                 ex_type, ex, tb = sys.exc_info()
                 logger.error("\n".join(traceback.format_exception(ex_type, ex, tb)))

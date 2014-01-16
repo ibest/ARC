@@ -80,89 +80,84 @@ class Finisher(Base):
         return 'Finisher for Sample: %s' % self.params['sample']
 
     def start(self):
-        try:
-            sample = self.params['sample']
-            logger.info("Sample: %s Starting finisher" % self.params['sample'])
-            finished_dir = self.params['finished_dir']
-            sample_finished = False
-            targets_written = 0
-            iteration = self.params['iteration']
+        sample = self.params['sample']
+        logger.info("Sample: %s Starting finisher" % self.params['sample'])
+        finished_dir = self.params['finished_dir']
+        sample_finished = False
+        targets_written = 0
+        iteration = self.params['iteration']
 
-            #Set up output for both finished and additional mapping outputs
-            fin_outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'a')
-            remap_outf = open(os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta'), 'w')
+        #Set up output for both finished and additional mapping outputs
+        fin_outf = open(os.path.join(finished_dir, 'contigs.fasta'), 'a')
+        remap_outf = open(os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta'), 'w')
 
-            #check whether the sample is globally finished
-            if self.params['iteration'] >= self.params['numcycles']:
-                sample_finished = True
+        #check whether the sample is globally finished
+        if self.params['iteration'] >= self.params['numcycles']:
+            sample_finished = True
 
-            #loop over the current set of targets_folders
-            for target_folder in self.params['targets']:
-                #Extract target specific details:
-                target_map_against_reads = False
-                safe_target = target_folder.split("/")[-1]  # get last element of path name
-                target = self.params['safe_targets'][safe_target]
-                cur_reads = self.params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
-                previous_reads = self.params['readcounts'][target][iteration - 1]
+        #loop over the current set of targets_folders
+        for target_folder in self.params['targets']:
+            #Extract target specific details:
+            target_map_against_reads = False
+            safe_target = target_folder.split("/")[-1]  # get last element of path name
+            target = self.params['safe_targets'][safe_target]
+            cur_reads = self.params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
+            previous_reads = self.params['readcounts'][target][iteration - 1]
 
-                #Get finished assembly status:
-                with open(os.path.join(target_folder, 'finished'), 'r') as finishedf:
-                    l = finishedf.readline().strip().split()[0]
+            #Get finished assembly status:
+            with open(os.path.join(target_folder, 'finished'), 'r') as finishedf:
+                l = finishedf.readline().strip().split()[0]
 
-                logger.info("Sample: %s target: %s finishing target.." % (self.params['sample'], target))
-                logger.info("Sample: %s target: %s iteration: %s Assembly reports status: %s." % (sample, target, self.params['iteration'], l))
+            logger.info("Sample: %s target: %s finishing target.." % (self.params['sample'], target))
+            logger.info("Sample: %s target: %s iteration: %s Assembly reports status: %s." % (sample, target, self.params['iteration'], l))
 
-                if l in ('assembly_failed', 'map_against_reads'):
-                    target_map_against_reads = True
+            if l in ('assembly_failed', 'map_against_reads'):
+                target_map_against_reads = True
 
-                if l == 'assembly_killed':
-                    #only write out the reads, assembly won't have contigs
-                    self.write_target(target, target_folder, outf=fin_outf, finished=False, map_against_reads=False, killed=True)
-                elif sample_finished:  # everything goes into the final file/folders.
-                    self.write_target(target, target_folder, outf=fin_outf, finished=True)
-                elif target_map_against_reads and cur_reads > previous_reads and iteration < 3:
-                    #Only map against reads if we have improvement in mapping and we haven't been mapping for multiple iterations
-                    self.write_target(target, target_folder, outf=remap_outf, finished=False, map_against_reads=True)
-                    targets_written += 1
-                else:
-                    #Check read counts and retire target, or send it back for re-mapping depending on mapped reads
-                    if iteration > 1 and cur_reads != 0 and previous_reads != 0:
-                        if cur_reads / previous_reads > self.params['max_incorporation']:
-                            logger.info("Sample %s target %s hit a repetitive region, no more mapping will be done" % (self.params['sample'], target))
-                            self.write_target(target, target_folder, outf=fin_outf, finished=True)
-                        elif cur_reads <= previous_reads and iteration > 2:
-                            #Give the mapper a couple extra iterations in case the first mapping got a lot of reads which didn't assemble
-                            logger.info("Sample %s target %s did not incorporate any more reads, no more mapping will be done" % (self.params['sample'], target))
-                            self.write_target(target, target_folder, outf=fin_outf, finished=True)
-                        else:
-                            #nothing fancy is going on, just write the contigs out for remapping
-                            self.write_target(target, target_folder, outf=remap_outf, finished=False)
-                            targets_written += 1
+            if l == 'assembly_killed':
+                #only write out the reads, assembly won't have contigs
+                self.write_target(target, target_folder, outf=fin_outf, finished=False, map_against_reads=False, killed=True)
+            elif sample_finished:  # everything goes into the final file/folders.
+                self.write_target(target, target_folder, outf=fin_outf, finished=True)
+            elif target_map_against_reads and cur_reads > previous_reads and iteration < 3:
+                #Only map against reads if we have improvement in mapping and we haven't been mapping for multiple iterations
+                self.write_target(target, target_folder, outf=remap_outf, finished=False, map_against_reads=True)
+                targets_written += 1
+            else:
+                #Check read counts and retire target, or send it back for re-mapping depending on mapped reads
+                if iteration > 1 and cur_reads != 0 and previous_reads != 0:
+                    if cur_reads / previous_reads > self.params['max_incorporation']:
+                        logger.info("Sample %s target %s hit a repetitive region, no more mapping will be done" % (self.params['sample'], target))
+                        self.write_target(target, target_folder, outf=fin_outf, finished=True)
+                    elif cur_reads <= previous_reads and iteration > 2:
+                        #Give the mapper a couple extra iterations in case the first mapping got a lot of reads which didn't assemble
+                        logger.info("Sample %s target %s did not incorporate any more reads, no more mapping will be done" % (self.params['sample'], target))
+                        self.write_target(target, target_folder, outf=fin_outf, finished=True)
                     else:
                         #nothing fancy is going on, just write the contigs out for remapping
                         self.write_target(target, target_folder, outf=remap_outf, finished=False)
                         targets_written += 1
+                else:
+                    #nothing fancy is going on, just write the contigs out for remapping
+                    self.write_target(target, target_folder, outf=remap_outf, finished=False)
+                    targets_written += 1
 
-            if targets_written > 0:
-                # Build a new mapper and put it on the queue
-                from ARC.runners import Mapper
-                mapper_params = {}
-                for k in self.params:
-                    mapper_params[k] = self.params[k]
-                del mapper_params['targets']
-                mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
-                self.submit(Mapper.to_job(mapper_params))
-                logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
+        if targets_written > 0:
+            # Build a new mapper and put it on the queue
+            from ARC.runners import Mapper
+            mapper_params = {}
+            for k in self.params:
+                mapper_params[k] = self.params[k]
+            del mapper_params['targets']
+            mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
+            self.submit(Mapper.to_job(mapper_params))
+            logger.info("Sample: %s Added new mapper to queue: iteration %s" % (self.params['sample'], self.params['iteration']))
 
-            else:
-                logger.info("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])
+        else:
+            logger.info("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])
 
-            fin_outf.close()
-            remap_outf.close()
-
-        except:
-            print "".join(traceback.format_exception(*sys.exc_info()))
-            raise exceptions.FatalError("".join(traceback.format_exception(*sys.exc_info())))
+        fin_outf.close()
+        remap_outf.close()
 
     #Functions for repeat masking:
     def num_unmers(self, seq, N):

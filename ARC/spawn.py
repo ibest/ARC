@@ -17,8 +17,6 @@
 import time
 import multiprocessing
 import os
-#from copy import deepcopy
-from Queue import Empty
 from ARC import ProcessRunner
 from ARC import logger
 from ARC import exceptions
@@ -98,9 +96,11 @@ class Spawn:
 
             except exceptions.FatalError:
                 logger.error("A fatal error was encountered.")
+                self.killall()
                 raise
             except (KeyboardInterrupt, SystemExit):
                 logger.error("Terminating processes")
+                self.killall()
                 raise
             finally:
                 # Kill 'em all!
@@ -125,9 +125,9 @@ class Spawn:
     def all_workers_waiting(self):
         waiting = 0
         for i in range(self.nprocs):
-            print "Spawn: Runner %d reports %d" % (i, self.status[i])
+            logger.debug("ProcessRunner %d reports %d" % (i, self.status[i]))
             if self.status[i] == 1:
                 waiting += 1
 
-        print "%d of %d workers are in the waiting state" % (waiting, self.nprocs)
+        logger.debug("%d of %d workers are in the waiting state" % (waiting, self.nprocs))
         return waiting == self.nprocs
