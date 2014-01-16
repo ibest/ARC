@@ -15,6 +15,8 @@
 import sys
 import time
 import traceback
+import os
+import signal
 from Queue import Empty
 from multiprocessing import Process
 from ARC import logger
@@ -43,7 +45,7 @@ class ProcessRunner(Process):
         job.start()
 
         # Update stats
-        update_jobstats(item['runner'])
+        self.update_jobstats(item['runner'])
         
         # Clean up
         job.clean()
@@ -74,7 +76,7 @@ class ProcessRunner(Process):
                 sys.exit()
             except Exception as e:
                 ex_type, ex, tb = sys.exc_info()
-                logger.error("\n".join(traceback.format_list(traceback.extract_tb(tb))))
+                logger.error("\n".join(traceback.format_exception(ex_type, ex, tb)))
                 logger.error("An unhandled exception occurred")
                 os.kill(self.ppid, signal.SIGINT)
 
@@ -93,7 +95,7 @@ class ProcessRunner(Process):
         elif result == 1:
             self.stats[1] += 1
 
-    def update_jobstats(jobtype):
+    def update_jobstats(self, jobtype):
         if jobtype == "Mapper":
             self.stats[2] += 1
         elif jobtype == "Assembler":

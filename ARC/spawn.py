@@ -16,7 +16,7 @@
 
 import time
 import multiprocessing
-#import os
+import os
 #from copy import deepcopy
 from Queue import Empty
 from ARC import ProcessRunner
@@ -89,7 +89,7 @@ class Spawn:
                 self.q.join()
 
                 # This shouldn't be needed but we will check just in case
-                if self.all_workers_waiting_errored():
+                if self.all_workers_waiting():
                     logger.debug("Workers are all waiting and the queue is empty.  Exiting")
                     break
                 else:
@@ -122,13 +122,12 @@ class Spawn:
             self.workers[i].terminate()
             self.workers[i].join()
 
-    def all_workers_waiting_or_errored(self):
+    def all_workers_waiting(self):
         waiting = 0
-        errored = False
         for i in range(self.nprocs):
             print "Spawn: Runner %d reports %d" % (i, self.status[i])
             if self.status[i] == 1:
                 waiting += 1
 
         print "%d of %d workers are in the waiting state" % (waiting, self.nprocs)
-        return (waiting == self.nprocs) or errored
+        return waiting == self.nprocs
