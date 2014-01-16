@@ -23,7 +23,7 @@ import ARC.runners
 
 
 class ProcessRunner(Process):
-    def __init__(self, proc, q, status, stats):
+    def __init__(self, proc, q, status, stats, peers):
         super(ProcessRunner, self).__init__()
         self.proc = proc
         self.q = q
@@ -58,6 +58,7 @@ class ProcessRunner(Process):
         while True:
             try:
                 self.waiting()
+                self.check_for_errors()
                 self.launch()
                 self.update_runstats()
             except exceptions.RerunnableError as e:
@@ -65,15 +66,17 @@ class ProcessRunner(Process):
                 self.update_runstats(1)
             except exceptions.FatalError as e:
                 logger.error("[%s] A fatal error occurred: %s" % (self.name, e))
-                raise e
+                self.errored()
+                self.drain()
             except (KeyboardInterrupt, SystemExit):
                 logger.debug("Process interrupted")
                 sys.exit()
             except Exception as e:
                 ex_type, ex, tb = sys.exc_info()
-                logger.error(traceback.format_list(traceback.extract_tb(tb)))
+                logger.error("\n".join(traceback.format_list(traceback.extract_tb(tb))))
                 logger.error("An unhandled exception occurred")
-                raise e
+                self.errored()
+                self.drain()
 
     def waiting(self):
         self.status[self.proc] = 1
@@ -86,6 +89,22 @@ class ProcessRunner(Process):
 
     def errored(self):
         self.status[self.proc] = 3
+
+    def drain(self):
+        while not self.q.empty():
+            q.get()
+            q.task_done
+
+    def check_for_errors(self):
+        errors = -1
+        for i in range(self.proc):
+            if self.status[i] == 3:
+                errors = i
+                break
+        
+        if errors >= 0:
+            self.drain()
+            logger.error("Exiting due to error on ProcessRunner %d" % (errors))
 
     def update_runstats(self, result = 0):
         if result == 0:
