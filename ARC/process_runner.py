@@ -69,8 +69,10 @@ class ProcessRunner(Process):
                 logger.debug("Process interrupted")
                 sys.exit()
             except Exception as e:
+                ex_type, ex, tb = sys.exc_info()
+                logger.error(traceback.format_list(traceback.extract_tb(tb)))
                 logger.error("An unhandled exception occurred")
-                raise exceptions.FatalError("An unhandled exception occurred")
+                raise e
 
     def waiting(self):
         self.status[self.proc] = 1
@@ -80,6 +82,9 @@ class ProcessRunner(Process):
 
     def running(self):
         self.status[self.proc] = 2
+
+    def errored(self):
+        self.status[self.proc] = 3
 
     def update_runstats(self, result = 0):
         if result == 0:

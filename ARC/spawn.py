@@ -35,6 +35,7 @@ class Spawn:
         # 0: Not set
         # 1: Waiting for jobs
         # 2: Running a job
+        # 3: Job has encountered a fatal error
         self.status = multiprocessing.Array('i', [0] * self.nprocs)
         # Contains stats for the run
         # [0]: Number of jobs returned ok
@@ -84,14 +85,14 @@ class Spawn:
         while True:
             try:
                 self.q.join()
+
                 # This shouldn't be needed but we will check just in case
-                if self.all_workers_waiting():
+                if self.all_workers_waiting_errored():
                     logger.debug("Workers are all waiting and the queue is empty.  Exiting")
                     break
                 else:
                     logger.debug("Workers are not in a waiting state.  Waiting for more.")
                     time.sleep(5)
-                # Terminate the jobs
 
             except exceptions.FatalError:
                 logger.error("A fatal error was encountered.")
@@ -119,12 +120,13 @@ class Spawn:
             self.workers[i].terminate()
             self.workers[i].join()
 
-    def all_workers_waiting(self):
+    def all_workers_waiting_or_errored(self):
         waiting = 0
+        errored = False
         for i in range(self.nprocs):
             print "Spawn: Runner %d reports %d" % (i, self.status[i])
             if self.status[i] == 1:
                 waiting += 1
 
         print "%d of %d workers are in the waiting state" % (waiting, self.nprocs)
-        return waiting == self.nprocs
+        return (waiting == self.nprocs) or errored
