@@ -71,7 +71,7 @@ class ProcessRunner(Process):
                 os.kill(self.ppid, signal.SIGINT)
             except (KeyboardInterrupt, SystemExit):
                 logger.debug("Process interrupted")
-                os.kill(self.ppid, signal.SIGINT)
+                sys.exit()
             except Exception as e:
                 ex_type, ex, tb = sys.exc_info()
                 logger.error("\n".join(traceback.format_exception(ex_type, ex, tb)))
