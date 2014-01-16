@@ -29,6 +29,7 @@ class Spawn:
     def __init__(self, config):
         self.workers = []
         self.config = config
+        self.pid = os.getpid()
         self.nprocs = int(config['nprocs'])
         self.q = multiprocessing.JoinableQueue()
         # Contains the state of the job
@@ -77,7 +78,8 @@ class Spawn:
                 i,
                 self.q,
                 self.status,
-                self.stats)
+                self.stats,
+                self.pid)
             self.workers.append(worker)
             worker.daemon = False
             worker.start()
