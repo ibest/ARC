@@ -47,8 +47,6 @@ class App:
             logger.error("A fatal error was encountered. \n\t%s" % str(e))
             return 1
         except (KeyboardInterrupt, SystemExit):
-            # if 'batch' in vars():
-            #     batch.killall()
             self.clean()
             logger.error("%s unexpectedly terminated" % (__name__))
             return 1

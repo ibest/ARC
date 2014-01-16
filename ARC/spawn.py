@@ -101,11 +101,10 @@ class Spawn:
                 raise
             except (KeyboardInterrupt, SystemExit):
                 logger.error("Terminating processes")
-                self.killall()
                 raise
-
-        # Kill 'em all!
-        self.killall()
+            finally:
+                # Kill 'em all!
+                self.killall()
 
         logger.info("-----")
         logger.info("%d processes returned ok." % (self.stats[0]))

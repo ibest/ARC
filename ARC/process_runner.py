@@ -81,9 +81,6 @@ class ProcessRunner(Process):
     def waiting(self):
         self.status[self.proc] = 1
 
-    def is_waiting(self):
-        self.status[self.proc] == 1
-
     def running(self):
         self.status[self.proc] = 2
 
