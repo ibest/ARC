@@ -101,6 +101,12 @@ class Spawn:
                 logger.error("Terminating processes")
                 self.killall()
                 raise
+            except Exception as e:
+                ex_type, ex, tb = sys.exc_info()
+                logger.error("\n".join(traceback.format_exception(ex_type, ex, tb)))
+                logger.error("An unhandled exception occurred")
+                self.killall()
+                raise
             finally:
                 # Kill 'em all!
                 self.killall()
