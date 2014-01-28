@@ -42,7 +42,7 @@ class Spawn:
         # [3]: Number of Assembly jobs run
         # [4]: Number of Checker jobs run
         # [5]: Number of Finisher jobs run
-        self.stats = multiprocessing.Array('i', [0] * self.nprocs)
+        self.stats = multiprocessing.Array('i', [0] * 6)
 
     def submit(self):
         # Get the number of samples from the configuration
