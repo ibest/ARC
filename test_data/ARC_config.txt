@@ -19,7 +19,7 @@
 # numcycles=10
 # mapper=bowtie2
 # assembler=newbler
-# nprocs=4
+# nprocs=7
 # format=fastq
 # verbose=True
 # urt=True
@@ -27,7 +27,7 @@
 # assemblytimeout=1
 # bowtie2_k=1
 # rip=True
-# cdna=False
+# cdna=True
 # subsample=1
 # maskrepeats=False
 Sample_ID	FileName	FileType
@@ -37,5 +37,5 @@ Sample1	./reads/Sample1_SE.fastq	SE
 Sample2	./reads/Sample2_R1.fastq	PE1
 Sample2	./reads/Sample2_R2.fastq	PE2
 Sample2	./reads/Sample2_SE.fastq	SE
-cDNASample ./reads/Sample3_SE.fastq	SE
 Repeat ./reads/repeat_reads.fastq	SE
+RNASeq ./reads/RNA_seq_Sample.fastq	SE

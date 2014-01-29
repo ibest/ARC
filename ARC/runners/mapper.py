@@ -108,7 +108,17 @@ class Mapper(Base):
         #args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', self.params['nprocs'], '-x', base]
         #args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', '1', '-x', base]
         #args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
-        args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
+        #args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
+        args = ['bowtie2', '-I', '0', '-X', '1500']
+
+        #Tune the sensitivity so that on the first iteration the mapper is very sensitive
+        #On later iterations the mapper is very specific
+        if self.params['iteration'] == 0:
+            args.append("--very-sensitive-local")
+        else:
+            args += ["--very-fast-local", "--mp", "12", "--rdg", "12,6", "--rfg", "12,6"]
+
+        args += ['-p', str(n_bowtieprocs), '-x', base]
         if self.params['bowtie2_k'] > 1:
             args += ['-k', str(self.params['bowtie2_k'])]
         if self.params['format'] == 'fasta':
