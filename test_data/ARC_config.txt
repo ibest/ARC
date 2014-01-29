@@ -27,7 +27,7 @@
 # assemblytimeout=1
 # bowtie2_k=1
 # rip=True
-# cdna=True
+# cdna=False
 # subsample=1
 # maskrepeats=False
 Sample_ID	FileName	FileType

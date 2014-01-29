@@ -198,7 +198,10 @@ class Finisher(Base):
                 contig_inf = open(contigf, 'r')
                 for contig in SeqIO.parse(contig_inf, 'fasta'):
                     i += 1
-                    contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
+                    if finished:
+                        contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Contig%03d" % i
+                    else:
+                        contig.name = contig.id = self.params['sample'] + "_:_" + target + "_:_" + "Unfinished%03d" % i
                     contig = contig.upper()
                     #Only mask repeats on intermediate iterations.
                     if self.params['maskrepeats'] and not finished:
@@ -391,5 +394,6 @@ class Finisher(Base):
                 #print self.params['sample'], target, seqrec
                 SeqIO.write(seqrec, outf, "fasta")
         ## TODO: add support for the ExceedsThreshold contigs
-        logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs, %s isogroups " % (self.params['sample'], target, self.params['iteration'], ncontigs, nisogroups))
+        logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs, %s isogroups " % (self.params['sample'],
+                    target, self.params['iteration'], ncontigs, nisogroups))
 
