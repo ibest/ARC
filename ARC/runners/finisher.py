@@ -206,7 +206,9 @@ class Finisher(Base):
                     #Only mask repeats on intermediate iterations.
                     if self.params['maskrepeats'] and not finished:
                         contig.seq = Seq(str(self.mask_seq(contig.seq.tostring())))
-                    SeqIO.write(contig, outf, "fasta")
+                    #Bowtie2 crashes if a contig is all 'n' so only write it out if it isn't
+                    if len(contig.seq) != contig.seq.count('n'):
+                        SeqIO.write(contig, outf, "fasta")
                 contig_inf.close()
                 logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs " % (self.params['sample'], target, self.params['iteration'], i))
                 #if i == 0 and finished is False and self.params['iteration'] < 2:

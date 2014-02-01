@@ -157,7 +157,7 @@ class Mapper(Base):
         #Extract the SAM to a dict
         self.params['mapping_dict'] = self.SAM_to_dict(os.path.join(working_dir, 'mapping.sam'))
         #clean up intermediary files:
-        #os.remove(os.path.join(working_dir, 'mapping.sam'))
+        os.remove(os.path.join(working_dir, 'mapping.sam'))
         os.system("rm -rf %s" % idx_dir)
 
     def run_blat(self):
