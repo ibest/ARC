@@ -98,7 +98,7 @@ class Mapper(Base):
         fin_outf = os.path.join(self.params['finished_dir'], 'contigs.fasta')
         #print "find_outf", fin_outf, os.path.exists(fin_outf)
         args = ['bowtie2-build', '-f']
-        if os.path.getsize(fin_outf) > 0:
+        if os.path.exists(fin_outf) and os.path.getsize(fin_outf) > 0:
             args.append(','.join((fin_outf, self.params['reference'])))
         else:
             args.append(self.params['reference'])
