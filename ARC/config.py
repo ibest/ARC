@@ -39,7 +39,8 @@ class Config:
         'subsample': 1,
         'maskrepeats': True,
         'nprocs': 1,
-        'fastmap': False
+        'fastmap': False,
+        'keepassemblies': False
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {

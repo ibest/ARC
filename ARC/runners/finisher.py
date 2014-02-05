@@ -288,7 +288,8 @@ class Finisher(Base):
                         contig.name = contig.id = contig.id.replace("Unfinished", "Contig")
                         SeqIO.write(contig, outf, "fasta")
         #Cleanup temporary assembly, and reads:
-        os.system("rm -rf %s" % target_folder)
+        if not self.params['keepassemblies']:
+            os.system("rm -rf %s" % target_folder)
         if finished or killed:
             return 0
         else:

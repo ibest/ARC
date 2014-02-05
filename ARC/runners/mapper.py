@@ -96,9 +96,9 @@ class Mapper(Base):
         # the situation where reads which were mapped to a now finished target might later be
         # mapped to a an in-progress target.
         fin_outf = os.path.join(self.params['finished_dir'], 'contigs.fasta')
-        print "find_outf", fin_outf, os.path.exists(fin_outf)
+        #print "find_outf", fin_outf, os.path.exists(fin_outf)
         args = ['bowtie2-build', '-f']
-        if os.path.exists(fin_outf):
+        if os.path.getsize(fin_outf) > 0:
             args.append(','.join((fin_outf, self.params['reference'])))
         else:
             args.append(self.params['reference'])
