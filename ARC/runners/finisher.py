@@ -139,6 +139,11 @@ class Finisher(Base):
                     #nothing fancy is going on, just write the contigs out for remapping
                     targets_written += self.write_target(target, target_folder, outf=remap_outf, finished=False)
 
+        fin_outf.flush()
+        remap_outf.flush()
+        fin_outf.close()
+        remap_outf.close()
+
         if targets_written > 0:
             # Build a new mapper and put it on the queue
             from ARC.runners import Mapper
@@ -152,9 +157,6 @@ class Finisher(Base):
 
         else:
             logger.info("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])
-
-        fin_outf.close()
-        remap_outf.close()
 
     #Functions for repeat masking:
     def num_unmers(self, seq, N):
