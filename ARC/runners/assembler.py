@@ -263,7 +263,7 @@ class Assembler(Base):
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
             outf.write("assembly_failed")
             outf.close()
-        if killed:
+        elif killed:
             logger.info("Sample: %s target: %s iteration: %s Assembly killed after %s seconds" % (sample, target, self.params['iteration'], time.time() - start))
             outf = open(os.path.join(self.params['target_dir'], "finished"), 'w')
             outf.write("assembly_killed")

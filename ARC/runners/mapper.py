@@ -87,12 +87,28 @@ class Mapper(Base):
         else:
             out = open(os.devnull, 'w')
 
-        #Build index
+        #Set up a path to the index
         base = os.path.join(idx_dir, 'idx')
+
+        #Build index
+        #The idea is to map against the finished contigs and in-progress contigs, thereby
+        # ensuring that the -k parameter (or best map) are respected properly, and avoid
+        # the situation where reads which were mapped to a now finished target might later be
+        # mapped to a an in-progress target.
+        fin_outf = os.path.join(self.params['finished_dir'], 'contigs.fasta')
+        #print "find_outf", fin_outf, os.path.exists(fin_outf)
+        args = ['bowtie2-build', '-f']
+        if os.path.exists(fin_outf) and os.path.getsize(fin_outf) > 0:
+            args.append(','.join((fin_outf, self.params['reference'])))
+        else:
+            args.append(self.params['reference'])
+        args.append(base)
         logger.info("Sample: %s Calling bowtie2-build." % self.params['sample'])
-        logger.info(" ".join(['bowtie2-build', '-f', self.params['reference'], base]))
+        #logger.info(" ".join(['bowtie2-build', '-f', self.params['reference'], base]))
+        logger.info(" ".join(args))
         try:
-            ret = subprocess.call(['bowtie2-build', '-f', self.params['reference'], base], stdout=out, stderr=out)
+            ret = subprocess.call(args, stdout=out, stderr=out)
+            #ret = subprocess.call(['bowtie2-build', '-f', self.params['reference'], base], stdout=out, stderr=out)
         except Exception as exc:
             txt = ("Sample %s: Unhandeled error running bowtie2-build" % self.params['sample']) + '\n\t' + str(exc)
             out.close()  # make sure that out is closed before throwing exception
@@ -104,10 +120,6 @@ class Mapper(Base):
 
         #Do bowtie2 mapping:
         n_bowtieprocs = int(round(max(float(self.params['nprocs'])/len(self.params['Samples']), 1)))
-        #print "Number of bowtie2 procs:", n_bowtieprocs
-        #args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', self.params['nprocs'], '-x', base]
-        #args = ['nice', '-n', '19', 'bowtie2', '-I', '0', '-X', '1500', '--local', '-p', '1', '-x', base]
-        #args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
         #args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
         args = ['bowtie2', '-I', '0', '-X', '1500']
 
@@ -236,8 +248,11 @@ class Mapper(Base):
                 readid = l2[0].split("/")[0]
                 target = l2[2]
                 #handle references built using assembled contigs:
-                if len(target.split("_:_")) > 1:
-                    target = target.split("_:_")[1]
+                if len(target.split("_:_")) == 3:
+                    target, status = target.split("_:_")[1:]
+                    # This keeps ARC from writing reads which mapped to finished contigs
+                    if status.startswith("Contig") or status.startswith("isogroup"):
+                        continue
                 if target not in read_map:
                     read_map[target] = {}
                 read_map[target][readid] = 1

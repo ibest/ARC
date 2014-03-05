@@ -92,7 +92,7 @@ class App:
             #Create a stats file for cdna
             if config['cdna']:
                 countsf = open(os.path.join(finished_dir, "isogroup_read_counts.tsv"), 'a')
-                countsf.write('\t'.join(['Sample','Target','isogroup','readcount']) + '\n')
+                countsf.write('\t'.join(['Sample', 'Target', 'isogroup', 'readcount']) + '\n')
                 countsf.close()
 
             # Build a separate index for each read file in the input, put them
@@ -116,7 +116,7 @@ class App:
                         key_function=lambda x: x.split("/")[0])
                     if len(p1) != len(p2):
                         logger.error("The number of reads in %s and %s do not match, "
-                            "check the config for errors" %(s['PE1'], s['PE2']))
+                                     "check the config for errors" % (s['PE1'], s['PE2']))
             if 'SE' in s:
                 if not os.path.exists(os.path.join(working_dir, "SE.idx")):
                     print s['SE']

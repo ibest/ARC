@@ -25,7 +25,7 @@ def run(loglevel):
     app = App()
     return app.start(loglevel)
 
-VERSION = '1.1.0-nosleep'
+VERSION = '1.1.0-bowtie2-multitargets'
 
 
 def main():
