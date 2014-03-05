@@ -40,7 +40,9 @@ class Config:
         'maskrepeats': True,
         'nprocs': 1,
         'fastmap': False,
-        'keepassemblies': False
+        'keepassemblies': False,
+        'pacbio': False,
+        'NewblerMap': False
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {
@@ -146,7 +148,7 @@ class Config:
 
             line = line.strip()
             # Blank line
-            if line == "" or line[0] == '#' :
+            if line == "" or line[0] == '#':
                 continue
 
             arr = line.split()
@@ -171,7 +173,7 @@ class Config:
             if not os.path.exists(filename):
                 raise exceptions.FatalError(
                     "%s file indicated but not found: %s" % (
-                    filetype, filename))
+                        filetype, filename))
             else:
                 self.config['Samples'][sample_id][filetype] = os.path.realpath(
                     filename)
@@ -185,7 +187,7 @@ class Config:
             if not os.path.exists(self.config['reference']):
                 raise exceptions.FatalError(
                     "Error, cannot find reference %s" % (
-                    self.config['reference']))
+                        self.config['reference']))
         else:
             raise exceptions.FatalError(
                 'Error, reference not included in ARC_self.txt')
@@ -213,7 +215,7 @@ class Config:
         if self.config['mapper'] not in self.MAPPERS:
             raise exceptions.FatalError(
                 "Error mapper must be either %s" % (
-                ', '.join(self.MAPPERS.keys())))
+                    ', '.join(self.MAPPERS.keys())))
         else:
             self.check_bins(self.MAPPERS[self.config['mapper']])
 
@@ -226,10 +228,9 @@ class Config:
         else:
             self.check_bins(self.ASSEMBLERS[self.config['assembler']])
 
-        if self.config['subsample'] <= 0 and  self.config['subsample'] > 1:
+        if self.config['subsample'] <= 0 and self.config['subsample'] > 1:
             raise exceptions.FatalError(
                 "Error, you must specify a value greater than 0 and less than or equal to 1 for subsample")
-
 
     def convert(self):
         # Convert minutes to seconds for assembly timeouts

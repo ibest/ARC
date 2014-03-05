@@ -107,7 +107,10 @@ class Assembler(Base):
             out = open(os.devnull, 'w')
 
         #Build args for newAssembly:
-        args = ['newAssembly', '-force']
+        if self.params['NewblerMap']:
+            args = ['newMapping', '-force']
+        else:
+            args = ['newAssembly', '-force']
         if self.params['last_assembly'] and self.params['cdna']:
             #only run with cdna switch on the final assembly
             args += ['-cdna']
@@ -115,6 +118,13 @@ class Assembler(Base):
         logger.debug("Calling newAssembly for sample: %s target %s" % (sample, target))
         logger.info(" ".join(args))
         ret = subprocess.call(args, stdout=out, stderr=out)
+
+        #PacBio
+        if self.params['NewblerMap']:
+            args = ['setRef', os.path.join(self.params['target_dir'], 'assembly'), self.params['reference']]
+            logger.info(" ".join(args))
+            ret = subprocess.call(args, stdout=out, stderr=out)
+
         #Build args for addRun:
         if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
             args = ['addRun', os.path.join(self.params['target_dir'], 'assembly')]

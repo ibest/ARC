@@ -204,6 +204,8 @@ class Mapper(Base):
         if self.params['iteration'] > 0:
             args.append("-minIdentity=98")
             args.append("-minScore=40")
+        if self.params['pacbio'] and self.params['iteration'] == 0:
+            args += ["-minScore=90", "-minIdentity=92"]
         args.append(os.path.join(working_dir, 'mapping.psl'))
 
         logger.info("Sample: %s Calling blat mapper" % self.params['sample'])
@@ -342,6 +344,10 @@ class Mapper(Base):
             idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=lambda x: x.split("/")[0])
         if 'readcounts' not in checker_params:
             checker_params['readcounts'] = {}
+        #add support for writing out PacBio reads for Newbler reference based/mapping assembly
+        if self.params['NewblerMap']:
+            ref_idx = SeqIO.index(self.params['reference'], "fasta")
+
         for target in self.params['mapping_dict']:
             startT = time.time()
             #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
@@ -395,7 +401,7 @@ class Mapper(Base):
             assembly_params['target_dir'] = target_dir
             assembly_params['iteration'] = iteration
             assembly_params['last_assembly'] = False
-            assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles', 'cdna', 'rip']
+            assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles', 'cdna', 'rip', 'NewblerMap']
             for k in assembler_keys:
                 assembly_params[k] = self.params[k]
             cur_reads = checker_params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
@@ -413,6 +419,18 @@ class Mapper(Base):
                 assembly_params['assembly_PE2'] = os.path.join(target_dir, "PE2." + self.params['format'])
             if SEs > 0:
                 assembly_params['assembly_SE'] = os.path.join(target_dir, "SE." + self.params['format'])
+
+            #Set up a reference for PacBio if we are doing a read-fixing operation:
+            if self.params['NewblerMap']:
+                outf_ref = open(os.path.join(target_dir, "pbref.fasta"), 'w')
+                ref_seq = ref_idx.get(target, None)
+                if ref_seq is not None:
+                    SeqIO.write(ref_seq, outf_ref, "fasta")
+                    outf_ref.close()
+                    assembly_params['reference'] = os.path.join(target_dir, "pbref.fasta")
+                else:
+                    logger.info("Error, reference %s could not be found." % target)
+                    raise exceptions.FatalError("Error, reference %s could not be found." % target)
 
             #All reads have been written at this point, add an assembly to the queue:
             logger.info("Sample: %s target: %s iteration: %s Split %s reads in %s seconds" % (self.params['sample'], target, self.params['iteration'], len(reads), time.time() - startT))

@@ -139,8 +139,6 @@ class Finisher(Base):
                     #nothing fancy is going on, just write the contigs out for remapping
                     targets_written += self.write_target(target, target_folder, outf=remap_outf, finished=False)
 
-        fin_outf.flush()
-        remap_outf.flush()
         fin_outf.close()
         remap_outf.close()
 
@@ -186,8 +184,10 @@ class Finisher(Base):
         # --> write reads as contigs
         num_contigs = 0  # store how many contigs were written out
         if map_against_reads is False and killed is False:
-            if self.params['assembler'] == 'newbler':
+            if self.params['assembler'] == 'newbler' and not self.params['NewblerMap']:
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "assembly", "454AllContigs.fna")
+            if self.params['assembler'] == 'newbler' and self.params['NewblerMap']:
+                contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "mapping", "454AllContigs.fna")
             elif self.params['assembler'] == 'spades':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "contigs.fasta")
             #add support for a special output if this is the final assembly and newbler -cdna was used:
