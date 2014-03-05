@@ -139,7 +139,7 @@ def check_status(results):
     return unfinished
 
 
-def process_sample(sample, targets, contigs):
+def process_sample(sample, targets, contigs, output='processedcontigs.fa'):
     """
     Wrapper function which handles processing for a single sample.
     """
@@ -152,7 +152,7 @@ def process_sample(sample, targets, contigs):
         print "Processing PSL for sample: %s" % sample
         psl_processed = process_psl(sample, contigs, psl)
 
-        with open(str("./finished_" + sample + "/processedcontigs.fa"), "w") as outfile:
+        with open(str("./finished_" + sample + '/' + output), "w") as outfile:
             for contig_id, value in psl_processed.items():
                 #write out relevant info in line
                 rec = str(">"+contig_id+" "+value[0]+" "+str(value[1])+" "+str(value[2])+" "+value[3]+" "+str(value[4])+"\n"+value[5]+"\n")
@@ -169,11 +169,14 @@ parser.add_argument('-p', action='store', dest='processes', default=7,
                     help='Number of processes to use', type=int)
 parser.add_argument("-c", action='store', dest='contigs', default='contigs.fasta',
                     help='alternate names for contigs, i.e. if hets have been injected.')
+parser.add_argument("-o", action='store', dest='output', default='processedcontigs.fa',
+                    help='alternate names for output, i.e. if hets have been injected.')
 
 args = parser.parse_args()
 processes = int(args.processes)
 targets = args.targets
 contigs = args.contigs
+output = args.output
 
 #processes = 7
 samples = []
@@ -196,7 +199,7 @@ p = Pool(processes=processes, maxtasksperchild=1)
 results = {}
 
 for sample in samples:
-    results[sample] = p.apply_async(process_sample, (sample, targets, contigs, ))
+    results[sample] = p.apply_async(process_sample, (sample, targets, contigs, output, ))
 
 allfinished = False
 while not allfinished:

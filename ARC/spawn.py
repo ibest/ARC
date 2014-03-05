@@ -16,9 +16,7 @@
 
 import time
 import multiprocessing
-#import os
-#from copy import deepcopy
-from Queue import Empty
+import os
 from ARC import ProcessRunner
 from ARC import logger
 from ARC import exceptions
@@ -27,21 +25,34 @@ from ARC.runners import Mapper
 
 class Spawn:
     def __init__(self, config):
+        self.workers = []
+        self.config = config
+        self.pid = os.getpid()
         self.nprocs = int(config['nprocs'])
+        self.q = multiprocessing.JoinableQueue()
+        # Contains the state of the job
+        # 0: Not set
+        # 1: Waiting for jobs
+        # 2: Running a job
+        self.status = multiprocessing.Array('i', [0] * self.nprocs)
+        # Contains stats for the run
+        # [0]: Number of jobs returned ok
+        # [1]: Number of jobs returned rerun
+        # [2]: Number of Mapper jobs run
+        # [3]: Number of Assembly jobs run
+        # [4]: Number of Checker jobs run
+        # [5]: Number of Finisher jobs run
+        self.stats = multiprocessing.Array('i', [0] * 6)
 
-        #Setup thread-safe shared objects
-        self.job_q = multiprocessing.Queue()
-        self.result_q = multiprocessing.Queue()
-        self.finished = multiprocessing.Array('i', [0] * self.nprocs)
-
+    def submit(self):
         # Get the number of samples from the configuration
         logger.info("Submitting initial mapping runs.")
 
-        for sample in config['Samples']:
-            s = config['Samples'][sample]
+        for sample in self.config['Samples']:
+            s = self.config['Samples'][sample]
             params = {}
-            for k in config:
-                params[k] = config[k]
+            for k in self.config:
+                params[k] = self.config[k]
             params['working_dir'] = s['working_dir']
             params['finished_dir'] = s['finished_dir']
             params['sample'] = sample
@@ -53,113 +64,75 @@ class Spawn:
                 params['SE'] = s['SE']
 
             # mapper = Mapper(params)
-            self.job_q.put(Mapper.to_job(params))
+            self.q.put(Mapper.to_job(params))
 
     def run(self):
         logger.info("Starting...")
         logger.debug("Setting up workers.")
-        workers = []
+
         for i in range(self.nprocs):
             worker = ProcessRunner(
-                self.job_q,
-                self.result_q,
-                self.finished,
-                i)
+                i,
+                self.q,
+                self.status,
+                self.stats,
+                self.pid)
+            self.workers.append(worker)
             worker.daemon = False
-            workers.append(worker)
             worker.start()
 
-        status_ok = 0
-        status_rerun = 0
-        sleeptime = 0.1
         while True:
             try:
-                time.sleep(sleeptime)
-                result = self.result_q.get_nowait()
-                #print "Spawner, setting sleeptime to %s" % sleeptime
-                sleeptime = 0
-                if result['status'] == 0:
-                    logger.debug("Completed successfully %s" % (
-                        result['process']))
-                    status_ok += 1
-                elif result['status'] == 1:
-                    logger.debug("Rerunnable error returned from %s" % (
-                        result['process']))
-                    status_rerun += 1
-                elif result['status'] == 2:
-                    logger.error("Fatal error returned from %s" % (
-                        result['process']))
-                    logger.error("Terminating processes")
-                    self.kill_workers(workers)
-                    raise exceptions.FatalError("Unrecoverable error")
-                elif result['status'] == 3:
-                    logger.debug("Empty state returned from %s" % (
-                        result['process']))
-                elif result['status'] == 4:
-                    logger.debug("%s worker needs to be retired" % (
-                        result['process']))
-                    self.retire_worker(
-                        workers,
-                        result['process'],
-                        self.job_q,
-                        self.result_q,
-                        self.finished)
-                else:
-                    logger.error("Unknown state returned from %s" % (
-                        result['process']))
-                    self.kill_workers(workers)
-            except (KeyboardInterrupt, SystemExit):
-                logger.error("Terminating processes")
-                self.kill_workers(workers)
-                raise
-            except Empty:
-                sleeptime = 5
-                #print "Spawn setting sleeptime to", sleeptime
-                # In rare cases, the queue can be empty because a worker just
-                # pulled a job, but hasn't yet gotten to uppdate the finished
-                # status. This will cause not_done() to return False, causing
-                # the loop to break. Adding a short sleep here allows workers
-                # to update their status.
-                time.sleep(5.5)
-                if not self.not_done():
-                    logger.debug(
-                        "Results queue is empty and there are no active "
-                        "processes.  Exiting")
+                self.q.join()
+
+                # This shouldn't be needed but we will check just in case
+                if self.all_workers_waiting():
+                    logger.debug("Workers are all waiting and the queue is empty.  Exiting")
                     break
                 else:
-                    logger.debug(
-                        "Results queue is empty and there are still "
-                        "active processes.  Waiting")
+                    logger.debug("Workers are not in a waiting state.  Waiting for more.")
+                    time.sleep(5)
 
-        logger.info("%d processes returned ok" % (status_ok))
-        logger.info("%d processes had to be rerun" % (status_rerun))
-        self.kill_workers(workers)
+            except exceptions.FatalError:
+                logger.error("A fatal error was encountered.")
+                self.killall()
+                raise
+            except (KeyboardInterrupt, SystemExit):
+                logger.error("Terminating processes")
+                self.killall()
+                raise
+            except Exception as e:
+                ex_type, ex, tb = sys.exc_info()
+                logger.error("\n".join(traceback.format_exception(ex_type, ex, tb)))
+                logger.error("An unhandled exception occurred")
+                self.killall()
+                raise
+            finally:
+                # Kill 'em all!
+                self.killall()
 
-    def kill_workers(self, workers):
-        for worker in workers:
-            logger.debug("Shutting down %s" % (worker.name))
-            worker.terminate()
+        logger.info("-----")
+        logger.info("%d processes returned ok." % (self.stats[0]))
+        logger.info("%d processes had to be rerun." % (self.stats[1]))
+        logger.info("-----")
+        logger.info("%d Mapper jobs run." %(self.stats[2]))
+        logger.info("%d Assembly jobs run." %(self.stats[3]))
+        logger.info("%d Checker jobs run." %(self.stats[4]))
+        logger.info("%d Finisher jobs run." %(self.stats[5]))
+        logger.info("-----")
 
-    def retire_worker(self, workers, process, job_q, result_q, finished):
-        for i in range(len(workers)):
-            worker = workers[i]
-            if worker.name == process:
-                logger.info("Terminating working %s" % worker.name)
-                worker.terminate()
-                worker = ProcessRunner(job_q, result_q, finished, i)
-                worker.daemon = False
-                workers[i] = worker
-                worker.start()
-                logger.info("Started new worker %s" % worker.name)
+    def killall(self):
+        for i in range(self.nprocs):
+            logger.debug("Shutting down %s" % (self.workers[i].name))
+            self.workers[i].terminate()
+            self.workers[i].join()
 
-    def not_done(self):
-        logger.debug("Checking to see if workers are done")
-        done = 0
-        for i in self.finished:
-            done += i
-        logger.debug("Active Workers: %d" % (
-            len(self.finished) - done))
-        return done < len(self.finished)
+    def all_workers_waiting(self):
+        waiting = 0
+        for i in range(self.nprocs):
+            logger.debug("ProcessRunner %d reports %d" % (i, self.status[i]))
+            if self.status[i] == 1:
+                waiting += 1
 
-    def not_empty(self, q):
-        return not q.empty()
+        logger.debug("%d of %d workers are in the waiting state" % (waiting, self.nprocs))
+        return waiting == self.nprocs
