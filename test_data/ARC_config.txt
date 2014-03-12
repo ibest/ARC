@@ -17,7 +17,7 @@
 ## FileFormat: fasta or fastq
 # reference=./targets.fa
 # numcycles=10
-# mapper=bowtie2
+# mapper=blat
 # assembler=newbler
 # nprocs=7
 # format=fastq
