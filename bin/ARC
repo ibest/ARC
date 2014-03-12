@@ -56,8 +56,8 @@ def main():
         loglevel = logging.DEBUG
     else:
         loglevel = logging.INFO
+    print "ARC Version: ", VERSION
     if options.version:
-        print "ARC Version: ", VERSION
         sys.exit()
 
     lib_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
