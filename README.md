@@ -158,3 +158,5 @@ All configuration for ARC is stored in the ARC_config.txt file. Consult the exam
 Please send questions, comments and suggestions to Sam Hunter (shunter {at} gmail {dot} com).
 
 [![githalytics.com alpha](https://cruel-carlota.pagodabox.com/ccea24d058d3315f3610784acc00af67 "githalytics.com")](http://githalytics.com/ibest/ARC)
+
+[![githalytics.com alpha](https://cruel-carlota.gopagoda.com/ccea24d058d3315f3610784acc00af67 "githalytics.com")](http://githalytics.com/ibest/ARC)
