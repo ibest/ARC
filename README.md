@@ -160,3 +160,5 @@ Please send questions, comments and suggestions to Sam Hunter (shunter {at} gmai
 [![githalytics.com alpha](https://cruel-carlota.pagodabox.com/ccea24d058d3315f3610784acc00af67 "githalytics.com")](http://githalytics.com/ibest/ARC)
 
 [![githalytics.com alpha](https://cruel-carlota.gopagoda.com/ccea24d058d3315f3610784acc00af67 "githalytics.com")](http://githalytics.com/ibest/ARC)
+
+[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/9d7b273a276eb05c10996be02a6d7c09 "githalytics.com")](http://githalytics.com/ibest/ARC)
