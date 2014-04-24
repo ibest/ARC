@@ -136,6 +136,7 @@ The finished_* folders contain the following files:
 
 ## Configuring ARC
 Command line options include:
+
 Option | Description
 -------|------------
   -d   | --debug, Turn on debug output
