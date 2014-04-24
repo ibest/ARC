@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import sys
-import time
 import traceback
 import os
 import signal
@@ -45,7 +44,7 @@ class ProcessRunner(Process):
 
         # Update stats
         self.update_jobstats(item['runner'])
-        
+
         # Clean up
         # job.clean()
         del job
