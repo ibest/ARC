@@ -25,7 +25,7 @@ def run(loglevel):
     app = App()
     return app.start(loglevel)
 
-VERSION = '1.1.1'
+VERSION = 'v1.1.2 2014-04-24'
 
 
 def main():
@@ -58,6 +58,13 @@ def main():
         loglevel = logging.INFO
     print "ARC Version: ", VERSION
     if options.version:
+        sys.exit()
+
+    #Try to import required modules (before they are needed anywhere)
+    try:
+        from Bio import SeqIO
+    except ImportError, e:
+        print "Error: Biopython not available, please install it before using ARC (http://biopython.org)."
         sys.exit()
 
     lib_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')

@@ -135,15 +135,36 @@ The finished_* folders contain the following files:
 
 
 ## Configuring ARC
+Command line options include:
+Option | Description
+-------|------------
+  -d   | --debug, Turn on debug output
+  -p   | --profile, Turn on profiling
+  -c   | --config, Specify the ARC config file.  The default is ARC_config.txt in the working directory
+  -v   | --version, Print the version number and exit.
+
+
 All configuration for ARC is stored in the ARC_config.txt file. Consult the example configuration file in test_data for exact formatting requirements. The following options are currently supported:
-* reference - path to the reference fasta which contains targets
-* numcycles - the maximum number of iterations ARC is allowed to run
-* mapper - which mapper to use (blat/bowtie2)
-* assembler - which assembler to use (newbler/spades)
-* nprocs - the number of processors to use
-* format - the read format (fasta/fastq)
-* urt - only applies to Newbler, causes it to 'use read tips' for all but the final assembly
-* map_against_reads - causes ARC to map against reads instead of contigs on the second iteration
+
+Parameter | Description
+----------|-------------
+reference*| A fasta file contain one or more reference sequences.
+numcycles | Maximum number of mapping and assembly cycles ARC will carry out Default: 1
+max_incorporation | Control for repeat elements. If total reads recruited in the current cycle is greater than max_incorporation X reads recruited in previous cycle, assembly will not be carried out. Default: 5
+bowtie2_k | Controls the max number of matches Bowtie 2 will report for each read. Default 5
+format* | Format for files containing reads, can be fasta or fastq.
+mapper* | Mapper to use during read recruitment, can be bowtie2 or blat.
+assembler* | Assembler to use during assembly stage, can be newbler or spades
+urt | Newbler parameter “use read tips” may reduce the number of ARC iterations by instructing Newbler to extend contigs using single reads at the edges of contigs. Note that ARC will not use 'urt' on the final iteration to ensure higher quality contigs. Default False
+verbose | Output extensive logging details about ARC operation including all calls to external programs Default False
+assemblytimeout | Amount of time (in minutes) ARC will wait for an assembly to finish before killing the assembly process. Adjusting this value can make assemblies of large targets possible, or reduce the impact of repeats on large ARC runs. Default 10.
+cdna | Newbler parameter that enables experimental RNAseq assembly and read incorporation reporting. Newbler will be run in transcriptome assembly mode on the final ARC iteration. Default: False
+rip | Newbler parameter that instructs Newbler to only place reads in a single contig. In some cases Newbler will split a read placing parts of it in more than one contig. Default: False
+subsample | Subsample read depth to a percentage of the original number of mapped reads. In cases where sequencing depth is great (>100x) it is often beneficial to only assemble a random subset of the mapped reads. For example, subsample=0.4 would cause ARC to retain 40% of mapped reads for assembly. Default: 1
+maskrepeats | Causes ARC to mask simple tandem repeats in contigs before mapping. This results in recruitment of fewer reads contain repeats. Default: True
+nprocs | Number of processors ARC should use. ARC can effectively make use of at least 64 cores when processing large jobs. Default: 1
+fastmap | BLAT mapper parameter, runs BLAT in fastMap mode that requires high identity and doesn't allow insertions or deletions.
+
 
 
 ## Tips and tricks for advanced users
