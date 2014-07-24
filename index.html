@@ -32,14 +32,17 @@ function Toggle(tt) {
         <header>
           <h1>ARC</h1>
           <h2>Assembly by Reduced Complexity</h2>
-        </header>
+        <img src="./images/Hickey_arc-float.png", width="300", height='280', style="float:left; margin:0px 0px 0px 10px" />
+        <img src="./images/Pennell_arc_logo.png", width="300", height='150' style="float:right; margin:0px 0px 0px 10px" />
 
-        <img src="./images/Hickey_arc-float.png", width="300", height="188", style="float:left; margin:0px 0px 0px 10px" />
-        <img src="./images/Pennell_arc_logo.png", width="300", height="188", style="float:right; margin:0px 0px 0px 10px" />
-        <br>
-        <p>
+        </header>
+        <br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+
         <center>Which logo do you prefer?</center>
-</p>
+
+        <br><br>
+
         <section id="downloads" class="clearfix">
           <a href="https://github.com/ibest/ARC/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
           <a href="https://github.com/ibest/ARC/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
@@ -76,10 +79,10 @@ function Toggle(tt) {
           <li><a href="#PatchingBLAT">Patching BLAT for Fastq support</a></li>
           <li><a href="#ARCTesting">Testing ARC install</a></li>
           <li><a href="#ARCUsage">How to use ARC</a></li>
-          <li><a href="#ARCOutputs">
+          <li><a href="#ARCOutputs">ARC output files</a></li>
           <li><a href="#ARCConfig">Configuring ARC</a></li>
           <li><a href="#TipsAndTricks">Tips and tricks</a></li>
-
+          <li><a href="#Contact">Contact us</a></li>
 
           </ul>
           </div>
@@ -144,6 +147,7 @@ function Toggle(tt) {
         </blockquote>
         </li>
         </ul>
+        <h7><a href="#TOC">Table of contents</a></h7>
         </div>
 
         <div id='ARCInstallation'>
@@ -215,6 +219,7 @@ $ cd /path/to/arc/source
 $ python setup.py install
 </code></pre>
       </li></ul>
+      <h7><a href="#TOC">Table of contents</a></h7>
     </div>
 
 <div id="PatchingBLAT">
@@ -230,7 +235,7 @@ $ mkdir ~/bin/x86_64
 $ make
 </code></pre>
   Executables for blat with FASTQ support will now be located in your ~/bin/x86_64 folder. Either add this folder to your path, or move the executable files to a folder already in your path.
-
+<br><h7><a href="#TOC">Table of contents</a></h7>
     </div>
 
 <div id='ARCTesting'>
@@ -243,6 +248,7 @@ Or (if ARC is installed in the PATH)
 <pre><code>$ cd test_data
 $ ARC
 </code></pre>
+<h7><a href="#TOC">Table of contents</a></h7>
     </div>
 
 
@@ -259,6 +265,7 @@ $ ARC
       <pre><code>$ ARC > log.txt </code></pre>
     </li>
     </ul>
+    <h7><a href="#TOC">Table of contents</a></h7>
 </div>
 
 <div id="ARCOutputs">
@@ -279,6 +286,7 @@ The finished_* folders contain the following files:
     <li>PE1.fastq, PE2.fastq, SE.fastq - these files contain the reads which were mapped on the final iteration of ARC.
         Reads have a slightly modified name to ensure compatibility with Newbler and contain a Sample_:_Target field in the description.</li>
 </ul>
+<h7><a href="#TOC">Table of contents</a></h7>
 </div>
 
 <div id="ARCConfig">
@@ -324,24 +332,56 @@ All configuration for ARC is stored in the ARC_config.txt file. Consult the exam
 <tr><td>fastmap</td><td>BLAT mapper parameter, runs BLAT in fastMap mode that requires high identity and doesn't allow insertions or deletions.</td></tr>
 </table>
 </p>
+<h7><a href="#TOC">Table of contents</a></h7>
 </div>
 
 
 
 <div id="TipsAndTricks">
 <h3>Tips and tricks for advanced users</h3>
+<h4>Using multiple sequences for a single target:</h4>
+  In some cases it may be difficult to identify a single best homologous target to use in seeding an assembly. In this situation ARC can be configured to use multiple sequences as a single target by using the following naming scheme:
+      <ul>
+        <li>Name the targets sequences so that they share a common middle element in the following way:
+          <ul>
+            <li><strong>></strong>ID_:Target1:_seq1</li>
+            <li><strong>></strong>ID_:Target1:_seq2</li>
+            </ul>
+        </li>
+      </ul>
 
-    Using multiple sequences for a single Target:
-        Name the sequences so that they share a common element in the reference fasta file in the following way:
-            ID_:Target1:_seq1
-            ID_:Target1:_seq2
-    Setting map_against_reads:
-        Only a small number of reads may map on the first iteration if your reference is very distantly related or coverage is low. In these situations, set map_against_reads=True in the ARC_config.txt file. This will use all of the mapped reads as the new set of targets instead of using contigs. Please note that this feature is experimental and sometimes leads to incorporation of repetitive elements.
+<h4>Setting map_against_reads:</h4>
+  Only a small number of reads may map on the first iteration if your reference is very distantly related or coverage is low. In these situations, set map_against_reads=True in the ARC_config.txt file. This will use all of the mapped reads as the new set of targets instead of using contigs on the first iteration. Please note that this feature is experimental and sometimes leads to incorporation of repetitive elements and off-target contigs.
+  <br>
+<h7><a href="#TOC">Table of contents</a></h7>
+</div>
 
-Questions/Comments/Suggestions
 
-Please send questions, comments and suggestions to Sam Hunter (shunter {at} gmail {dot} com).
+<div id="Contact">
+<h3>Questions/Comments/Suggestions</h3>
+Please post questions, comments and suggestions to the <a href="https://groups.google.com/forum/#!forum/arc-assembly">ARC user group</a>, or email (arc-assembly {at} googlegroups {dot} com).
+</div>
 
+
+<script type="text/javascript">
+  var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+  document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+    try {
+      var pageTracker = _gat._getTracker("UA-39120406-2");
+    pageTracker._trackPageview();
+    } catch(err) {}
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>
+
+
+
+<!--
 
 <br><br>
 <pre><code>$ cd your_repo_root/repo_name
@@ -377,18 +417,4 @@ $ git checkout gh-pages
           This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
         </footer>
 
-<script type="text/javascript">
-  var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-  document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-</script>
-<script type="text/javascript">
-    try {
-      var pageTracker = _gat._getTracker("UA-39120406-2");
-    pageTracker._trackPageview();
-    } catch(err) {}
-</script>
-
-      </div>
-    </div>
-  </body>
-</html>
+-->
