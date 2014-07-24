@@ -1,14 +1,14 @@
 # ARC (Assembly by Reduced Complexity)
 
-For details about ARC installation, usage, and output, please visit the ARC web page: http://ibest.github.io/ARC/
+### For details about ARC installation, usage, and output, please visit the [ARC web page: http://ibest.github.io/ARC/](http://ibest.github.io/ARC/).
 
 
 ## News
 
 ARC Updates:
 2014-07-24:
-* ARC has a web page: http://ibest.github.io/ARC/
-* ARC has a Google Group: https://groups.google.com/forum/?hl=en#!forum/arc-assembly
+* ARC has a [web page: http://ibest.github.io/ARC/](http://ibest.github.io/ARC/)
+* ARC has a [Google Group: https://groups.google.com/forum/?hl=en#!forum/arc-assembly](https://groups.google.com/forum/?hl=en#!forum/arc-assembly)
 
 2014-03-12:
 * Some major improvements were made over the last few months, these include:
