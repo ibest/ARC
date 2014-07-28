@@ -125,7 +125,7 @@ class Mapper(Base):
 
         #Tune the sensitivity so that on the first iteration the mapper is very sensitive
         #On later iterations the mapper is very specific
-        if self.params['iteration'] == 0:
+        if self.params['iteration'] == 0 and self.params['sloppymapping']:
             args.append("--very-sensitive-local")
         else:
             args += ["--very-fast-local", "--mp", "12", "--rdg", "12,6", "--rfg", "12,6"]
@@ -201,7 +201,7 @@ class Mapper(Base):
         #Some new experimental params to increase specificity after the first iteration:
         if self.params['maskrepeats']:
             args.append("-mask=lower")
-        if self.params['iteration'] > 0:
+        if self.params['iteration'] > 0 or not self.params['sloppymapping']:
             args.append("-minIdentity=98")
             args.append("-minScore=40")
         args.append(os.path.join(working_dir, 'mapping.psl'))
