@@ -6,6 +6,9 @@
 ## News
 
 ARC Updates:
+2014-07-28:
+* ARC (develop branch) now has a "sloppymapping" parameter which can be used to turn off the low-specificity mapping on iteration 1. This works with both Bowtie2 and BLAT.
+
 2014-07-24:
 * ARC has a [web page: http://ibest.github.io/ARC/](http://ibest.github.io/ARC/)
 * ARC has a [Google Group: https://groups.google.com/forum/?hl=en#!forum/arc-assembly](https://groups.google.com/forum/?hl=en#!forum/arc-assembly)
