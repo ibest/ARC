@@ -29,7 +29,7 @@
 # rip=True
 # cdna=False
 # subsample=1
-# maskrepeats=False
+# maskrepeats=True
 # sloppymapping=True
 Sample_ID	FileName	FileType
 Sample1	./reads/Sample1_R1.fastq	PE1

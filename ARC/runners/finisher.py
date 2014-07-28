@@ -17,6 +17,7 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from ARC import logger
 from ARC import exceptions
+from ARC.functions import *
 from ARC.runners import Base
 from collections import Counter
 import traceback
@@ -158,27 +159,6 @@ class Finisher(Base):
         else:
             logger.info("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])
 
-    #Functions for repeat masking:
-    def num_unmers(self, seq, N):
-        #Calculate the number of unique nmers in seq
-        nmers = {}
-        for i in range(len(seq) - (N - 1)):
-            nmers[str(seq[i:i+N]).upper()] = True
-        return(len(nmers))
-
-    def mask_seq(self, seq, W=15, N=3):
-        #Replace simple repeats with 'n' characters
-        #This masks a window if the number of unique Nmers is <
-        seq_copy = bytearray(seq)
-        i = 0
-        for i in range(len(seq) - (W - 1)):
-            if self.num_unmers(seq[i:i + W], N) < 7:
-                if self.params['mapper'] == 'blat':
-                    seq_copy[i:i + W] = seq[i:i + W].lower()
-                if self.params['mapper'] == 'bowtie2':
-                    seq_copy[i:i + W] = 'n' * W
-        return(seq_copy)
-
     def write_target(self, target, target_folder, outf, finished=False, map_against_reads=False, killed=False):
         # either map_against_reads was passed in, or
         # no contigs were assembled and target isn't finished, or
@@ -205,7 +185,7 @@ class Finisher(Base):
                     contig = contig.upper()
                     #Only mask repeats on intermediate iterations.
                     if self.params['maskrepeats'] and not finished:
-                        contig.seq = Seq(str(self.mask_seq(contig.seq.tostring())))
+                        contig.seq = Seq(str(mask_seq(contig.seq.tostring(), self.params['mapper'])))
                     #Bowtie2 crashes if a contig is all 'n' so only write it out if it isn't
                     if len(contig.seq) != contig.seq.count('n'):
                         SeqIO.write(contig, outf, "fasta")

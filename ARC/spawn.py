@@ -17,6 +17,8 @@
 import time
 import multiprocessing
 import os
+import sys
+import traceback
 from ARC import ProcessRunner
 from ARC import logger
 from ARC import exceptions
@@ -115,10 +117,10 @@ class Spawn:
         logger.info("%d processes returned ok." % (self.stats[0]))
         logger.info("%d processes had to be rerun." % (self.stats[1]))
         logger.info("-----")
-        logger.info("%d Mapper jobs run." %(self.stats[2]))
-        logger.info("%d Assembly jobs run." %(self.stats[3]))
-        logger.info("%d Checker jobs run." %(self.stats[4]))
-        logger.info("%d Finisher jobs run." %(self.stats[5]))
+        logger.info("%d Mapper jobs run." % (self.stats[2]))
+        logger.info("%d Assembly jobs run." % (self.stats[3]))
+        logger.info("%d Checker jobs run." % (self.stats[4]))
+        logger.info("%d Finisher jobs run." % (self.stats[5]))
         logger.info("-----")
 
     def killall(self):
