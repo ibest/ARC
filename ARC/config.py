@@ -40,7 +40,8 @@ class Config:
         'maskrepeats': True,
         'nprocs': 1,
         'fastmap': False,
-        'keepassemblies': False
+        'keepassemblies': False,
+        'sloppymapping': True
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {
