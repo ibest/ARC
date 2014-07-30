@@ -14,10 +14,12 @@
 import os
 import time
 from Bio import SeqIO
+from Bio.Seq import Seq
 from ARC import Config
 from ARC import logger
 from ARC import FatalError
 from ARC import Spawn
+from ARC.functions import *
 
 
 class App:
@@ -89,6 +91,12 @@ class App:
                 ['Sample', 'Target', 'Iteration', 'Reads']) + '\n')
             statsf.close()
 
+            # Create Target Summary Table
+            tstf = open(os.path.join(finished_dir, "target_summary_table.tsv"), 'w')
+            tstf.write('\t'.join(
+                ['Sample', 'Target', 'RefLen', 'Status', 'Iteration', 'Reads', 'Contigs', 'ContigLength']) + '\n')
+            tstf.close()
+
             #Create a stats file for cdna
             if config['cdna']:
                 countsf = open(os.path.join(finished_dir, "isogroup_read_counts.tsv"), 'a')
@@ -97,6 +105,7 @@ class App:
 
             # Build a separate index for each read file in the input, put them
             # in working_dir
+            #Consider parallelizing this?
             start = time.time()
             if 'PE1' in s:
                 if not os.path.exists(os.path.join(working_dir, "PE1.idx")):
@@ -130,21 +139,56 @@ class App:
                 "Sample: %s, indexed reads in %s seconds." % (
                     sample, time.time() - start))
 
-            # Read through the reference, set up a set of safe names for the
-            # targets:
-            safe_targets = {}
-            i = 0
-            for t in SeqIO.parse(config['reference'], "fasta"):
-                if len(t.name.split("_:_")) == 1:
-                    safe_targets[t.name] = "t__%06d" % i
-                    safe_targets["t__%06d" % i] = t.name
-                    i += 1
-                else:
-                    target = t.name.split("_:_")[1]
-                    safe_targets[target] = "t__%06d" % i
-                    safe_targets["t__%06d" % i] = target
-                    i += 1
-            config['safe_targets'] = safe_targets
+            #Read through the references, mask them if necessary
+
+            #mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
+
+        # Read through the reference, set up a set of safe names for the targets.
+        # Also create the Target Summary Table which is indexed by original target name (following ARC conventions)
+        # Also mask sequences and write them to a new set of output files
+        #safe_targets is a two-way lookup, meaning it has both the safe target ID and the contig ID.
+        summary_stats = {}
+        safe_targets = {}
+        new_refsf = {}
+        for sample in config['Samples']:
+            s = config['Samples'][sample]
+            new_refsf[sample] = open(os.path.join(s['working_dir'], 'I000_contigs.fasta'), 'w')
+
+        i = 0
+        for t in SeqIO.parse(config['reference'], "fasta"):
+            if len(t.name.split("_:_")) == 1:
+                target = t.name
+            else:
+                target = t.name.split("_:_")[1]
+
+            safe_targets[target] = "t__%06d" % i
+            safe_targets["t__%06d" % i] = target
+            i += 1
+            if target not in summary_stats:
+                summary_stats[target] = {'targetLength': len(t)}
+            else:
+                summary_stats[target]['targetLength'] = (summary_stats[target]['targetLength'] + len(t))
+
+            #Write contigs:
+            if config['maskrepeats']:
+                t.seq = Seq(str(mask_seq(t.seq.tostring(), config['mapper'])))
+            #Bowtie2 crashes if a contig is all 'n' so only write it out if it isn't
+            if len(t) != t.seq.count('n'):
+                for outf in new_refsf.values():
+                    SeqIO.write(t, outf, "fasta")
+            else:
+                writeTargetStats(finished_dir=s['finished_dir'],
+                                 sample=sample,
+                                 target=target,
+                                 targetLength=summary_stats[target]['targetLength'],
+                                 status='MaskedOut',
+                                 iteration=0,
+                                 readcount=0,
+                                 num_contigs=0, contig_length=0)
+                del summary_stats[target]
+
+        config['safe_targets'] = safe_targets
+        config['summary_stats'] = summary_stats
 
     def clean(self):
         pass

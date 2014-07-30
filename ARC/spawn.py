@@ -57,6 +57,8 @@ class Spawn:
                 params[k] = self.config[k]
             params['working_dir'] = s['working_dir']
             params['finished_dir'] = s['finished_dir']
+            #params['reference'] = s['reference']
+            params['reference'] = os.path.join(s['working_dir'], 'I000_contigs.fasta')
             params['sample'] = sample
 
             if 'PE1' in s and 'PE2' in s:

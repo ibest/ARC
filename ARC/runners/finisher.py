@@ -119,7 +119,7 @@ class Finisher(Base):
                 #only write out the reads, assembly won't have contigs
                 self.write_target(target, target_folder, outf=fin_outf, finished=False, map_against_reads=False, killed=True)
             elif sample_finished:  # everything goes into the final file/folders.
-                self.write_target(target, target_folder, outf=fin_outf, finished=True)
+                self.write_target(target, target_folder, outf=fin_outf, finished=True, )
             elif target_map_against_reads and cur_reads > previous_reads and iteration < 3:
                 #Only map against reads if we have improvement in mapping and we haven't been mapping for multiple iterations
                 targets_written += self.write_target(target, target_folder, outf=remap_outf, finished=False, map_against_reads=True)
@@ -128,7 +128,7 @@ class Finisher(Base):
                 if iteration > 1 and cur_reads != 0 and previous_reads != 0:
                     if cur_reads / previous_reads > self.params['max_incorporation']:
                         logger.info("Sample %s target %s hit a repetitive region, no more mapping will be done" % (self.params['sample'], target))
-                        self.write_target(target, target_folder, outf=fin_outf, finished=True)
+                        self.write_target(target, target_folder, outf=fin_outf, finished=True, status='Repeat')
                     elif cur_reads <= previous_reads and iteration > 2:
                         #Give the mapper a couple extra iterations in case the first mapping got a lot of reads which didn't assemble
                         logger.info("Sample %s target %s did not incorporate any more reads, no more mapping will be done" % (self.params['sample'], target))
@@ -159,12 +159,17 @@ class Finisher(Base):
         else:
             logger.info("Sample: %s Mapper not added to queue. Work finished." % self.params['sample'])
 
-    def write_target(self, target, target_folder, outf, finished=False, map_against_reads=False, killed=False):
+    def write_target(self, target, target_folder, outf, finished=False, map_against_reads=False, killed=False, status=None):
         # either map_against_reads was passed in, or
         # no contigs were assembled and target isn't finished, or
         # assembler crashed and no contig file was created
         # --> write reads as contigs
         num_contigs = 0  # store how many contigs were written out
+        contig_length = 0
+        if finished and status is None:
+            status = 'Finished'
+        if killed:
+            status = 'Killed'
         if map_against_reads is False and killed is False:
             if self.params['assembler'] == 'newbler':
                 contigf = os.path.join(self.params['working_dir'], target_folder, "assembly", "assembly", "454AllContigs.fna")
@@ -189,6 +194,7 @@ class Finisher(Base):
                     #Bowtie2 crashes if a contig is all 'n' so only write it out if it isn't
                     if len(contig.seq) != contig.seq.count('n'):
                         SeqIO.write(contig, outf, "fasta")
+                        contig_length += len(contig.seq)
                 contig_inf.close()
                 logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs " % (self.params['sample'], target, self.params['iteration'], i))
                 num_contigs += i
@@ -256,6 +262,7 @@ class Finisher(Base):
                         r.description = self.params['sample'] + "_:_" + target
                         SeqIO.write(r, outf_SE, self.params['format'])
                     outf_SE.close()
+
         # Finally a special case for situations where assembly of a target is killed, but contigs exist from
         # a previous assembly. Note that we only do this when not running in cDNA mode.
         if killed and self.params['iteration'] > 1 and not self.params['cdna']:
@@ -269,9 +276,29 @@ class Finisher(Base):
                     if contig.id.split("_:_")[1] == target:
                         contig.name = contig.id = contig.id.replace("Unfinished", "Contig")
                         SeqIO.write(contig, outf, "fasta")
+                        num_contigs += 1
+                        contig_length += len(contig.seq)
         #Cleanup temporary assembly, and reads:
         if not self.params['keepassemblies']:
             os.system("rm -rf %s" % target_folder)
+
+        #write out target stats:
+        if finished or killed:
+            writeTargetStats(finished_dir=self.params['finished_dir'],
+                             sample=self.params['sample'],
+                             target=target,
+                             targetLength=self.params['summary_stats'][target]['targetLength'],
+                             status=status,
+                             iteration=self.params['iteration'],
+                             readcount=self.params['readcounts'][target][self.params['iteration']],
+                             num_contigs=num_contigs, contig_length=contig_length)
+            del self.params['summary_stats'][target]
+
+        #writeTargetStats(target, status, num_contigs, contig_length, self.params)
+
+#summary_stats[target] = {'RefLen': len(t), 'Status': 'NA', 'Iteration': None,
+#                                         'Reads': None, 'Contigs': None, 'ContigLength': None}
+            #[self.params['Sample'], target, 'TargetLength', 'Status', 'Iteration', 'Reads', 'Contigs', 'ContigLength']) + '\n')
         if finished or killed:
             return 0
         else:
@@ -385,4 +412,3 @@ class Finisher(Base):
         ## TODO: add support for the ExceedsThreshold contigs
         logger.info("Sample: %s target: %s iteration: %s Finished writing %s contigs, %s isogroups " % (self.params['sample'],
                     target, self.params['iteration'], ncontigs, nisogroups))
-
