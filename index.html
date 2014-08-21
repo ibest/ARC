@@ -259,7 +259,6 @@ $ ARC
     </ul></li>
     <li>Run ARC using the approach appropriate to the installation method selected.
       <pre><code>$ ARC > log.txt </code></pre>
-    </li>
     </ul>
     <h7><a href="#TOC">Table of contents</a></h7>
 </div>
@@ -281,6 +280,15 @@ The finished_* folders contain the following files:
         Contig names have the following format: SampleID_:TargetID:_ContigN where there can be multiple contigs for one target</li>
     <li>PE1.fastq, PE2.fastq, SE.fastq - these files contain the reads which were mapped on the final iteration of ARC.
         Reads have a slightly modified name to ensure compatibility with Newbler and contain a Sample_:_Target field in the description.</li>
+    <li>mapping_stats.tsv: tab separated values file that contains the number of reads mapped at each iteration for each target that successfully recruited reads.
+    <li>target_summary_table.tsv: tab separated values file that contains the final status of all targets within the original set of reference sequences.
+        <table>
+          <tr><td>NoReads</td><td>no reads were recruited by this target.</td>
+          <tr><td>Finished</td><td>target was finished normally.</td>
+          <tr><td>Killed</td><td>Assembly time was longer than assemblytimeout.</td>
+          <tr><td>Repeat</td><td>target recruited too many reads and may be a repeat.</td>
+        </table>
+    </li>
 </ul>
 <h7><a href="#TOC">Table of contents</a></h7>
 </div>
