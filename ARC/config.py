@@ -25,7 +25,7 @@ from ARC import exceptions
 class Config:
     OPTIONS = {
         'numcycles': 1,
-        'max_incorporation': 5,
+        'max_incorporation': 10,
         'bowtie2_k': 5,
         'format': None,
         'mapper': None,
