@@ -7,6 +7,18 @@
 
 ### ARC Updates:
 
+#### 2014-08-21:
+* Two exciting updates for ARC (in the develop branch):
+    * ARC's behavior has been modified so that it will mask the reference sequences for simple repeats on iteration 1 if maskrepeats=True (the default).
+    * A new summary table named "target_summary_table.tsv" is now generated which complements the information already reported in "mapping_stats.tsv".
+        * This file is created for each sample, and contains target specific details for every target in the original set of reference sequences.
+        * Targets can have one of the following statuses:
+            * NoReads - no reads were recruited by this target
+            * Finished - target was finished normally
+            * Killed - Assembly time was longer than assemblytimeout
+            * Repeat - target recruited too many reads and may be a repeat
+* It was found that the default max_incorporations=5 repeat detection setting was too aggressive in cases where divergent references were used. The default for this setting has been adjusted to a more conservative max_incorporation=10.
+
 #### 2014-07-28:
 * ARC (develop branch) now has a "sloppymapping" parameter which can be used to turn off the low-specificity mapping on iteration 1. This works with both Bowtie2 and BLAT.
 
