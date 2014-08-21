@@ -30,18 +30,14 @@ function Toggle(tt) {
       <div class="inner">
 
         <header>
-          <h1>ARC</h1>
-          <h2>Assembly by Reduced Complexity</h2>
+          <!--
         <img src="./images/Hickey_arc-float.png", width="300", height='280', style="float:left; margin:0px 0px 0px 10px" />
-        <img src="./images/Pennell_arc_logo2.png", width="300", height='150' style="float:right; margin:0px 0px 0px 10px" />
-
+        -->
+        <center>
+        <img src="./images/Pennell_arc_logo2.png", width="300", height='150'  />
+          <h2>Assembly by Reduced Complexity</h2>
         </header>
-        <br><br><br><br><br><br><br><br><br><br><br><br><br>
 
-
-        <center>Which logo do you prefer?</center>
-
-        <br><br>
 
         <section id="downloads" class="clearfix">
           <a href="https://github.com/ibest/ARC/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
@@ -316,13 +312,14 @@ All configuration for ARC is stored in the ARC_config.txt file. Consult the exam
 
 <tr><td>reference*</td><td>A fasta file contain one or more reference sequences.</td></tr>
 <tr><td>numcycles</td><td>Maximum number of mapping and assembly cycles ARC will carry out Default: 1</td></tr>
-<tr><td>max_incorporation</td><td>Control for repeat elements. If total reads recruited in the current cycle is greater than max_incorporation X reads recruited in previous cycle, assembly will not be carried out. Default: 5</td></tr>
+<tr><td>max_incorporation</td><td>Control for repeat elements. If total reads recruited in the current cycle is greater than max_incorporation X reads recruited in previous cycle, assembly will not be carried out. Default: 10</td></tr>
 <tr><td>bowtie2_k</td><td>Controls the max number of matches Bowtie 2 will report for each read. Default 5</td></tr>
 <tr><td>format*</td><td>Format for files containing reads, can be fasta or fastq.</td></tr>
 <tr><td>mapper*</td><td>Mapper to use during read recruitment, can be bowtie2 or blat.</td></tr>
 <tr><td>assembler*</td><td>Assembler to use during assembly stage, can be newbler or spades</td></tr>
 <tr><td>urt</td><td>Newbler parameter “use read tips” may reduce the number of ARC iterations by instructing Newbler to extend contigs using single reads at the edges of contigs. Note that ARC will not use 'urt' on the final iteration to ensure higher quality contigs. Default False</td></tr>
 <tr><td>verbose</td><td>Output extensive logging details about ARC operation including all calls to external programs Default False</td></tr>
+<tr><td>map_against_reads</td><td>ARC will skip attempting to assemble recruited reads on the first iteration. Instead these reads are used as mapping targets on the second iteration and assembly is than carried out as usual. This setting can be useful for very divergent references where assembly isn't possible because very few reads are recruited. Default: False</td></tr>
 <tr><td>assemblytimeout</td><td>Amount of time (in minutes) ARC will wait for an assembly to finish before killing the assembly process. Adjusting this value can make assemblies of large targets possible, or reduce the impact of repeats on large ARC runs. Default 10.</td></tr>
 <tr><td>cdna</td><td>Newbler parameter that enables experimental RNAseq assembly and read incorporation reporting. Newbler will be run in transcriptome assembly mode on the final ARC iteration. Default: False</td></tr>
 <tr><td>rip</td><td>Newbler parameter that instructs Newbler to only place reads in a single contig. In some cases Newbler will split a read placing parts of it in more than one contig. Default: False</td></tr>
@@ -330,7 +327,8 @@ All configuration for ARC is stored in the ARC_config.txt file. Consult the exam
 <tr><td>maskrepeats</td><td>Causes ARC to mask simple tandem repeats in contigs before mapping. This results in recruitment of fewer reads contain repeats. Default: True</td></tr>
 <tr><td>nprocs</td><td>Number of processors ARC should use. ARC can effectively make use of at least 64 cores when processing large jobs. Default: 1</td></tr>
 <tr><td>fastmap</td><td>BLAT mapper parameter, runs BLAT in fastMap mode that requires high identity and doesn't allow insertions or deletions.</td></tr>
-<tr><td>sloppymapping</td><td>Controls whether reads will be mapped in low-specificity (sloppy) mode on the first iteration. Default True.</td></tr>
+<tr><td>keepassemblies</td><td>ARC working directories can grow very large. ARC deletes these folders automatically during the run, but can be instructed not to delete them if needed for troubleshooting, etc. Default False</td></tr>
+<tr><td>sloppymapping</td><td>Controls whether reads will be mapped in low-specificity (sloppy) mode on the first iteration. Set this to False if your reference is very closely related to the sample. Default True.</td></tr>
 </table>
 </p>
 <h7><a href="#TOC">Table of contents</a></h7>
