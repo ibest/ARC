@@ -190,7 +190,8 @@ class Finisher(Base):
                     contig = contig.upper()
                     #Only mask repeats on intermediate iterations.
                     if self.params['maskrepeats'] and not finished:
-                        contig.seq = Seq(str(mask_seq(contig.seq.tostring(), self.params['mapper'])))
+                        #contig.seq = Seq(str(mask_seq(contig.seq.tostring(), self.params['mapper'])))
+                        contig.seq = Seq(str(mask_seq(str(contig.seq), self.params['mapper'])))
                     #Bowtie2 crashes if a contig is all 'n' so only write it out if it isn't
                     if len(contig.seq) != contig.seq.count('n'):
                         SeqIO.write(contig, outf, "fasta")

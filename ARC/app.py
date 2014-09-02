@@ -66,7 +66,8 @@ class App:
         format = config['format']
         for sample in config['Samples']:
             s = config['Samples'][sample]
-            working_dir = os.path.realpath('./working_' + sample)
+            working_dir = os.path.realpath(config['workingdirectory'] + '/working_' + sample)
+            #working_dir = os.path.realpath('./working_' + sample)
             finished_dir = os.path.realpath('./finished_' + sample)
             config['Samples'][sample]['working_dir'] = working_dir
             config['Samples'][sample]['finished_dir'] = finished_dir
@@ -171,7 +172,8 @@ class App:
 
             #Write contigs:
             if config['maskrepeats']:
-                t.seq = Seq(str(mask_seq(t.seq.tostring(), config['mapper'])))
+                #t.seq = Seq(str(mask_seq(t.seq.tostring(), config['mapper'])))
+                t.seq = Seq(str(mask_seq(str(t.seq), config['mapper'])))
             #Bowtie2 crashes if a contig is all 'n' so only write it out if it isn't
             if len(t) != t.seq.count('n'):
                 for outf in new_refsf.values():

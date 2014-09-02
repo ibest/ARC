@@ -41,7 +41,8 @@ class Config:
         'nprocs': 1,
         'fastmap': False,
         'keepassemblies': False,
-        'sloppymapping': True
+        'sloppymapping': True,
+        'workingdirectory': './'
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {
