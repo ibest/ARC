@@ -7,6 +7,15 @@
 
 ### ARC Updates:
 
+#### 2014-09-02:
+* Released version v1.1.3 to reflect the following tweaks, improvements and bug fixes:
+    * ARC no longer produces a "deprecated method" warning with Biopython v1.64
+    * ARC now supports high-specificity mapping on iteration 1, set sloppymapping=False
+    * ARC now supports doing work in a different folder, set workingdirectory='/path/to/fast/storage'
+    * ARC now generates new summary tables named target_summary_table.tsv
+    * ARC now supports simple-repeat-masking on iteration 1 when maskrepeats=True is set
+    * ARC default max_incorporation now defaults to 10 instead of 5.
+
 #### 2014-08-21:
 * Two exciting updates for ARC (in the develop branch):
     * ARC's behavior has been modified so that it will mask the reference sequences for simple repeats on iteration 1 if maskrepeats=True (the default).
@@ -17,7 +26,7 @@
             * Finished - target was finished normally
             * Killed - Assembly time was longer than assemblytimeout
             * Repeat - target recruited too many reads and may be a repeat
-* It was found that the default max_incorporations=5 repeat detection setting was too aggressive in cases where divergent references were used. The default for this setting has been adjusted to a more conservative max_incorporation=10.
+* It was found that the default max_incorporation=5 repeat detection setting was too aggressive in cases where divergent references were used. The default for this setting has been adjusted to a more conservative max_incorporation=10.
 
 #### 2014-07-28:
 * ARC (develop branch) now has a "sloppymapping" parameter which can be used to turn off the low-specificity mapping on iteration 1. This works with both Bowtie2 and BLAT.
