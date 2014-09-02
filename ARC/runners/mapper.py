@@ -23,6 +23,7 @@ from ARC import logger
 from ARC.runners import Base
 from ARC.runners import Assembler
 from ARC.runners import AssemblyChecker
+from ARC.functions import *
 import traceback
 import sys
 from random import randint
@@ -125,7 +126,7 @@ class Mapper(Base):
 
         #Tune the sensitivity so that on the first iteration the mapper is very sensitive
         #On later iterations the mapper is very specific
-        if self.params['iteration'] == 0:
+        if self.params['iteration'] == 0 and self.params['sloppymapping']:
             args.append("--very-sensitive-local")
         else:
             args += ["--very-fast-local", "--mp", "12", "--rdg", "12,6", "--rfg", "12,6"]
@@ -201,7 +202,7 @@ class Mapper(Base):
         #Some new experimental params to increase specificity after the first iteration:
         if self.params['maskrepeats']:
             args.append("-mask=lower")
-        if self.params['iteration'] > 0:
+        if self.params['iteration'] > 0 or not self.params['sloppymapping']:
             args.append("-minIdentity=98")
             args.append("-minScore=40")
         args.append(os.path.join(working_dir, 'mapping.psl'))
@@ -328,6 +329,20 @@ class Mapper(Base):
     def splitreads(self):
         """ Split reads and then kick off assemblies once the reads are split for a target, use safe_targets for names"""
         self.params['iteration'] += 1
+
+        #Write out statistics for any/all targets which failed to recruit reads:
+        for target in self.params['summary_stats'].keys():
+            if target not in self.params['mapping_dict']:
+                writeTargetStats(finished_dir=self.params['finished_dir'],
+                                 sample=self.params['sample'],
+                                 target=target,
+                                 targetLength=self.params['summary_stats'][target]['targetLength'],
+                                 status='NoReads',
+                                 iteration=self.params['iteration'],
+                                 readcount=0,
+                                 num_contigs=0, contig_length=0)
+                del self.params['summary_stats'][target]
+
         #checker_params = deepcopy(self.params)
         checker_params = {}
         for k in self.params:
@@ -342,12 +357,17 @@ class Mapper(Base):
             idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=lambda x: x.split("/")[0])
         if 'readcounts' not in checker_params:
             checker_params['readcounts'] = {}
+        #if 'contigcounts' not in checker_params:
+        #    checker_params['contigcounts'] = {}
+        statsf = open(os.path.join(self.params['finished_dir'], 'mapping_stats.tsv'), 'a')
         for target in self.params['mapping_dict']:
             startT = time.time()
             #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
             target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
             if target not in checker_params['readcounts']:
                 checker_params['readcounts'][target] = Counter()
+            #if target not in checker_params['contigcounts']:
+            #    checker_params['contigcounts'] = Counter()
             if os.path.exists(target_dir):
                 os.system("rm -rf %s" % target_dir)
             os.mkdir(target_dir)
@@ -355,9 +375,7 @@ class Mapper(Base):
             reads = self.params['mapping_dict'][target]
             # track how many total reads were added for this cycle
             checker_params['readcounts'][target][iteration] = len(reads)
-            statsf = open(os.path.join(self.params['finished_dir'], "mapping_stats.tsv"), 'a')
             statsf.write('\t'.join([self.params['sample'], target, str(iteration), str(len(reads))]) + '\n')
-            statsf.close()
 
             SEs = PEs = 0
             if 'PE1' and 'PE2' in self.params:
@@ -422,6 +440,7 @@ class Mapper(Base):
                 checker_params['targets'][target_dir] = False
                 self.submit(Assembler.to_job(assembly_params))
 
+        statsf.close()
         logger.info("------------------------------------")
         logger.info("| Sample: %s Iteration %s of numcycles %s" % (checker_params['sample'], checker_params['iteration'], checker_params['numcycles']))
         logger.info("------------------------------------")
@@ -440,3 +459,4 @@ class Mapper(Base):
             self.submit(AssemblyChecker.to_job(checker_params))
         else:
             logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
+
