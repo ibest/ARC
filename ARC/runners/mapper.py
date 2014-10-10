@@ -31,9 +31,11 @@ from random import randint
 
 class Mapper(Base):
     """
-    This calss handles mapping jobs, as well as converting map results into a text version of a dict.
+    This calss handles mapping jobs, as well as converting map results into a
+     text version of a dict.
     required params:
-        PE1, PE2, SE, format, mapper, numcycles, reference, sample, verbose, working_dir
+        PE1, PE2, SE, format, mapper, numcycles, reference, sample, verbose,
+         working_dir
     params added:
         mapping_dict
     """
@@ -61,14 +63,18 @@ class Mapper(Base):
             sample, target, reference, working_dir, PE1 and PE2 and/or SE
         """
         #Check for necessary params:
-        if not ('sample' in self.params and 'reference' in self.params and 'working_dir' in self.params and (('PE1' in self.params and 'PE2' in self.params) or 'SE' in self.params)):
+        if not ('sample' in self.params and 'reference' in self.params and
+                'working_dir' in self.params and (('PE1' in self.params and
+                              'PE2' in self.params) or 'SE' in self.params)):
             raise exceptions.FatalError('Missing params in run_bowtie2.')
         #Check for necessary files:
         if os.path.exists(self.params['reference']) is False:
             raise exceptions.FatalError("Missing reference file for mapping")
         if 'PE1' in self.params and 'PE2' in self.params:
-            if not (os.path.exists(self.params['PE1']) and os.path.exists(self.params['PE2'])):
-                raise exceptions.FatalError("One or both PE files can not be found for mapping.")
+            if not (os.path.exists(self.params['PE1']) and
+                    os.path.exists(self.params['PE2'])):
+                raise exceptions.FatalError(
+                    "One or both PE files can not be found for mapping.")
         if 'SE' in self.params:
             if not os.path.exists(self.params['SE']):
                 raise exceptions.FatalError("SE file cannot be found.")
@@ -79,7 +85,8 @@ class Mapper(Base):
             idx_dir = os.path.realpath(os.path.join(working_dir, 'idx'))
             os.mkdir(idx_dir)
         except Exception as exc:
-            txt = "Sample: %s Error creating working directory." % (self.params['sample']) + '\n\t' + str(exc)
+            txt = "Sample: %s Error creating working directory." % (
+                self.params['sample']) + '\n\t' + str(exc)
             raise exceptions.FatalError(txt)
 
         #Check whether to log to temporary file, or default to os.devnull
@@ -92,44 +99,47 @@ class Mapper(Base):
         base = os.path.join(idx_dir, 'idx')
 
         #Build index
-        #The idea is to map against the finished contigs and in-progress contigs, thereby
-        # ensuring that the -k parameter (or best map) are respected properly, and avoid
-        # the situation where reads which were mapped to a now finished target might later be
-        # mapped to a an in-progress target.
+        #The idea is to map against the finished contigs and in-progress
+        # contigs, thereby ensuring that the -k parameter (or best map)
+        # are respected properly, and avoid the situation where reads which
+        # were mapped to a now finished target might later be mapped to a an
+        # in-progress target.
         fin_outf = os.path.join(self.params['finished_dir'], 'contigs.fasta')
-        #print "find_outf", fin_outf, os.path.exists(fin_outf)
         args = ['bowtie2-build', '-f']
         if os.path.exists(fin_outf) and os.path.getsize(fin_outf) > 0:
             args.append(','.join((fin_outf, self.params['reference'])))
         else:
             args.append(self.params['reference'])
         args.append(base)
-        logger.info("Sample: %s Calling bowtie2-build." % self.params['sample'])
-        #logger.info(" ".join(['bowtie2-build', '-f', self.params['reference'], base]))
+        logger.info("Sample: %s Calling bowtie2-build." %
+                    self.params['sample'])
         logger.info(" ".join(args))
         try:
             ret = subprocess.call(args, stdout=out, stderr=out)
-            #ret = subprocess.call(['bowtie2-build', '-f', self.params['reference'], base], stdout=out, stderr=out)
         except Exception as exc:
-            txt = ("Sample %s: Unhandeled error running bowtie2-build" % self.params['sample']) + '\n\t' + str(exc)
-            out.close()  # make sure that out is closed before throwing exception
+            txt = ("Sample %s: Unhandeled error running bowtie2-build"
+                   % self.params['sample']) + '\n\t' + str(exc)
+            # make sure that out is closed before throwing exception
+            out.close()
             raise exceptions.FatalError(txt)
 
         if ret != 0:
             out.close()
-            raise exceptions.FatalError("Sample: %s Error creating bowtie2 index, check log file." % self.params['sample'])
+            raise exceptions.FatalError(
+                "Sample: %s Error creating bowtie2 index, check log file."
+                % self.params['sample'])
 
         #Do bowtie2 mapping:
         n_bowtieprocs = int(round(max(float(self.params['nprocs'])/len(self.params['Samples']), 1)))
-        #args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
         args = ['bowtie2', '-I', '0', '-X', '1500']
 
-        #Tune the sensitivity so that on the first iteration the mapper is very sensitive
-        #On later iterations the mapper is very specific
+        #Tune the sensitivity so that on the first iteration the mapper is
+        # very sensitive. On later iterations the mapper is very specific.
         if self.params['iteration'] == 0 and self.params['sloppymapping']:
             args.append("--very-sensitive-local")
         else:
-            args += ["--very-fast-local", "--mp", "12", "--rdg", "12,6", "--rfg", "12,6"]
+            args += ["--very-fast-local", "--mp", "12", "--rdg", "12,6",
+                     "--rfg", "12,6"]
 
         args += ['-p', str(n_bowtieprocs), '-x', base]
         if self.params['bowtie2_k'] > 1:
@@ -141,36 +151,42 @@ class Mapper(Base):
         if 'SE' in self.params:
             args += ['-U', self.params['SE']]
         args += ['-S', os.path.join(working_dir, 'mapping.sam')]
-        logger.info("Sample: %s Calling bowtie2 mapper" % self.params['sample'])
+        logger.info(
+            "Sample: %s Calling bowtie2 mapper" % self.params['sample'])
         logger.info(" ".join(args))
 
         try:
             ret = subprocess.call(args, stdout=out, stderr=out)
             out.close()
         except Exception as exc:
-            txt = ("Sample %s: Unhandeled error running bowtie2 mapping" % self.params['sample']) + '\n\t' + str(exc)
+            txt = ("Sample %s: Unhandeled error running bowtie2 mapping" %
+                   self.params['sample']) + '\n\t' + str(exc)
             raise exceptions.FatalError(txt)
 
         out.close()
         if ret != 0:
-            raise exceptions.FatalError("Sample %s: Bowtie2 mapping returned an error, check log file." % self.params['sample'])
+            raise exceptions.FatalError(
+                "Sample %s: Bowtie2 mapping returned an error, check log file."
+                % self.params['sample'])
 
         #Extract the SAM to a dict
-        self.params['mapping_dict'] = self.SAM_to_dict(os.path.join(working_dir, 'mapping.sam'))
+        self.params['mapping_dict'] = self.SAM_to_dict(
+            os.path.join(working_dir, 'mapping.sam'))
         #clean up intermediary files:
         os.remove(os.path.join(working_dir, 'mapping.sam'))
         os.system("rm -rf %s" % idx_dir)
 
     def run_blat(self):
         #Check for necessary params:
-        if not ('sample' in self.params and 'reference' in self.params and 'working_dir' in self.params and (('PE1' in self.params and 'PE2' in self.params) or 'SE' in self.params)):
+        if not ('sample' in self.params and 'reference' in self.params and 'working_dir' in self.params and (('PE1' in self.params   and 'PE2' in self.params) or 'SE' in self.params)):
             raise exceptions.FatalError('Missing self.params in run_bowtie2.')
         #Check for necessary files:
         if os.path.exists(self.params['reference']) is False:
             raise exceptions.FatalError("Missing reference file for mapping")
         if 'PE1' in self.params and 'PE2' in self.params:
             if not (os.path.exists(self.params['PE1']) and os.path.exists(self.params['PE2'])):
-                raise exceptions.FatalError("One or both PE files can not be found for mapping.")
+                raise exceptions.FatalError(
+                    "One or both PE files can not be found for mapping.")
         if 'SE' in self.params:
             if not os.path.exists(self.params['SE']):
                 raise exceptions.FatalError("SE file cannot be found.")
@@ -388,8 +404,12 @@ class Mapper(Base):
                 if self.params['subsample'] < 1 and randint(0, 100) > self.params['subsample'] * 100:
                     continue
                 if 'PE1' in self.params and readID in idx_PE1:
-                    read1 = idx_PE1[readID]
-                    read2 = idx_PE2[readID]
+                    #read1 = idx_PE1[readID]
+                    #read2 = idx_PE2[readID]
+                    read1 = idx_PE1.get(readID, None)
+                    read2 = idx_PE2.get(readID, None)
+                    if read2 is None:
+                        raise exceptions.FatalError("ERROR: ReadID %s was found in PE1 file but not PE2" % readID)
                     new_readID = readID.replace(":", "_") + ":0:0:0:0#0/"
                     read1.id = read1.name = new_readID + "1"
                     read2.id = read2.name = new_readID + "2"
@@ -459,4 +479,3 @@ class Mapper(Base):
             self.submit(AssemblyChecker.to_job(checker_params))
         else:
             logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
-
