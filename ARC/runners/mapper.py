@@ -433,7 +433,7 @@ class Mapper(Base):
             assembly_params['target_dir'] = target_dir
             assembly_params['iteration'] = iteration
             assembly_params['last_assembly'] = False
-            assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles', 'cdna', 'rip']
+            assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles', 'cdna', 'rip', 'only-assembler']
             for k in assembler_keys:
                 assembly_params[k] = self.params[k]
             cur_reads = checker_params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
