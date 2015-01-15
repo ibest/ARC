@@ -8,16 +8,16 @@
 ## FileFormat: fasta or fastq
 # reference=./targets.fa
 # numcycles=10
-# mapper=blat
+# mapper=bowtie2
 # assembler=spades
-# only-assembler=True
+# only-assembler=False
 # nprocs=7
 # format=fastq
 # verbose=True
 # urt=True
 # map_against_reads=False
 # assemblytimeout=2
-# bowtie2_k=1
+# bowtie2_k=5
 # rip=True
 # subsample=1
 # maskrepeats=True

@@ -43,7 +43,7 @@ class Config:
         'keepassemblies': False,
         'sloppymapping': True,
         'workingdirectory': './',
-        'only-assembler': True
+        'only-assembler': False
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {

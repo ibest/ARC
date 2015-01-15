@@ -131,7 +131,7 @@ class Mapper(Base):
 
         #Do bowtie2 mapping:
         n_bowtieprocs = int(round(max(float(self.params['nprocs'])/len(self.params['Samples']), 1)))
-        args = ['bowtie2', '-I', '0', '-X', '1500']
+        args = ['bowtie2', '-I', '0', '-X', '1500', '--no-unal']
 
         #Tune the sensitivity so that on the first iteration the mapper is
         # very sensitive. On later iterations the mapper is very specific.
