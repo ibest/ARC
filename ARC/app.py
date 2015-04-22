@@ -98,7 +98,7 @@ class App:
                 ['Sample', 'Target', 'RefLen', 'Status', 'Iteration', 'Reads', 'Contigs', 'ContigLength']) + '\n')
             tstf.close()
 
-            #Create a stats file for cdna
+            # Create a stats file for cdna
             if config['cdna']:
                 countsf = open(os.path.join(finished_dir, "isogroup_read_counts.tsv"), 'a')
                 countsf.write('\t'.join(['Sample', 'Target', 'isogroup', 'readcount']) + '\n')
@@ -106,48 +106,45 @@ class App:
 
             # Build a separate index for each read file in the input, put them
             # in working_dir
-            #Consider parallelizing this?
-            start = time.time()
-            if 'PE1' in s:
-                if not os.path.exists(os.path.join(working_dir, "PE1.idx")):
-                    print s['PE1']
-                    p1 = SeqIO.index_db(
-                        os.path.join(working_dir, "PE1.idx"),
-                        s['PE1'],
-                        format,
-                        key_function=lambda x: x.split("/")[0])
-            if 'PE2' in s:
-                if not os.path.exists(os.path.join(working_dir, "PE2.idx")):
-                    print s['PE2']
-                    p2 = SeqIO.index_db(
-                        os.path.join(working_dir, "PE2.idx"),
-                        s['PE2'],
-                        format,
-                        key_function=lambda x: x.split("/")[0])
-                    if len(p1) != len(p2):
-                        logger.error("The number of reads in %s and %s do not match, "
-                                     "check the config for errors" % (s['PE1'], s['PE2']))
-            if 'SE' in s:
-                if not os.path.exists(os.path.join(working_dir, "SE.idx")):
-                    print s['SE']
-                    SeqIO.index_db(
-                        os.path.join(working_dir, "SE.idx"),
-                        s['SE'],
-                        format,
-                        key_function=lambda x: x.split("/")[0])
-
+            # Consider parallelizing this?
+            try:
+                start = time.time()
+                if 'PE1' in s:
+                    if not os.path.exists(os.path.join(working_dir, "PE1.idx")):
+                        print s['PE1']
+                        index_file = os.path.join(working_dir, "PE1.idx")
+                        p1 = SeqIO.index_db(index_file, s['PE1'], format,
+                                            key_function=keyfunction(config['sra']))
+                if 'PE2' in s:
+                    if not os.path.exists(os.path.join(working_dir, "PE2.idx")):
+                        print s['PE2']
+                        index_file = os.path.join(working_dir, "PE2.idx")
+                        p2 = SeqIO.index_db(index_file, s['PE2'], format,
+                                            key_function=keyfunction(config['sra']))
+                        if len(p1) != len(p2):
+                            logger.error("The number of reads in %s and %s do not match, "
+                                         "check the config for errors" % (s['PE1'], s['PE2']))
+                if 'SE' in s:
+                    if not os.path.exists(os.path.join(working_dir, "SE.idx")):
+                        print s['SE']
+                        index_file = os.path.join(working_dir, "SE.idx")
+                        SeqIO.index_db(index_file, s['SE'], format,
+                                       key_function=keyfunction(config['sra']))
+            finally:
+                print "Removing partial index: %s" % index_file
+                os.unlink(index_file)
             logger.info(
                 "Sample: %s, indexed reads in %s seconds." % (
                     sample, time.time() - start))
 
-            #Read through the references, mask them if necessary
+            # Read through the references, mask them if necessary
 
-            #mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
+            # mapper_params['reference'] = os.path.join(self.params['working_dir'], 'I%03d' % self.params['iteration'] + '_contigs.fasta')
 
         # Read through the reference, set up a set of safe names for the targets.
         # Also create the Target Summary Table which is indexed by original target name (following ARC conventions)
         # Also mask sequences and write them to a new set of output files
-        #safe_targets is a two-way lookup, meaning it has both the safe target ID and the contig ID.
+        # safe_targets is a two-way lookup, meaning it has both the safe target ID and the contig ID.
         summary_stats = {}
         safe_targets = {}
         new_refsf = {}
@@ -170,11 +167,10 @@ class App:
             else:
                 summary_stats[target]['targetLength'] = (summary_stats[target]['targetLength'] + len(t))
 
-            #Write contigs:
+            # Write contigs:
             if config['maskrepeats']:
-                #t.seq = Seq(str(mask_seq(t.seq.tostring(), config['mapper'])))
                 t.seq = Seq(str(mask_seq(str(t.seq), config['mapper'])))
-            #Bowtie2 crashes if a contig is all 'n' so only write it out if it isn't
+            # Bowtie2 crashes if a contig is all 'n' so only write it out if it isn't
             if len(t) != t.seq.count('n'):
                 for outf in new_refsf.values():
                     SeqIO.write(t, outf, "fasta")

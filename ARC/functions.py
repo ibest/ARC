@@ -64,3 +64,9 @@ def writeTargetStats(finished_dir, sample, target, targetLength, status, iterati
                 str(contig_length)]) + '\n')
     tstf.close()
 
+
+def keyfunction(sra):
+    if sra:
+        return lambda x: x.split()[0][:-1]
+    else:
+        return lambda x: x.split("/")[0]

@@ -262,9 +262,9 @@ class Mapper(Base):
                 l2 = l.strip().split()
                 if l2[2] == "*":  # skip unmapped
                     continue
-                readid = l2[0].split("/")[0]
+                readid = keyfunction(self.params['sra'])(l2[0])  # .split("/")[0]
                 target = l2[2]
-                #handle references built using assembled contigs:
+                # handle references built using assembled contigs:
                 if len(target.split("_:_")) == 3:
                     target, status = target.split("_:_")[1:]
                     # This keeps ARC from writing reads which mapped to finished contigs
@@ -273,7 +273,7 @@ class Mapper(Base):
                 if target not in read_map:
                     read_map[target] = {}
                 read_map[target][readid] = 1
-        #Report total time:
+        # Report total time:
         logger.info("Sample: %s, Processed %s lines from SAM in %s seconds." % (self.params['sample'], i, time.time() - startT))
         return read_map
 
@@ -293,15 +293,15 @@ class Mapper(Base):
 
         for l in inf:
             i += 1
-            #Check for PSL header and skip 5 lines if it exists
+            # Check for PSL header and skip 5 lines if it exists
             if i == 1 and l.split()[0] == 'psLayout':
                 psl_header = True
             if psl_header and i <= 5:
                 continue
             l2 = l.strip().split("\t")
-            readid = l2[9].split("/")[0]  # remove unique part of PE reads
+            readid = keyfunction(self.params['sra'])(l2[9])  # .split("/")[0]  # remove unique part of PE reads
             target = l2[13]
-            #handle references built using assembled contigs:
+            # handle references built using assembled contigs:
             if len(target.split("_:_")) > 1:
                 target = target.split("_:_")[1]
             if target not in read_map:
@@ -346,7 +346,7 @@ class Mapper(Base):
         """ Split reads and then kick off assemblies once the reads are split for a target, use safe_targets for names"""
         self.params['iteration'] += 1
 
-        #Write out statistics for any/all targets which failed to recruit reads:
+        # Write out statistics for any/all targets which failed to recruit reads:
         for target in self.params['summary_stats'].keys():
             if target not in self.params['mapping_dict']:
                 writeTargetStats(finished_dir=self.params['finished_dir'],
@@ -359,30 +359,30 @@ class Mapper(Base):
                                  num_contigs=0, contig_length=0)
                 del self.params['summary_stats'][target]
 
-        #checker_params = deepcopy(self.params)
         checker_params = {}
         for k in self.params:
             checker_params[k] = self.params[k]
         del checker_params['mapping_dict']
         checker_params['targets'] = {}
         iteration = self.params['iteration']
+        # open previously created indexes:
         if 'PE1' in self.params and 'PE2' in self.params:
-            idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=lambda x: x.split("/")[0])
-            idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=lambda x: x.split("/")[0])
+            idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=keyfunction(self.params['sra']))
+            idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=keyfunction(self.params['sra']))
         if 'SE' in self.params:
-            idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=lambda x: x.split("/")[0])
+            idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=keyfunction(self.params['sra']))
         if 'readcounts' not in checker_params:
             checker_params['readcounts'] = {}
-        #if 'contigcounts' not in checker_params:
+        # if 'contigcounts' not in checker_params:
         #    checker_params['contigcounts'] = {}
         statsf = open(os.path.join(self.params['finished_dir'], 'mapping_stats.tsv'), 'a')
         for target in self.params['mapping_dict']:
             startT = time.time()
-            #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
+            # logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
             target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
             if target not in checker_params['readcounts']:
                 checker_params['readcounts'][target] = Counter()
-            #if target not in checker_params['contigcounts']:
+            # if target not in checker_params['contigcounts']:
             #    checker_params['contigcounts'] = Counter()
             if os.path.exists(target_dir):
                 os.system("rm -rf %s" % target_dir)
@@ -404,8 +404,8 @@ class Mapper(Base):
                 if self.params['subsample'] < 1 and randint(0, 100) > self.params['subsample'] * 100:
                     continue
                 if 'PE1' in self.params and readID in idx_PE1:
-                    #read1 = idx_PE1[readID]
-                    #read2 = idx_PE2[readID]
+                    # read1 = idx_PE1[readID]
+                    # read2 = idx_PE2[readID]
                     read1 = idx_PE1.get(readID, None)
                     read2 = idx_PE2.get(readID, None)
                     if read2 is None:
