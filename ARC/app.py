@@ -130,7 +130,7 @@ class App:
                         index_file = os.path.join(working_dir, "SE.idx")
                         SeqIO.index_db(index_file, s['SE'], format,
                                        key_function=keyfunction(config['sra']))
-            finally:
+            except (KeyboardInterrupt, SystemExit):
                 print "Removing partial index: %s" % index_file
                 os.unlink(index_file)
             logger.info(
