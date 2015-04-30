@@ -133,6 +133,7 @@ class App:
             except (KeyboardInterrupt, SystemExit):
                 print "Removing partial index: %s" % index_file
                 os.unlink(index_file)
+                raise
             logger.info(
                 "Sample: %s, indexed reads in %s seconds." % (
                     sample, time.time() - start))
