@@ -255,6 +255,7 @@ class Mapper(Base):
             raise exceptions.FatalError(txt)
         read_map = {}  # target:{read} dictionary of dictionaries
         i = 0
+        discards = 0
         startT = time.time()
         for l in inf:
             i += 1
@@ -269,12 +270,15 @@ class Mapper(Base):
                     target, status = target.split("_:_")[1:]
                     # This keeps ARC from writing reads which mapped to finished contigs
                     if status.startswith("Contig") or status.startswith("isogroup"):
+                        discards += 1
                         continue
                 if target not in read_map:
                     read_map[target] = {}
                 read_map[target][readid] = 1
         # Report total time:
         logger.info("Sample: %s, Processed %s lines from SAM in %s seconds." % (self.params['sample'], i, time.time() - startT))
+        if discards > 0:
+            logger.info("%s out of %s reads mapped to finished contigs and were not recruited for assembly." % (discards, i))
         return read_map
 
     def PSL_to_dict(self, filename):
@@ -348,6 +352,7 @@ class Mapper(Base):
 
         # Write out statistics for any/all targets which failed to recruit reads:
         for target in self.params['summary_stats'].keys():
+            print "Target", target
             if target not in self.params['mapping_dict']:
                 writeTargetStats(finished_dir=self.params['finished_dir'],
                                  sample=self.params['sample'],
