@@ -352,7 +352,7 @@ class Mapper(Base):
 
         # Write out statistics for any/all targets which failed to recruit reads:
         for target in self.params['summary_stats'].keys():
-            print "Target", target
+            # print "Target", target
             if target not in self.params['mapping_dict']:
                 writeTargetStats(finished_dir=self.params['finished_dir'],
                                  sample=self.params['sample'],
