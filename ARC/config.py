@@ -42,7 +42,9 @@ class Config:
         'fastmap': False,
         'keepassemblies': False,
         'sloppymapping': True,
-        'workingdirectory': './'
+        'workingdirectory': './',
+        'only-assembler': False,
+        'sra': False
     }
     FORMATS = ['fastq', 'fasta']
     ASSEMBLERS = {
@@ -190,7 +192,7 @@ class Config:
                         self.config['reference']))
         else:
             raise exceptions.FatalError(
-                'Error, reference not included in ARC_self.txt')
+                'Error, reference not included in %s' % self.filename)
 
         # Check to see if the samples are valid
         if len(self.config['Samples']) > 0:
@@ -206,7 +208,7 @@ class Config:
                         "each sample.")
         else:
             raise exceptions.FatalError(
-                "Could not find samples in ARC_self.txt")
+                "Could not find samples in %s" % self.filename)
 
         if self.config['format'] not in self.FORMATS:
             raise exceptions.FatalError(
@@ -221,8 +223,6 @@ class Config:
 
         if self.config['assembler'] not in self.ASSEMBLERS:
             raise exceptions.FatalError(
-                #"Error assembler must be either %s" % (
-                #self.ASSEMBLERS.keys().join(',')))
                 "Error assembler must be either: %s" % (
                     ', '.join(self.ASSEMBLERS.keys())))
         else:

@@ -117,7 +117,7 @@ def make_vcf(i, j, target, PE, SE, format, sample, caller='GATK'):
             log("Filtering and converting to bam", out)
             #Note, you can't use subprocess.call() with this command because stdout is getting
             # piped from one call to the next and subprocess.call() seems to mess this up:
-            cmd = "samtools view -q 10 -bS ./make_vcf_temp/tmp_%s_%s.sam | samtools sort - ./make_vcf_temp/tmp_%s_%s" % (i, j, i, j)
+            cmd = "samtools view -bS ./make_vcf_temp/tmp_%s_%s.sam | samtools sort - ./make_vcf_temp/tmp_%s_%s" % (i, j, i, j)
             cmd += " >> ./make_vcf_temp/S%s_%s.log 2>&1" % (i, j)
             log(cmd, out)
             os.system(cmd)

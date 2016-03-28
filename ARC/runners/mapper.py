@@ -31,9 +31,11 @@ from random import randint
 
 class Mapper(Base):
     """
-    This calss handles mapping jobs, as well as converting map results into a text version of a dict.
+    This calss handles mapping jobs, as well as converting map results into a
+     text version of a dict.
     required params:
-        PE1, PE2, SE, format, mapper, numcycles, reference, sample, verbose, working_dir
+        PE1, PE2, SE, format, mapper, numcycles, reference, sample, verbose,
+         working_dir
     params added:
         mapping_dict
     """
@@ -61,14 +63,18 @@ class Mapper(Base):
             sample, target, reference, working_dir, PE1 and PE2 and/or SE
         """
         #Check for necessary params:
-        if not ('sample' in self.params and 'reference' in self.params and 'working_dir' in self.params and (('PE1' in self.params and 'PE2' in self.params) or 'SE' in self.params)):
+        if not ('sample' in self.params and 'reference' in self.params and
+                'working_dir' in self.params and (('PE1' in self.params and
+                              'PE2' in self.params) or 'SE' in self.params)):
             raise exceptions.FatalError('Missing params in run_bowtie2.')
         #Check for necessary files:
         if os.path.exists(self.params['reference']) is False:
             raise exceptions.FatalError("Missing reference file for mapping")
         if 'PE1' in self.params and 'PE2' in self.params:
-            if not (os.path.exists(self.params['PE1']) and os.path.exists(self.params['PE2'])):
-                raise exceptions.FatalError("One or both PE files can not be found for mapping.")
+            if not (os.path.exists(self.params['PE1']) and
+                    os.path.exists(self.params['PE2'])):
+                raise exceptions.FatalError(
+                    "One or both PE files can not be found for mapping.")
         if 'SE' in self.params:
             if not os.path.exists(self.params['SE']):
                 raise exceptions.FatalError("SE file cannot be found.")
@@ -79,7 +85,8 @@ class Mapper(Base):
             idx_dir = os.path.realpath(os.path.join(working_dir, 'idx'))
             os.mkdir(idx_dir)
         except Exception as exc:
-            txt = "Sample: %s Error creating working directory." % (self.params['sample']) + '\n\t' + str(exc)
+            txt = "Sample: %s Error creating working directory." % (
+                self.params['sample']) + '\n\t' + str(exc)
             raise exceptions.FatalError(txt)
 
         #Check whether to log to temporary file, or default to os.devnull
@@ -92,44 +99,47 @@ class Mapper(Base):
         base = os.path.join(idx_dir, 'idx')
 
         #Build index
-        #The idea is to map against the finished contigs and in-progress contigs, thereby
-        # ensuring that the -k parameter (or best map) are respected properly, and avoid
-        # the situation where reads which were mapped to a now finished target might later be
-        # mapped to a an in-progress target.
+        #The idea is to map against the finished contigs and in-progress
+        # contigs, thereby ensuring that the -k parameter (or best map)
+        # are respected properly, and avoid the situation where reads which
+        # were mapped to a now finished target might later be mapped to a an
+        # in-progress target.
         fin_outf = os.path.join(self.params['finished_dir'], 'contigs.fasta')
-        #print "find_outf", fin_outf, os.path.exists(fin_outf)
         args = ['bowtie2-build', '-f']
         if os.path.exists(fin_outf) and os.path.getsize(fin_outf) > 0:
             args.append(','.join((fin_outf, self.params['reference'])))
         else:
             args.append(self.params['reference'])
         args.append(base)
-        logger.info("Sample: %s Calling bowtie2-build." % self.params['sample'])
-        #logger.info(" ".join(['bowtie2-build', '-f', self.params['reference'], base]))
+        logger.info("Sample: %s Calling bowtie2-build." %
+                    self.params['sample'])
         logger.info(" ".join(args))
         try:
             ret = subprocess.call(args, stdout=out, stderr=out)
-            #ret = subprocess.call(['bowtie2-build', '-f', self.params['reference'], base], stdout=out, stderr=out)
         except Exception as exc:
-            txt = ("Sample %s: Unhandeled error running bowtie2-build" % self.params['sample']) + '\n\t' + str(exc)
-            out.close()  # make sure that out is closed before throwing exception
+            txt = ("Sample %s: Unhandeled error running bowtie2-build"
+                   % self.params['sample']) + '\n\t' + str(exc)
+            # make sure that out is closed before throwing exception
+            out.close()
             raise exceptions.FatalError(txt)
 
         if ret != 0:
             out.close()
-            raise exceptions.FatalError("Sample: %s Error creating bowtie2 index, check log file." % self.params['sample'])
+            raise exceptions.FatalError(
+                "Sample: %s Error creating bowtie2 index, check log file."
+                % self.params['sample'])
 
         #Do bowtie2 mapping:
         n_bowtieprocs = int(round(max(float(self.params['nprocs'])/len(self.params['Samples']), 1)))
-        #args = ['bowtie2', '-I', '0', '-X', '1500', '--local', '-p', str(n_bowtieprocs), '-x', base]
-        args = ['bowtie2', '-I', '0', '-X', '1500']
+        args = ['bowtie2', '-I', '0', '-X', '1500', '--no-unal']
 
-        #Tune the sensitivity so that on the first iteration the mapper is very sensitive
-        #On later iterations the mapper is very specific
+        #Tune the sensitivity so that on the first iteration the mapper is
+        # very sensitive. On later iterations the mapper is very specific.
         if self.params['iteration'] == 0 and self.params['sloppymapping']:
             args.append("--very-sensitive-local")
         else:
-            args += ["--very-fast-local", "--mp", "12", "--rdg", "12,6", "--rfg", "12,6"]
+            args += ["--very-fast-local", "--mp", "12", "--rdg", "12,6",
+                     "--rfg", "12,6"]
 
         args += ['-p', str(n_bowtieprocs), '-x', base]
         if self.params['bowtie2_k'] > 1:
@@ -141,36 +151,42 @@ class Mapper(Base):
         if 'SE' in self.params:
             args += ['-U', self.params['SE']]
         args += ['-S', os.path.join(working_dir, 'mapping.sam')]
-        logger.info("Sample: %s Calling bowtie2 mapper" % self.params['sample'])
+        logger.info(
+            "Sample: %s Calling bowtie2 mapper" % self.params['sample'])
         logger.info(" ".join(args))
 
         try:
             ret = subprocess.call(args, stdout=out, stderr=out)
             out.close()
         except Exception as exc:
-            txt = ("Sample %s: Unhandeled error running bowtie2 mapping" % self.params['sample']) + '\n\t' + str(exc)
+            txt = ("Sample %s: Unhandeled error running bowtie2 mapping" %
+                   self.params['sample']) + '\n\t' + str(exc)
             raise exceptions.FatalError(txt)
 
         out.close()
         if ret != 0:
-            raise exceptions.FatalError("Sample %s: Bowtie2 mapping returned an error, check log file." % self.params['sample'])
+            raise exceptions.FatalError(
+                "Sample %s: Bowtie2 mapping returned an error, check log file."
+                % self.params['sample'])
 
         #Extract the SAM to a dict
-        self.params['mapping_dict'] = self.SAM_to_dict(os.path.join(working_dir, 'mapping.sam'))
+        self.params['mapping_dict'] = self.SAM_to_dict(
+            os.path.join(working_dir, 'mapping.sam'))
         #clean up intermediary files:
         os.remove(os.path.join(working_dir, 'mapping.sam'))
         os.system("rm -rf %s" % idx_dir)
 
     def run_blat(self):
         #Check for necessary params:
-        if not ('sample' in self.params and 'reference' in self.params and 'working_dir' in self.params and (('PE1' in self.params and 'PE2' in self.params) or 'SE' in self.params)):
+        if not ('sample' in self.params and 'reference' in self.params and 'working_dir' in self.params and (('PE1' in self.params   and 'PE2' in self.params) or 'SE' in self.params)):
             raise exceptions.FatalError('Missing self.params in run_bowtie2.')
         #Check for necessary files:
         if os.path.exists(self.params['reference']) is False:
             raise exceptions.FatalError("Missing reference file for mapping")
         if 'PE1' in self.params and 'PE2' in self.params:
             if not (os.path.exists(self.params['PE1']) and os.path.exists(self.params['PE2'])):
-                raise exceptions.FatalError("One or both PE files can not be found for mapping.")
+                raise exceptions.FatalError(
+                    "One or both PE files can not be found for mapping.")
         if 'SE' in self.params:
             if not os.path.exists(self.params['SE']):
                 raise exceptions.FatalError("SE file cannot be found.")
@@ -239,6 +255,7 @@ class Mapper(Base):
             raise exceptions.FatalError(txt)
         read_map = {}  # target:{read} dictionary of dictionaries
         i = 0
+        discards = 0
         startT = time.time()
         for l in inf:
             i += 1
@@ -246,19 +263,22 @@ class Mapper(Base):
                 l2 = l.strip().split()
                 if l2[2] == "*":  # skip unmapped
                     continue
-                readid = l2[0].split("/")[0]
+                readid = keyfunction(self.params['sra'])(l2[0])  # .split("/")[0]
                 target = l2[2]
-                #handle references built using assembled contigs:
+                # handle references built using assembled contigs:
                 if len(target.split("_:_")) == 3:
                     target, status = target.split("_:_")[1:]
                     # This keeps ARC from writing reads which mapped to finished contigs
                     if status.startswith("Contig") or status.startswith("isogroup"):
+                        discards += 1
                         continue
                 if target not in read_map:
                     read_map[target] = {}
                 read_map[target][readid] = 1
-        #Report total time:
+        # Report total time:
         logger.info("Sample: %s, Processed %s lines from SAM in %s seconds." % (self.params['sample'], i, time.time() - startT))
+        if discards > 0:
+            logger.info("%s out of %s reads mapped to finished contigs and were not recruited for assembly." % (discards, i))
         return read_map
 
     def PSL_to_dict(self, filename):
@@ -277,15 +297,15 @@ class Mapper(Base):
 
         for l in inf:
             i += 1
-            #Check for PSL header and skip 5 lines if it exists
+            # Check for PSL header and skip 5 lines if it exists
             if i == 1 and l.split()[0] == 'psLayout':
                 psl_header = True
             if psl_header and i <= 5:
                 continue
             l2 = l.strip().split("\t")
-            readid = l2[9].split("/")[0]  # remove unique part of PE reads
+            readid = keyfunction(self.params['sra'])(l2[9])  # .split("/")[0]  # remove unique part of PE reads
             target = l2[13]
-            #handle references built using assembled contigs:
+            # handle references built using assembled contigs:
             if len(target.split("_:_")) > 1:
                 target = target.split("_:_")[1]
             if target not in read_map:
@@ -330,8 +350,9 @@ class Mapper(Base):
         """ Split reads and then kick off assemblies once the reads are split for a target, use safe_targets for names"""
         self.params['iteration'] += 1
 
-        #Write out statistics for any/all targets which failed to recruit reads:
+        # Write out statistics for any/all targets which failed to recruit reads:
         for target in self.params['summary_stats'].keys():
+            # print "Target", target
             if target not in self.params['mapping_dict']:
                 writeTargetStats(finished_dir=self.params['finished_dir'],
                                  sample=self.params['sample'],
@@ -343,30 +364,30 @@ class Mapper(Base):
                                  num_contigs=0, contig_length=0)
                 del self.params['summary_stats'][target]
 
-        #checker_params = deepcopy(self.params)
         checker_params = {}
         for k in self.params:
             checker_params[k] = self.params[k]
         del checker_params['mapping_dict']
         checker_params['targets'] = {}
         iteration = self.params['iteration']
+        # open previously created indexes:
         if 'PE1' in self.params and 'PE2' in self.params:
-            idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=lambda x: x.split("/")[0])
-            idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=lambda x: x.split("/")[0])
+            idx_PE1 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE1.idx"), key_function=keyfunction(self.params['sra']))
+            idx_PE2 = SeqIO.index_db(os.path.join(self.params['working_dir'], "PE2.idx"), key_function=keyfunction(self.params['sra']))
         if 'SE' in self.params:
-            idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=lambda x: x.split("/")[0])
+            idx_SE = SeqIO.index_db(os.path.join(self.params['working_dir'], "SE.idx"), key_function=keyfunction(self.params['sra']))
         if 'readcounts' not in checker_params:
             checker_params['readcounts'] = {}
-        #if 'contigcounts' not in checker_params:
+        # if 'contigcounts' not in checker_params:
         #    checker_params['contigcounts'] = {}
         statsf = open(os.path.join(self.params['finished_dir'], 'mapping_stats.tsv'), 'a')
         for target in self.params['mapping_dict']:
             startT = time.time()
-            #logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
+            # logger.info("Running splitreads for Sample: %s target: %s" % (self.params['sample'], target))
             target_dir = os.path.join(self.params['working_dir'], self.params['safe_targets'][target])
             if target not in checker_params['readcounts']:
                 checker_params['readcounts'][target] = Counter()
-            #if target not in checker_params['contigcounts']:
+            # if target not in checker_params['contigcounts']:
             #    checker_params['contigcounts'] = Counter()
             if os.path.exists(target_dir):
                 os.system("rm -rf %s" % target_dir)
@@ -388,8 +409,12 @@ class Mapper(Base):
                 if self.params['subsample'] < 1 and randint(0, 100) > self.params['subsample'] * 100:
                     continue
                 if 'PE1' in self.params and readID in idx_PE1:
-                    read1 = idx_PE1[readID]
-                    read2 = idx_PE2[readID]
+                    # read1 = idx_PE1[readID]
+                    # read2 = idx_PE2[readID]
+                    read1 = idx_PE1.get(readID, None)
+                    read2 = idx_PE2.get(readID, None)
+                    if read2 is None:
+                        raise exceptions.FatalError("ERROR: ReadID %s was found in PE1 file but not PE2" % readID)
                     new_readID = readID.replace(":", "_") + ":0:0:0:0#0/"
                     read1.id = read1.name = new_readID + "1"
                     read2.id = read2.name = new_readID + "2"
@@ -413,7 +438,7 @@ class Mapper(Base):
             assembly_params['target_dir'] = target_dir
             assembly_params['iteration'] = iteration
             assembly_params['last_assembly'] = False
-            assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles', 'cdna', 'rip']
+            assembler_keys = ['assembler', 'sample', 'verbose', 'format', 'assemblytimeout', 'map_against_reads', 'urt', 'numcycles', 'cdna', 'rip', 'only-assembler']
             for k in assembler_keys:
                 assembly_params[k] = self.params[k]
             cur_reads = checker_params['readcounts'][target][iteration]  # note that this is a counter, so no key errors can occur
@@ -459,4 +484,3 @@ class Mapper(Base):
             self.submit(AssemblyChecker.to_job(checker_params))
         else:
             logger.info("Sample: %s No reads mapped, no more work to do." % checker_params['sample'])
-

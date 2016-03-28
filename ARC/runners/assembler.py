@@ -216,6 +216,8 @@ class Assembler(Base):
 
         #Build args for assembler call
         args = ['spades.py', '-t', '1']
+        if self.params['only-assembler'] and not self.params['last_assembly']:
+            args.append("--only-assembler")
         if self.params['format'] == 'fasta':
             args.append('--only-assembler')  # spades errors on read correction if the input isn't fastq
         if 'assembly_PE1' in self.params and 'assembly_PE2' in self.params:
