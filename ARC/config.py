@@ -124,9 +124,9 @@ class Config:
                 # Go ahead and convert the things that should be ints to ints
                 key = cfg[0].strip()
                 value = cfg[1].strip()
-                if re.match(r"[0-9]*\.[0-9]+", value):
+                if re.match(r"^[0-9]*\.[0-9]+$", value):
                     self.config[key] = float(value)
-                elif re.match(r"[0-9]+", value):
+                elif re.match(r"^[0-9]+$", value):
                     self.config[key] = int(value)
                 elif value in ('True', 'true'):
                     self.config[key] = True
