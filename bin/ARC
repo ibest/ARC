@@ -25,7 +25,7 @@ def run(loglevel):
     app = App()
     return app.start(loglevel)
 
-VERSION = 'v1.1.4 2016-03-27'
+VERSION = 'v1.1.4-beta 2016-03-28'
 
 
 def main():

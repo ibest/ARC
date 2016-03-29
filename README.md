@@ -7,6 +7,21 @@
 
 ### ARC Updates:
 
+#### 2016-03-27:
+* Updated version to v1.1.4-beta to reflect a number of modifications made over the last year+ these changes include:
+    * Low map qual reads are now recruited. Previously reads with mapq < 10 were not included (Bowtie2 specific).
+    * Added a double check to ensure that an exception would be raised if a read was somehow present in PE1 but absent from PE2 (this should only occur if there is an error in the input files, or reads are named in an unexpected way) (issue #50).
+    * Added option to make Spades assemblies faster by using "--only-assembler" option in all but the last assembly (issue #42). This parameter is disabled by default, set only-assembler=True to enable. Preliminary testing indicates:
+        * ~30% improved speed with slightly more recruited reads
+        * it isn't known how this impacts assembly quality or convergence rate
+    * Modified bowtie2 mapping to add the --no-unal parameter, resulting in a significant reduction in disk space requirements in some cases (should also reduce I/O overhead). This is enabled by default (issue #44).
+    * Added error handling around indexing of fastq files so that if ARC is killed during indexing, it will clean up partial index files before exiting (this seems to be one of the most common sources of error reports) (issue #46).
+    * fixed silly issue where config file name was not properly printed when missing reference or reads were detected in config file.
+    * fixed silly bug caused by incorrectly joining a list of strings when invalid assembler was detected.
+    * modified the way that read IDs are handled, previously both old and new style Illumina reads would work, but other formats were not supported. Now by setting "sra=True", reads which differ in the last character but don't have pair number delimited by "/" will still work (e.g. for reads extracted from the SRA with read IDs ending in *.1 and *.2). (Issue #47)
+    * Identified an issue where reads were not being recruited properly. In an earlier modification various parts of the code were modified to enforce assigning the same read to no more than N targets (set by the bowtie2_k parameter). This had the unintended side effect of making it impossible to use ARC contigs as targets for a second ARC run without renaming them first. This modification adds a message in the log file indicating that reads were mapped but discarded (bug #49).
+    * Fixed regular expressions for parameter conversion so that non-numeric parameters starting in a numeric digit are detected properly (bug #51).
+
 #### 2014-09-02:
 * Released version v1.1.3 to reflect the following tweaks, improvements and bug fixes:
     * ARC no longer produces a "deprecated method" warning with Biopython v1.64
