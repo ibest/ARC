@@ -142,6 +142,7 @@ function Toggle(tt) {
         <footer> - <a href='http://bioinformatics.oxfordjournals.org/content/early/2012/05/07/bioinformatics.bts280.abstract'>Heng Li, 2012</a></footer>
         </blockquote>
         </li>
+        <li>ARC attempts to solve these problems from the root.</li>
         </ul>
         <h7><a href="#TOC">Table of contents</a></h7>
         </div>
@@ -338,6 +339,8 @@ All configuration for ARC is stored in the ARC_config.txt file. Consult the exam
 <tr><td>keepassemblies</td><td>ARC working directories can grow very large. ARC deletes these folders automatically during the run, but can be instructed not to delete them if needed for troubleshooting, etc. Default False</td></tr>
 <tr><td>sloppymapping</td><td>Controls whether reads will be mapped in low-specificity (sloppy) mode on the first iteration. Set this to False if your reference is very closely related to the sample. Default True.</td></tr>
 <tr><td>workingdirectory</td><td>Controls where ARC temporary files will be created (put this on very fast storage for improved performance) Default './'.</td></tr>
+<tr><td>only-assembler</td><td>Run Spades in only-assembler mode, increase speed by skipping read error correction etc. Default is False.</td></tr>
+<tr><td>sra</td><td>Tell ARC to work with PE reads where the list digit is the pair number and there is no / (default setting will work with both styles of Illumina read ID). Default is false.</td></tr>
 </table>
 </p>
 <h7><a href="#TOC">Table of contents</a></h7>
@@ -357,12 +360,13 @@ All configuration for ARC is stored in the ARC_config.txt file. Consult the exam
             </ul>
         </li>
       </ul>
-
+  *NOTE: Don't name targets "Contig*" or "isogroup*" if mapping with bowtie2.
+<br><br>
 <h4>Setting map_against_reads:</h4>
   Only a small number of reads may map on the first iteration if your reference is very distantly related or coverage is low. In these situations, set map_against_reads=True in the ARC_config.txt file. This will use all of the mapped reads as the new set of targets instead of using contigs on the first iteration. Please note that this feature is experimental and sometimes leads to incorporation of repetitive elements and off-target contigs.
 <br><br>
 <h4>Using fast storage:</h4>
-  ARC does a lot of random reads from the storage system while splitting reads into subsets. This process can be the most time intensive part of the ARC pipeline, and is also difficult to parallelize because all of the reads are stored in a single set of files. One option for speeding this up is to store your reads on fast, low latency storage such as a flash-based/solid-state storage device or RAM disk. Our testing has shown that moving the reads and working folders to a flash-based hard disk improves performance by as much as 10x while an additional 10x improvement in speed can be gained by copying reads to a RAM drive (e.g. <a href='http://www.cyberciti.biz/tips/what-is-devshm-and-its-practical-usage.html'>/dev/shm</a> in CentOS). Using fast storage for the ARC intermediary files can also greatly improve performance. You can do this by setting workingdirectory='/path/to/fast/storage' in the ARC_config.txt file.
+  ARC relies heavily on fast random access to the storage system while splitting reads into subsets. This process can be the most time intensive part of the ARC pipeline, and is also difficult to parallelize because all of the reads are stored in a single set of files. One option for speeding this up is to store your reads on fast, low latency storage such as a flash-based/solid-state storage device or RAM disk. Our testing has shown that moving the reads and working folders to a flash-based hard disk improves performance by as much as 10x while an additional 10x improvement in speed can be gained by copying reads to a RAM drive (e.g. <a href='http://www.cyberciti.biz/tips/what-is-devshm-and-its-practical-usage.html'>/dev/shm</a> in CentOS). Using fast storage for the ARC intermediary files can also greatly improve performance. You can do this by setting workingdirectory='/path/to/fast/storage' in the ARC_config.txt file.
   <br>
 <h7><a href="#TOC">Table of contents</a></h7>
 </div>
